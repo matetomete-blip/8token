@@ -1,4 +1,4 @@
-# CLAUDE.md — Regras do Projeto LP 4TOKEN / GhostCLI
+# CLAUDE.md — Regras do Projeto LP 4TOKEN / 8Token
 
 ## 📋 CONTEXTO DA OFERTA (OBRIGATÓRIO)
 
@@ -21,14 +21,14 @@ Antes de **qualquer** tarefa relacionada a copy, design, funcionalidade, suporte
 
 ## 🎯 ESCOPO DO PROJETO
 
-Este projeto contém a landing page e infraestrutura backend do **GhostCLI** (também chamado de **8Token** em alguns contextos), uma plataforma de acesso unificado a modelos frontier de IA para código via assinatura mensal ilimitada.
+Este projeto contém a landing page e infraestrutura backend do **8Token**, uma plataforma de acesso unificado a modelos frontier de IA para código via assinatura mensal ilimitada.
 
 ### Arquivos-chave
 - `index.html` — Landing page principal
 - `server.js` — Backend Node.js
 - `login.html`, `account.html`, `admin.html` — Páginas de autenticação e gestão
 - `contexto/OFERTA.md` — **Fonte única de verdade da oferta** (leia sempre)
-- `RESUMO-COMPLETO-SITE-MAE.txt` — Conteúdo extraído do site original (ghostcli.dev)
+- `RESUMO-COMPLETO-SITE-MAE.txt` — Conteúdo extraído do site original de referência
 - `RESUMO-COMPLETO-DETALHADO-SITE-MAE.txt` — Versão detalhada com todas as seções, animações e estrutura
 
 ### Stack
@@ -39,14 +39,12 @@ Este projeto contém a landing page e infraestrutura backend do **GhostCLI** (ta
 ## ⚠️ REGRAS GERAIS
 
 - **Idioma**: responda sempre no mesmo idioma que o usuário escreveu
-- **Nomes corretos**: GhostCLI (produto), 8Token (LP alternativa), Claude Fable 5.1 (não "5.3"), GLM 5.3 (Z.ai), GPT-6 Astra (OpenAI)
+- **Nomes corretos**: 8Token (produto), Claude Fable 5.1 (não "5.3"), GLM 5.3 (Z.ai), GPT-6 Astra (OpenAI)
 - **Sem HTML raw**: nunca use `<details>`, `<summary>`, `<br>` nas respostas — o cliente CLI renderiza como texto literal
 - **Markdown apenas**: use headings, listas e parágrafos curtos
 - **TODOs**: quando implementar algo que depende de configuração externa (Google Client ID, gateway de pagamento, etc.), marque com comentário `TODO` no código e atualize o `contexto/OFERTA.md` na seção de estado atual
 
 ## 🔗 LINKS ÚTEIS
 
-- Site original: https://ghostcli.dev
-- Status: https://ghostcli.dev/status
-- Docs: https://ghostcli.dev/docs
-- Suporte: Discord + support@ghostcli.dev
+- Deploy: Vercel (matetomete-blip/8token)
+- Docs: docs.html (página local)

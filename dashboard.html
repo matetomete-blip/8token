@@ -808,8 +808,8 @@
                 <div class="plan-card" style="margin-top:var(--space-md);flex-direction:column;align-items:stretch;gap:var(--space-sm);">
                     <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;">URL do gateway (base URL)</div>
                     <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-md);flex-wrap:wrap;">
-                        <code id="gatewayUrl" style="font-family:var(--font-mono);font-size:15px;font-weight:600;color:var(--accent-blue);user-select:all;">https://ghostcli.dev</code>
-                        <button class="btn-icon" title="Copiar URL" onclick="copyText('https://ghostcli.dev', this)">
+                        <code id="gatewayUrl" style="font-family:var(--font-mono);font-size:15px;font-weight:600;color:var(--accent-blue);user-select:all;">URL DO SEU GATEWAY</code>
+                        <button class="btn-icon" title="Copiar URL" onclick="copyText('URL DO SEU GATEWAY', this)">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
@@ -985,7 +985,7 @@
         // comprou um plano. O gate lê o flag de assinatura do localStorage
         // (8token_has_plan) — definido quando o webhook de venda/assinatura confirma
         // o pagamento. Sem esse flag, a seção mostra o estado bloqueado.
-        const GATEWAY_URL = 'https://ghostcli.dev';
+        const GATEWAY_URL = 'URL DO SEU GATEWAY';
         const API_KEY_REAL = 'gcli_2c7Gqtld8tdiIk5JK4FWTRlUWUXGsoN3';
         const API_KEY_MASKED = 'gcli_••••••••••••••••••••••••••••';
         let apiKeyVisible = false;
