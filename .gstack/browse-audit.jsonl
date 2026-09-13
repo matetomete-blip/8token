@@ -2,3 +2,5 @@
 {"ts":"2026-09-12T23:17:16.100Z","cmd":"screenshot","args":"F:/agentes ia/LP 4TOKEN/site/index-preview.png --fullPage","origin":"file:///F:/agentes%20ia/LP%204TOKEN/site/index.html","durationMs":1,"status":"error","hasCookies":false,"mode":"launched","error":"Unknown screenshot flag: --fullPage"}
 {"ts":"2026-09-12T23:17:40.353Z","cmd":"screenshot","args":"F:/agentes ia/LP 4TOKEN/site/index-preview.png","origin":"file:///F:/agentes%20ia/LP%204TOKEN/site/index.html","durationMs":542,"status":"ok","hasCookies":false,"mode":"launched"}
 {"ts":"2026-09-12T23:18:25.837Z","cmd":"handoff","args":"Site GhostCLI aberto — navegue pelas páginas","origin":"file:///F:/agentes%20ia/LP%204TOKEN/site/index.html","durationMs":1813,"status":"ok","hasCookies":false,"mode":"headed"}
+{"ts":"2026-09-13T23:00:40.856Z","cmd":"goto","args":"https://ghostcli.dev/docs","origin":"https://ghostcli.dev/docs","durationMs":4262,"status":"ok","hasCookies":false,"mode":"launched"}
+{"ts":"2026-09-13T23:00:56.466Z","cmd":"text","args":"","origin":"https://ghostcli.dev/docs","durationMs":5,"status":"ok","hasCookies":false,"mode":"launched"}
