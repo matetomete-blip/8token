@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin 8Token</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #1a1818;
+            --bg-card: #232121;
+            --bg-card-alt: #1e1c1c;
+            --border: #2d2a2a;
+            --border-hover: #3d3939;
+            --text-primary: #ffffff;
+            --text-secondary: #b0abab;
+            --text-muted: #7a7575;
+            --accent-green: #10B981;
+            --accent-red: #F43F5E;
+            --accent-amber: #F59E0B;
+            --accent-blue: #006ffe;
+            --accent-orange: #f05409;
+            --accent-orange-hover: #d44a08;
+            --accent-purple: #a855f7;
+            --accent-teal: #2dd4bf;
+            --glow-orange: rgba(240, 84, 9, 0.15);
+            --space-unit: 4px;
+            --space-xs: calc(var(--space-unit) * 2);
+            --space-sm: calc(var(--space-unit) * 3);
+            --space-md: calc(var(--space-unit) * 4);
+            --space-lg: calc(var(--space-unit) * 6);
+            --space-xl: calc(var(--space-unit) * 8);
+            --space-2xl: calc(var(--space-unit) * 12);
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-pill: 999px;
+            --transition-fast: 150ms ease;
+            --transition-base: 250ms ease;
+        }
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+        body { font-family: var(--font-sans); background: var(--bg-primary); color: var(--text-primary); line-height: 1.6; min-height: 100vh; overflow-x: hidden; }
+        a { color: inherit; text-decoration: none; transition: color var(--transition-fast); }
+        a:hover { color: var(--accent-orange); }
+
+        /* Navbar */
+        .navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: rgba(26,24,24,0.97); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
+        .navbar-inner { max-width: 1400px; margin: 0 auto; padding: 0 var(--space-lg); display: flex; align-items: center; justify-content: space-between; height: 64px; gap: var(--space-md); }
+        .navbar-logo { display: flex; align-items: center; gap: var(--space-xs); font-weight: 700; font-size: 18px; white-space: nowrap; }
+        .navbar-logo svg { width: 28px; height: 28px; flex-shrink: 0; }
+        .navbar-badge { font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: var(--radius-pill); background: rgba(240,84,9,0.15); color: var(--accent-orange); text-transform: uppercase; letter-spacing: 0.05em; margin-left: var(--space-xs); }
+        .navbar-nav { display: flex; align-items: center; gap: var(--space-sm); flex-shrink: 0; }
+
+        /* Tabs */
+        .tabs-bar { background: var(--bg-card); border-bottom: 1px solid var(--border); position: sticky; top: 64px; z-index: 900; }
+        .tabs-inner { max-width: 1400px; margin: 0 auto; padding: 0 var(--space-lg); display: flex; gap: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .tabs-inner::-webkit-scrollbar { display: none; }
+        .tab-btn { padding: var(--space-md) var(--space-lg); font-size: 14px; font-weight: 500; color: var(--text-muted); background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap; transition: all var(--transition-fast); font-family: var(--font-sans); }
+        .tab-btn:hover { color: var(--text-secondary); }
+        .tab-btn.active { color: var(--accent-orange); border-bottom-color: var(--accent-orange); }
+        .tab-btn .tab-count { font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: var(--radius-pill); background: rgba(240,84,9,0.15); color: var(--accent-orange); margin-left: var(--space-xs); }
+
+        /* Page */
+        .page { max-width: 1400px; margin: 0 auto; padding: 144px var(--space-lg) 64px; }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; }
+
+        /* Cards & Stats */
+        .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--space-md); margin-bottom: var(--space-xl); }
+        .stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-lg); }
+        .stat-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: var(--space-xs); }
+        .stat-value { font-size: 28px; font-weight: 700; font-family: var(--font-mono); line-height: 1.2; }
+        .stat-value.green { color: var(--accent-green); }
+        .stat-value.orange { color: var(--accent-orange); }
+        .stat-value.blue { color: var(--accent-blue); }
+        .stat-value.purple { color: var(--accent-purple); }
+        .stat-value.red { color: var(--accent-red); }
+
+        .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-xl); margin-bottom: var(--space-lg); }
+        .card-title { font-size: 16px; font-weight: 600; margin-bottom: var(--space-md); }
+
+        /* Forms */
+        .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--space-md); margin-bottom: var(--space-md); }
+        .form-group { display: flex; flex-direction: column; gap: var(--space-xs); }
+        .form-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em; }
+        .form-input, .form-select { width: 100%; height: 40px; padding: 0 var(--space-md); background: var(--bg-primary); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 14px; font-family: var(--font-sans); outline: none; transition: border-color var(--transition-fast); }
+        .form-input:focus, .form-select:focus { border-color: var(--accent-orange); box-shadow: 0 0 0 3px var(--glow-orange); }
+        .form-input::placeholder { color: var(--text-muted); }
+        .form-select { cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237a7575' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+
+        /* Buttons */
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-xs); height: 40px; padding: 0 var(--space-lg); font-size: 14px; font-weight: 600; border-radius: var(--radius-sm); border: none; cursor: pointer; transition: all var(--transition-fast); white-space: nowrap; font-family: var(--font-sans); }
+        .btn-primary { background: var(--accent-orange); color: white; }
+        .btn-primary:hover { background: var(--accent-orange-hover); transform: translateY(-1px); }
+        .btn-secondary { background: transparent; border: 1px solid var(--border); color: var(--text-secondary); }
+        .btn-secondary:hover { border-color: var(--accent-orange); color: var(--accent-orange); }
+        .btn-success { background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: var(--accent-green); }
+        .btn-success:hover { background: rgba(16,185,129,0.25); }
+        .btn-danger { background: rgba(244,63,94,0.1); border: 1px solid rgba(244,63,94,0.3); color: var(--accent-red); }
+        .btn-danger:hover { background: rgba(244,63,94,0.2); }
+        .btn-sm { height: 32px; padding: 0 var(--space-md); font-size: 12px; }
+
+        /* Alert */
+        .alert { padding: var(--space-sm) var(--space-md); border-radius: var(--radius-sm); font-size: 13px; margin-bottom: var(--space-md); display: none; }
+        .alert.success { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); color: var(--accent-green); display: block; }
+        .alert.error { background: rgba(244,63,94,0.1); border: 1px solid rgba(244,63,94,0.3); color: var(--accent-red); display: block; }
+
+        /* Table */
+        .table-wrap { overflow-x: auto; border-radius: var(--radius-md); border: 1px solid var(--border); }
+        table { width: 100%; border-collapse: collapse; min-width: 700px; }
+        thead { background: #0f172a; }
+        th { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); padding: var(--space-sm) var(--space-md); text-align: left; white-space: nowrap; }
+        td { padding: var(--space-sm) var(--space-md); font-size: 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        tr:last-child td { border-bottom: none; }
+        tr:nth-child(even) td { background: var(--bg-card-alt); }
+        tr:hover td { background: var(--border); }
+        td.mono { font-family: var(--font-mono); font-size: 13px; color: var(--text-secondary); }
+        td.actions { white-space: nowrap; }
+        td.actions .btn { margin-right: var(--space-xs); }
+
+        /* Badges */
+        .badge { display: inline-flex; align-items: center; padding: 2px 10px; font-size: 11px; font-weight: 600; border-radius: var(--radius-pill); text-transform: uppercase; letter-spacing: 0.03em; }
+        .badge-active { background: rgba(16,185,129,0.12); color: var(--accent-green); }
+        .badge-pending { background: rgba(245,158,11,0.12); color: var(--accent-amber); }
+        .badge-expired { background: rgba(244,63,94,0.12); color: var(--accent-red); }
+        .badge-suspended { background: rgba(245,158,11,0.12); color: var(--accent-amber); }
+        .badge-approved { background: rgba(16,185,129,0.12); color: var(--accent-green); }
+        .badge-rejected { background: rgba(244,63,94,0.12); color: var(--accent-red); }
+        .badge-free { background: rgba(122,117,117,0.15); color: var(--text-muted); }
+        .badge-pro { background: rgba(0,111,254,0.12); color: var(--accent-blue); }
+        .badge-max { background: rgba(240,84,9,0.12); color: var(--accent-orange); }
+        .badge-admin { background: rgba(168,85,247,0.15); color: var(--accent-purple); }
+
+        .search-bar { display: flex; gap: var(--space-md); margin-bottom: var(--space-lg); flex-wrap: wrap; }
+        .search-bar .form-input { flex: 1; min-width: 200px; }
+        .empty-state { text-align: center; padding: var(--space-2xl); color: var(--text-muted); font-size: 14px; }
+
+        /* Plan breakdown mini chart */
+        .plan-bars { display: flex; flex-direction: column; gap: var(--space-sm); }
+        .plan-bar-row { display: flex; align-items: center; gap: var(--space-md); }
+        .plan-bar-label { font-size: 12px; color: var(--text-secondary); min-width: 80px; text-transform: capitalize; }
+        .plan-bar-track { flex: 1; height: 8px; background: var(--bg-primary); border-radius: 4px; overflow: hidden; }
+        .plan-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
+        .plan-bar-count { font-size: 12px; font-family: var(--font-mono); color: var(--text-muted); min-width: 30px; text-align: right; }
+
+        /* Responsive: tablet */
+        @media (max-width: 768px) {
+            .navbar-inner { padding: 0 var(--space-md); height: 56px; gap: var(--space-sm); }
+            .navbar-logo { font-size: 16px; }
+            .navbar-badge { font-size: 10px; padding: 2px 8px; }
+            .tabs-bar { top: 56px; }
+            .tabs-inner { padding: 0 var(--space-md); }
+            .tab-btn { padding: var(--space-sm) var(--space-md); font-size: 13px; }
+            .page { padding: 112px var(--space-md) 48px; }
+            .form-row { grid-template-columns: 1fr 1fr; }
+            .stats-row { grid-template-columns: repeat(2, 1fr); gap: var(--space-sm); }
+            .month-grid { grid-template-columns: 1fr 1fr !important; }
+            .dash-grid { grid-template-columns: 1fr !important; }
+            .stat-card { padding: var(--space-md); }
+            .stat-value { font-size: 22px; }
+            .card { padding: var(--space-md); }
+            table { min-width: 600px; }
+            th, td { padding: var(--space-xs) var(--space-sm); font-size: 12px; }
+            .btn-sm { height: 28px; padding: 0 var(--space-sm); font-size: 11px; }
+        }
+
+        /* Responsive: mobile */
+        @media (max-width: 480px) {
+            .navbar-inner { height: auto; padding: var(--space-sm); flex-wrap: wrap; }
+            .navbar-logo svg { width: 22px; height: 22px; }
+            .navbar-logo { font-size: 15px; gap: 4px; }
+            .navbar-badge { font-size: 9px; padding: 1px 6px; margin-left: 4px; }
+            .navbar-nav { width: 100%; justify-content: flex-end; }
+            .tabs-bar { top: 88px; }
+            .tabs-inner { padding: 0 var(--space-sm); }
+            .tab-btn { padding: var(--space-sm) var(--space-sm); font-size: 12px; }
+            .page { padding: 136px var(--space-sm) 32px; }
+            .form-row { grid-template-columns: 1fr; }
+            .stats-row { grid-template-columns: 1fr 1fr; gap: var(--space-xs); }
+            .stat-card { padding: var(--space-sm); }
+            .stat-label { font-size: 10px; }
+            .stat-value { font-size: 20px; }
+            .card { padding: var(--space-sm); margin-bottom: var(--space-md); }
+            .form-input, .form-select { height: 38px; font-size: 13px; }
+            .btn { height: 38px; font-size: 13px; padding: 0 var(--space-md); }
+            .btn-sm { height: 30px; }
+            table { min-width: 520px; }
+            th { font-size: 10px; }
+            td { font-size: 12px; }
+            .search-bar { flex-direction: column; }
+            .search-bar .form-input { min-width: unset; width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-inner">
+            <a href="index.html" class="navbar-logo">
+                <svg viewBox="0 0 48 48" fill="var(--accent-orange)" width="28" height="28">
+                    <path d="M24 4C14 4 8 12 8 22v14c0 2 1 4 3 4h2l3-4h4l3 4h2l3-4h4l3 4h2c2 0 3-2 3-4V22C40 12 34 4 24 4zm-8 22a3 3 0 110-6 3 3 0 010 6zm16 0a3 3 0 110-6 3 3 0 010 6z"/>
+                </svg>
+                8Token
+                <span class="navbar-badge">Admin</span>
+            </a>
+            <div class="navbar-nav">
+                <a href="dashboard.html" class="btn btn-secondary btn-sm">Dashboard</a>
+                <a href="index.html" class="btn btn-secondary btn-sm">Site</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Tabs -->
+    <div class="tabs-bar">
+        <div class="tabs-inner">
+            <button class="tab-btn active" onclick="switchTab('dashboard')">Dashboard</button>
+            <button class="tab-btn" onclick="switchTab('users')">Usuários / IPs</button>
+            <button class="tab-btn" onclick="switchTab('activations')">Ativação de IPs <span class="tab-count" id="pendingCount" style="display:none;">0</span></button>
+            <button class="tab-btn" onclick="switchTab('affiliates')">Afiliados</button>
+            <button class="tab-btn" onclick="switchTab('plans')">Planos</button>
+            <button class="tab-btn" onclick="switchTab('expired')">Expirados <span class="tab-count" id="expiredCount" style="display:none;">0</span></button>
+            <button class="tab-btn" onclick="switchTab('coupons')">Cupons</button>
+            <button class="tab-btn" onclick="switchTab('ipchanges')">Solicitações de IP <span class="tab-count" id="ipChangeCount" style="display:none;">0</span></button>
+        </div>
+    </div>
+
+    <main class="page">
+        <!-- ==================== TAB: DASHBOARD ==================== -->
+        <div class="tab-panel active" id="tab-dashboard">
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="stat-label">Total de IPs</div>
+                    <div class="stat-value" id="dashTotalIps">—</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">IPs Ativos</div>
+                    <div class="stat-value green" id="dashActiveIps">—</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Planos Pagos</div>
+                    <div class="stat-value blue" id="dashPaidPlans">—</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Ativações Pendentes</div>
+                    <div class="stat-value orange" id="dashPending">—</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Receita Total</div>
+                    <div class="stat-value green" id="dashRevenue">—</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Custo por IP</div>
+                    <div class="stat-value red" id="dashCostPerIp">—</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Lucro por IP</div>
+                    <div class="stat-value purple" id="dashProfitPerIp">—</div>
+                </div>
+            </div>
+
+            <!-- Resumo do Mês -->
+            <div class="card" style="margin-bottom:var(--space-lg);">
+                <div class="card-title" style="display:flex;align-items:center;gap:var(--space-sm);">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-orange)" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    Resumo do Mês — <span id="monthLabel" style="color:var(--accent-orange);"></span>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-md);margin-top:var(--space-md);" class="month-grid">
+                    <div style="background:var(--bg-card-alt);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-md) var(--space-lg);">
+                        <div style="font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">Vendido este mês</div>
+                        <div style="font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--accent-green);" id="monthSold">—</div>
+                        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;" id="monthSoldCount">0 vendas</div>
+                    </div>
+                    <div style="background:var(--bg-card-alt);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-md) var(--space-lg);">
+                        <div style="font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">IPs ativos agora</div>
+                        <div style="font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--accent-blue);" id="monthActiveNow">—</div>
+                        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;" id="monthActiveBreakdown">—</div>
+                    </div>
+                    <div style="background:var(--bg-card-alt);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-md) var(--space-lg);">
+                        <div style="font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">IPs que continuam próx. mês</div>
+                        <div style="font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--accent-teal);" id="monthContinueIps">—</div>
+                        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;" id="monthContinueNote">expiram após o próx. mês</div>
+                    </div>
+                    <div style="background:var(--bg-card-alt);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-md) var(--space-lg);">
+                        <div style="font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">Receita esperada próx. mês</div>
+                        <div style="font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--accent-orange);" id="monthProjected">—</div>
+                        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;" id="monthProjectedNote">baseado nos planos ativos</div>
+                    </div>
+                </div>
+                <!-- Breakdown por plano do mês -->
+                <div style="margin-top:var(--space-md);padding-top:var(--space-md);border-top:1px solid var(--border);">
+                    <div style="font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:var(--space-sm);">Composição dos IPs ativos</div>
+                    <div id="monthIpBreakdown" style="display:flex;flex-wrap:wrap;gap:var(--space-sm);"></div>
+                </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-lg);" class="dash-grid">
+                <div class="card">
+                    <div class="card-title">Distribuição por Plano</div>
+                    <div class="plan-bars" id="planBars">
+                        <div class="empty-state">Carregando...</div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Vendas Recentes</div>
+                    <div class="table-wrap">
+                        <table>
+                            <thead><tr><th>Data</th><th>Usuário</th><th>Plano</th><th>Valor</th><th>Status</th></tr></thead>
+                            <tbody id="recentInvoices"><tr><td colspan="5" class="empty-state">Carregando...</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== TAB: USERS / IPS ==================== -->
+        <div class="tab-panel" id="tab-users">
+            <div class="card">
+                <div class="card-title" id="userFormTitle">Adicionar IP</div>
+                <div id="userFormAlert" class="alert"></div>
+                <input type="hidden" id="editId" value="">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Endereço IP *</label>
+                        <input type="text" id="fieldIp" class="form-input" placeholder="Ex: 203.0.113.42">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Plano *</label>
+                        <select id="fieldPlan" class="form-select">
+                            <option value="free">Free</option>
+                            <option value="mensal">Mensal</option>
+                            <option value="trimestral">Trimestral</option>
+                            <option value="anual">Anual</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Status</label>
+                        <select id="fieldStatus" class="form-select">
+                            <option value="active">IP Ativo</option>
+                            <option value="pending">Não Programado</option>
+                            <option value="suspended">Desativado</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Expira em</label>
+                        <input type="datetime-local" id="fieldExpires" class="form-input">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label class="form-label">Notas</label>
+                        <input type="text" id="fieldNotes" class="form-input" placeholder="Observações internas (opcional)">
+                    </div>
+                </div>
+                <div style="display:flex;gap:var(--space-md);margin-top:var(--space-md);">
+                    <button class="btn btn-primary" onclick="saveSubscription()">Salvar</button>
+                    <button class="btn btn-secondary" onclick="resetUserForm()">Limpar</button>
+                </div>
+            </div>
+
+            <div class="search-bar">
+                <input type="text" id="userSearchInput" class="form-input" placeholder="Buscar por IP, email ou notas..." oninput="filterUsersTable()">
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>IP</th><th>Plano</th><th>Status</th><th>Usuário</th><th>Expira</th><th>Notas</th><th>Atualizado</th><th>Ações</th></tr></thead>
+                    <tbody id="usersTableBody"><tr><td colspan="8" class="empty-state">Carregando...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ==================== TAB: ACTIVATIONS ==================== -->
+        <div class="tab-panel" id="tab-activations">
+            <p style="color:var(--text-secondary);font-size:14px;margin-bottom:var(--space-lg);">Pedidos de ativação de IP gerados quando um usuário completa a compra. Aprovar libera a chave API e URL do gateway para o usuário.</p>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>ID</th><th>IP</th><th>Usuário</th><th>Plano</th><th>Status</th><th>Criado</th><th>API Key</th><th>Ações</th></tr></thead>
+                    <tbody id="activationsTableBody"><tr><td colspan="8" class="empty-state">Carregando...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ==================== TAB: COUPONS ==================== -->
+        <div class="tab-panel" id="tab-coupons">
+            <div class="card">
+                <div class="card-title">Criar Cupom de Desconto</div>
+                <div id="couponFormAlert" class="alert"></div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Código *</label>
+                        <input type="text" id="couponCode" class="form-input" placeholder="Ex: PROMO20" style="text-transform:uppercase;">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Desconto (%) *</label>
+                        <input type="number" id="couponDiscount" class="form-input" placeholder="Ex: 20" min="1" max="100" value="10">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Máx. de Usos</label>
+                        <input type="number" id="couponMaxUses" class="form-input" placeholder="Ilimitado se vazio" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Expira em</label>
+                        <input type="datetime-local" id="couponExpires" class="form-input">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label class="form-label">Notas</label>
+                        <input type="text" id="couponNotes" class="form-input" placeholder="Observações internas (opcional)">
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="createCoupon()" style="margin-top:var(--space-sm);">Criar Cupom</button>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Código</th><th>Desconto</th><th>Usos</th><th>Máx.</th><th>Expira</th><th>Status</th><th>Ações</th></tr></thead>
+                    <tbody id="couponsTableBody"><tr><td colspan="7" class="empty-state">Carregando...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ==================== TAB: IP CHANGES ==================== -->
+        <div class="tab-panel" id="tab-ipchanges">
+            <p style="color:var(--text-secondary);font-size:14px;margin-bottom:var(--space-lg);">Solicitações de alteração de IP enviadas pelos usuários. Aprove para atualizar o IP autorizado ou rejeite com motivo.</p>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>ID</th><th>Usuário</th><th>IP Atual</th><th>IP Solicitado</th><th>Data</th><th>Status</th><th>Ações</th></tr></thead>
+                    <tbody id="ipChangesTableBody"><tr><td colspan="7" class="empty-state">Carregando...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ==================== TAB: EXPIRED ==================== -->
+        <div class="tab-panel" id="tab-expired">
+            <p style="color:var(--text-secondary);font-size:14px;margin-bottom:var(--space-lg);">IPs cujo plano expirou e não foi renovado. Você pode reativar, remover ou entrar em contato com o usuário.</p>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>IP</th><th>Plano</th><th>Usuário</th><th>Expirou em</th><th>Dias vencido</th><th>Ações</th></tr></thead>
+                    <tbody id="expiredTableBody"><tr><td colspan="6" class="empty-state">Carregando...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ==================== TAB: PLANS ==================== -->
+        <div class="tab-panel" id="tab-plans">
+            <p style="color:var(--text-secondary);font-size:14px;margin-bottom:var(--space-lg);">Visualize os IPs vinculados a cada plano e remova diretamente. A lista atualiza automaticamente após qualquer alteração.</p>
+            <div id="plansContainer">
+                <div class="empty-state">Carregando...</div>
+            </div>
+        </div>
+
+        <!-- ==================== TAB: AFFILIATES ==================== -->
+        <div class="tab-panel" id="tab-affiliates">
+            <div class="card">
+                <div class="card-title">Cadastrar Afiliado</div>
+                <div id="affFormAlert" class="alert"></div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">ID do Usuário *</label>
+                        <input type="number" id="affUserId" class="form-input" placeholder="Ex: 1">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Comissão (%) *</label>
+                        <input type="number" id="affCommission" class="form-input" placeholder="Ex: 10" min="1" max="100" value="10">
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="addAffiliate()" style="margin-top:var(--space-sm);">Cadastrar Afiliado</button>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>ID</th><th>Usuário</th><th>Código</th><th>Comissão</th><th>Indicações</th><th>Pagantes</th><th>Volume</th><th>Ações</th></tr></thead>
+                    <tbody id="affiliatesTableBody"><tr><td colspan="8" class="empty-state">Carregando...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const API_BASE = window.location.port === '3001' ? window.location.origin : window.location.origin.replace(/:\d+$/, ':3001');
+        let allSubs = [];
+        let allActivations = [];
+        let allAffiliates = [];
+
+        function getAdminSecret() {
+            let secret = sessionStorage.getItem('8token_admin_secret');
+            if (!secret) {
+                try {
+                    secret = prompt('Digite a senha de administrador:');
+                } catch (e) {
+                    // prompt() not supported in headless/preview — use URL param or default
+                    const params = new URLSearchParams(window.location.search);
+                    secret = params.get('key') || '8token-admin-change-me';
+                }
+                if (secret) sessionStorage.setItem('8token_admin_secret', secret);
+            }
+            return secret;
+        }
+
+        async function apiFetch(url, options = {}) {
+            const secret = getAdminSecret();
+            if (!secret) throw new Error('Autenticação cancelada');
+            const headers = { 'Content-Type': 'application/json', 'X-Admin-Secret': secret, ...options.headers };
+            const res = await fetch(API_BASE + url, { ...options, headers });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Erro na requisição');
+            return data;
+        }
+
+        function showAlert(id, message, type) {
+            const el = document.getElementById(id);
+            el.textContent = message;
+            el.className = 'alert ' + type;
+            setTimeout(() => { el.className = 'alert'; }, 5000);
+        }
+
+        // ---- TABS ----
+        function switchTab(name, btnEl) {
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-' + name).classList.add('active');
+            // Use passed element or fall back to event.currentTarget
+            const activeBtn = btnEl || (typeof event !== 'undefined' ? event.currentTarget : null);
+            if (activeBtn) activeBtn.classList.add('active');
+            if (name === 'dashboard') loadDashboard();
+            if (name === 'users') loadSubscriptions();
+            if (name === 'activations') loadActivations();
+            if (name === 'affiliates') loadAffiliates();
+            if (name === 'plans') loadPlans();
+            if (name === 'expired') loadExpired();
+            if (name === 'coupons') loadCoupons();
+            if (name === 'ipchanges') loadIpChanges();
+        }
+
+        // ---- DASHBOARD ----
+        async function loadDashboard() {
+            try {
+                const stats = await apiFetch('/api/admin/stats');
+                document.getElementById('dashTotalIps').textContent = stats.totalIps;
+                document.getElementById('dashPaidPlans').textContent = stats.paidPlans;
+                document.getElementById('dashPending').textContent = stats.pendingActivations;
+                document.getElementById('dashRevenue').textContent = 'R$ ' + (stats.totalRevenue || 0).toFixed(2);
+
+                // Custo por IP e Lucro por IP (custo fixo mensal = R$ 650)
+                // Inclui TODOS os IPs ativos (pagos, admin, amigos/free) no denominador
+                const FIXED_COST = 650;
+                const planBreakdownForCost = stats.planBreakdown || [];
+                const activeIps = planBreakdownForCost.reduce((sum, p) => sum + (p.count || 0), 0);
+                const revenue = stats.totalRevenue || 0;
+                // Card "IPs Ativos" usa a mesma contagem (inclui admin/amigos com receita zero)
+                document.getElementById('dashActiveIps').textContent = activeIps;
+                const costPerIp = activeIps > 0 ? FIXED_COST / activeIps : 0;
+                const profitPerIp = activeIps > 0 ? (revenue - FIXED_COST) / activeIps : 0;
+                document.getElementById('dashCostPerIp').textContent = 'R$ ' + costPerIp.toFixed(2);
+                const profitEl = document.getElementById('dashProfitPerIp');
+                profitEl.textContent = (profitPerIp >= 0 ? 'R$ ' : '-R$ ') + Math.abs(profitPerIp).toFixed(2);
+                profitEl.className = 'stat-value ' + (profitPerIp >= 0 ? 'green' : 'red');
+
+                // Pending count badge
+                const badge = document.getElementById('pendingCount');
+                if (stats.pendingActivations > 0) {
+                    badge.textContent = stats.pendingActivations;
+                    badge.style.display = 'inline';
+                } else {
+                    badge.style.display = 'none';
+                }
+
+                // Plan bars
+                const planColors = { free: '#7a7575', mensal: '#006ffe', trimestral: '#006ffe', anual: '#f05409', admin: '#a855f7' };
+                const maxCount = Math.max(...(stats.planBreakdown || []).map(p => p.count), 1);
+                const barsHtml = (stats.planBreakdown || []).map(p => `
+                    <div class="plan-bar-row">
+                        <span class="plan-bar-label">${p.plan}</span>
+                        <div class="plan-bar-track"><div class="plan-bar-fill" style="width:${(p.count/maxCount*100)}%;background:${planColors[p.plan]||'#7a7575'}"></div></div>
+                        <span class="plan-bar-count">${p.count}</span>
+                    </div>
+                `).join('');
+                document.getElementById('planBars').innerHTML = barsHtml || '<div class="empty-state">Sem dados</div>';
+
+                // Recent invoices
+                const invHtml = (stats.recentInvoices || []).map(i => `
+                    <tr>
+                        <td class="mono" style="font-size:12px;">${formatDate(i.created_at)}</td>
+                        <td style="font-size:13px;">${i.user_email || '—'}</td>
+                        <td>${badgeForPlan(i.plan)}</td>
+                        <td class="mono">R$ ${(i.amount||0).toFixed(2)}</td>
+                        <td>${badgeForStatus(i.status)}</td>
+                    </tr>
+                `).join('');
+                document.getElementById('recentInvoices').innerHTML = invHtml || '<tr><td colspan="5" class="empty-state">Nenhuma venda ainda</td></tr>';
+
+                // ── Resumo do Mês ──
+                const now = new Date();
+                const monthNames = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+                document.getElementById('monthLabel').textContent = monthNames[now.getMonth()] + ' ' + now.getFullYear();
+
+                // Vendas deste mês (filtrar invoices do mês atual)
+                const currentMonth = now.getMonth();
+                const currentYear = now.getFullYear();
+                const monthInvoices = (stats.recentInvoices || []).filter(i => {
+                    const d = new Date(i.created_at);
+                    return d.getMonth() === currentMonth && d.getFullYear() === currentYear && i.status === 'paid';
+                });
+                const monthSoldTotal = monthInvoices.reduce((sum, i) => sum + (i.amount || 0), 0);
+                document.getElementById('monthSold').textContent = 'R$ ' + monthSoldTotal.toFixed(2);
+                document.getElementById('monthSoldCount').textContent = monthInvoices.length + ' venda' + (monthInvoices.length !== 1 ? 's' : '');
+
+                // IPs ativos agora
+                document.getElementById('monthActiveNow').textContent = activeIps;
+
+                // Breakdown por plano dos IPs ativos
+                const planBreakdown = stats.planBreakdown || [];
+                const activePlans = planBreakdown.filter(p => p.plan !== 'free');
+                const breakdownParts = activePlans.map(p => {
+                    const colors = { mensal: '#006ffe', trimestral: '#006ffe', anual: '#f05409', admin: '#a855f7' };
+                    return '<span style="display:inline-flex;align-items:center;gap:6px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-pill);padding:4px 12px;font-size:12px;font-family:var(--font-mono);">' +
+                        '<span style="width:8px;height:8px;border-radius:50%;background:' + (colors[p.plan]||'#7a7575') + ';"></span>' +
+                        p.plan + ': <strong>' + p.count + '</strong></span>';
+                });
+                document.getElementById('monthIpBreakdown').innerHTML = breakdownParts.join('') || '<span style="color:var(--text-muted);font-size:12px;">Nenhum plano pago ativo</span>';
+                document.getElementById('monthActiveBreakdown').textContent = activePlans.reduce((s, p) => s + p.count, 0) + ' planos pagos';
+
+                // Próximo mês: calcular data do próximo mês
+                const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+                const nextMonthEnd = new Date(now.getFullYear(), now.getMonth() + 2, 0, 23, 59, 59);
+
+                // Usar activeSubscriptions (com expires_at) para cálculo preciso
+                const subs = stats.activeSubscriptions || [];
+                let mensalRenewing = 0;
+                let trimestralRenewing = 0;
+                let anualRenewing = 0;
+                let continueCertain = 0; // trimestral/anual que NÃO expiram próx. mês (continuam ativos)
+
+                subs.forEach(s => {
+                    if (s.plan === 'admin' || s.plan === 'free') return; // receita zero
+                    const expDate = s.expires_at ? new Date(s.expires_at) : null;
+                    if (!expDate) {
+                        // Sem data de expiração — contar como ativo
+                        if (s.plan === 'mensal') mensalRenewing++;
+                        else if (s.plan === 'trimestral') { trimestralRenewing++; continueCertain++; }
+                        else if (s.plan === 'anual') { anualRenewing++; continueCertain++; }
+                        return;
+                    }
+                    // O plano expira no próximo mês? (chance de renovação)
+                    const expiresNextMonth = expDate >= nextMonth && expDate <= nextMonthEnd;
+                    if (s.plan === 'mensal') {
+                        // Mensal: sempre conta como receita esperada (renova todo mês)
+                        mensalRenewing++;
+                    } else if (s.plan === 'trimestral') {
+                        if (expiresNextMonth) {
+                            trimestralRenewing++; // vai renovar = receita esperada
+                        } else {
+                            continueCertain++; // continua ativo mas não renova próx. mês
+                        }
+                    } else if (s.plan === 'anual') {
+                        if (expiresNextMonth) {
+                            anualRenewing++; // vai renovar = receita esperada
+                        } else {
+                            continueCertain++; // continua ativo mas não renova próx. mês
+                        }
+                    }
+                });
+
+                const totalContinue = continueCertain + mensalRenewing + trimestralRenewing + anualRenewing;
+                document.getElementById('monthContinueIps').textContent = totalContinue;
+                document.getElementById('monthContinueNote').textContent = continueCertain + ' certos (não expiram) + ' + (mensalRenewing + trimestralRenewing + anualRenewing) + ' renovando';
+
+                // Receita esperada no próximo mês
+                // Só conta IPs que vão gerar cobrança no próx. mês:
+                // - Mensal: sempre (R$ 199,70/mês)
+                // - Trimestral: só se expira no próx. mês (R$ 399 renovação)
+                // - Anual: só se expira no próx. mês (R$ 1.100 renovação)
+                // - Admin/Free: R$ 0
+                const projectedRevenue = (mensalRenewing * 199.70) + (trimestralRenewing * 399) + (anualRenewing * 1100);
+                document.getElementById('monthProjected').textContent = 'R$ ' + projectedRevenue.toFixed(2);
+                const parts = [];
+                if (mensalRenewing > 0) parts.push(mensalRenewing + ' mensal × R$199,70');
+                if (trimestralRenewing > 0) parts.push(trimestralRenewing + ' trim × R$399');
+                if (anualRenewing > 0) parts.push(anualRenewing + ' anual × R$1.100');
+                document.getElementById('monthProjectedNote').textContent = parts.length > 0 ? parts.join(' + ') : 'Nenhuma renovação prevista no próx. mês';
+            } catch (e) {
+                console.error('Dashboard error:', e);
+            }
+        }
+
+        // ---- USERS / IPS ----
+        function badgeForPlan(plan) {
+            const map = { free: 'badge-free', mensal: 'badge-pro', trimestral: 'badge-pro', anual: 'badge-max', admin: 'badge-admin' };
+            return `<span class="badge ${map[plan] || 'badge-free'}">${plan}</span>`;
+        }
+        function badgeForStatus(status) {
+            const map = { active: 'badge-active', pending: 'badge-pending', expired: 'badge-expired', suspended: 'badge-suspended', approved: 'badge-approved', rejected: 'badge-rejected', paid: 'badge-active', unpaid: 'badge-pending' };
+            const labels = { active: 'IP Ativo', pending: 'Não Programado', expired: 'Expirado', suspended: 'Desativado', approved: 'Aprovado', rejected: 'Recusado', paid: 'Pago', unpaid: 'Pendente' };
+            return `<span class="badge ${map[status] || 'badge-free'}">${labels[status] || status}</span>`;
+        }
+        function formatDate(d) {
+            if (!d) return '—';
+            return new Date(d).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        }
+
+        function renderUsersTable(subs) {
+            const tbody = document.getElementById('usersTableBody');
+            if (!subs.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Nenhum registro encontrado.</td></tr>'; return; }
+            tbody.innerHTML = subs.map(s => `
+                <tr data-id="${s.id}">
+                    <td class="mono">${s.ip}</td>
+                    <td>${badgeForPlan(s.plan)}</td>
+                    <td>${badgeForStatus(s.status)}</td>
+                    <td style="font-size:13px;color:var(--text-secondary);">${s.user_email || '—'}</td>
+                    <td class="mono" style="font-size:12px;">${formatDate(s.expires_at)}</td>
+                    <td style="font-size:13px;color:var(--text-muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${(s.notes||'').replace(/"/g,'&quot;')}">${s.notes || '—'}</td>
+                    <td class="mono" style="font-size:12px;color:var(--text-muted);">${formatDate(s.updated_at)}</td>
+                    <td class="actions">
+                        <button class="btn btn-secondary btn-sm" onclick="editSub(${s.id})">Editar</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteSub(${s.id},'${s.ip}')">Remover</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function loadSubscriptions() {
+            try {
+                allSubs = await apiFetch('/api/admin/subscriptions');
+                filterUsersTable();
+            } catch (e) {
+                document.getElementById('usersTableBody').innerHTML = `<tr><td colspan="8" class="empty-state" style="color:var(--accent-red);">${e.message}</td></tr>`;
+                if (e.message.includes('Acesso negado')) sessionStorage.removeItem('8token_admin_secret');
+            }
+        }
+
+        function filterUsersTable() {
+            const q = (document.getElementById('userSearchInput').value || '').toLowerCase().trim();
+            if (!q) { renderUsersTable(allSubs); return; }
+            renderUsersTable(allSubs.filter(s =>
+                (s.ip||'').toLowerCase().includes(q) || (s.user_email||'').toLowerCase().includes(q) ||
+                (s.notes||'').toLowerCase().includes(q) || (s.plan||'').toLowerCase().includes(q)
+            ));
+        }
+
+        function resetUserForm() {
+            document.getElementById('editId').value = '';
+            document.getElementById('fieldIp').value = '';
+            document.getElementById('fieldPlan').value = 'free';
+            document.getElementById('fieldStatus').value = 'active';
+            document.getElementById('fieldExpires').value = '';
+            document.getElementById('fieldNotes').value = '';
+            document.getElementById('userFormTitle').textContent = 'Adicionar IP';
+            document.getElementById('fieldIp').disabled = false;
+        }
+
+        function editSub(id) {
+            const sub = allSubs.find(s => s.id === id);
+            if (!sub) return;
+            document.getElementById('editId').value = sub.id;
+            document.getElementById('fieldIp').value = sub.ip;
+            document.getElementById('fieldIp').disabled = true;
+            document.getElementById('fieldPlan').value = sub.plan;
+            document.getElementById('fieldStatus').value = sub.status;
+            document.getElementById('fieldExpires').value = sub.expires_at ? sub.expires_at.slice(0, 16) : '';
+            document.getElementById('fieldNotes').value = sub.notes || '';
+            document.getElementById('userFormTitle').textContent = `Editar IP: ${sub.ip}`;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        async function saveSubscription() {
+            const editId = document.getElementById('editId').value;
+            const ip = document.getElementById('fieldIp').value.trim();
+            const plan = document.getElementById('fieldPlan').value;
+            const status = document.getElementById('fieldStatus').value;
+            const expires = document.getElementById('fieldExpires').value || null;
+            const notes = document.getElementById('fieldNotes').value.trim() || null;
+            if (!editId && !ip) { showAlert('userFormAlert', 'O endereço IP é obrigatório.', 'error'); return; }
+            try {
+                if (editId) {
+                    await apiFetch(`/api/admin/subscriptions/${editId}`, { method: 'PUT', body: JSON.stringify({ plan, status, expires_at: expires, notes }) });
+                    showAlert('userFormAlert', 'Assinatura atualizada com sucesso!', 'success');
+                } else {
+                    await apiFetch('/api/admin/subscriptions', { method: 'POST', body: JSON.stringify({ ip, plan, status, expires_at: expires, notes }) });
+                    showAlert('userFormAlert', `IP ${ip} adicionado com sucesso!`, 'success');
+                }
+                resetUserForm();
+                loadSubscriptions();
+            } catch (e) { showAlert('userFormAlert', e.message, 'error'); }
+        }
+
+        async function deleteSub(id, ip) {
+            if (!confirm(`Remover assinatura do IP ${ip}?`)) return;
+            try { await apiFetch(`/api/admin/subscriptions/${id}`, { method: 'DELETE' }); loadSubscriptions(); } catch (e) { alert(e.message); }
+        }
+
+        // ---- ACTIVATIONS ----
+        async function loadActivations() {
+            try {
+                allActivations = await apiFetch('/api/admin/activations');
+                const tbody = document.getElementById('activationsTableBody');
+                if (!allActivations.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Nenhum pedido de ativação pendente.</td></tr>'; return; }
+                tbody.innerHTML = allActivations.map(a => `
+                    <tr>
+                        <td class="mono">#${a.id}</td>
+                        <td class="mono">${a.ip}</td>
+                        <td style="font-size:13px;">${a.user_email || '—'}</td>
+                        <td>${badgeForPlan(a.plan)}</td>
+                        <td>${badgeForStatus(a.status)}</td>
+                        <td class="mono" style="font-size:12px;">${formatDate(a.created_at)}</td>
+                        <td class="mono" style="font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;">${a.api_key ? a.api_key.slice(0,16)+'...' : '—'}</td>
+                        <td class="actions">
+                            ${a.status === 'pending' ? `
+                                <button class="btn btn-success btn-sm" onclick="approveActivation(${a.id})">Aprovar</button>
+                                <button class="btn btn-danger btn-sm" onclick="rejectActivation(${a.id})">Recusar</button>
+                            ` : '<span style="color:var(--text-muted);font-size:12px;">Processado</span>'}
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (e) {
+                document.getElementById('activationsTableBody').innerHTML = `<tr><td colspan="8" class="empty-state" style="color:var(--accent-red);">${e.message}</td></tr>`;
+            }
+        }
+
+        async function approveActivation(id) {
+            if (!confirm('Aprovar esta ativação? Isso liberará a chave API e gateway para o usuário.')) return;
+            try {
+                const result = await apiFetch(`/api/admin/activations/${id}/approve`, { method: 'POST' });
+                alert(`Ativado! API Key: ${result.apiKey}\nGateway: ${result.gatewayUrl}`);
+                loadActivations();
+                loadDashboard();
+            } catch (e) { alert(e.message); }
+        }
+
+        async function rejectActivation(id) {
+            const notes = prompt('Motivo da recusa (opcional):');
+            try {
+                await apiFetch(`/api/admin/activations/${id}/reject`, { method: 'POST', body: JSON.stringify({ notes }) });
+                loadActivations();
+                loadDashboard();
+            } catch (e) { alert(e.message); }
+        }
+
+        // ---- AFFILIATES ----
+        async function loadAffiliates() {
+            try {
+                allAffiliates = await apiFetch('/api/admin/affiliates');
+                const tbody = document.getElementById('affiliatesTableBody');
+                if (!allAffiliates.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Nenhum afiliado cadastrado.</td></tr>'; return; }
+                tbody.innerHTML = allAffiliates.map(a => `
+                    <tr>
+                        <td class="mono">#${a.id}</td>
+                        <td style="font-size:13px;">${a.user_email || '—'}<br><span style="font-size:11px;color:var(--text-muted);">${a.user_name || ''}</span></td>
+                        <td class="mono" style="font-size:12px;">${a.code}</td>
+                        <td><span class="badge badge-pro">${a.commission_pct}%</span></td>
+                        <td class="mono">${a.total_referrals || 0}</td>
+                        <td class="mono">${a.paid_referrals || 0}</td>
+                        <td class="mono">R$ ${(a.total_commission_base || 0).toFixed(2)}</td>
+                        <td class="actions">
+                            <button class="btn btn-secondary btn-sm" onclick="editAffiliate(${a.id}, ${a.commission_pct})">Editar %</button>
+                            <button class="btn btn-danger btn-sm" onclick="removeAffiliate(${a.id})">Remover</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (e) {
+                document.getElementById('affiliatesTableBody').innerHTML = `<tr><td colspan="8" class="empty-state" style="color:var(--accent-red);">${e.message}</td></tr>`;
+            }
+        }
+
+        async function addAffiliate() {
+            const userId = document.getElementById('affUserId').value;
+            const commission = parseFloat(document.getElementById('affCommission').value) || 10;
+            if (!userId) { showAlert('affFormAlert', 'ID do usuário é obrigatório.', 'error'); return; }
+            try {
+                const result = await apiFetch('/api/admin/affiliates', { method: 'POST', body: JSON.stringify({ user_id: parseInt(userId), commission_pct: commission }) });
+                showAlert('affFormAlert', `Afiliado criado! Código: ${result.code}`, 'success');
+                document.getElementById('affUserId').value = '';
+                loadAffiliates();
+            } catch (e) { showAlert('affFormAlert', e.message, 'error'); }
+        }
+
+        async function editAffiliate(id, currentPct) {
+            const newPct = prompt(`Nova comissão % (atual: ${currentPct}%):`, currentPct);
+            if (newPct === null) return;
+            try {
+                await apiFetch(`/api/admin/affiliates/${id}`, { method: 'PUT', body: JSON.stringify({ commission_pct: parseFloat(newPct) }) });
+                loadAffiliates();
+            } catch (e) { alert(e.message); }
+        }
+
+        async function removeAffiliate(id) {
+            if (!confirm('Remover este afiliado?')) return;
+            try { await apiFetch(`/api/admin/affiliates/${id}`, { method: 'DELETE' }); loadAffiliates(); } catch (e) { alert(e.message); }
+        }
+
+        // ---- EXPIRED ----
+        async function loadExpired() {
+            try {
+                const subs = await apiFetch('/api/admin/subscriptions');
+                const now = new Date();
+                const expired = subs.filter(s => s.expires_at && new Date(s.expires_at) < now);
+                const tbody = document.getElementById('expiredTableBody');
+                // Update badge count
+                const badge = document.getElementById('expiredCount');
+                if (expired.length > 0) { badge.textContent = expired.length; badge.style.display = 'inline'; }
+                else { badge.style.display = 'none'; }
+                if (!expired.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Nenhum plano expirado. Tudo em dia!</td></tr>'; return; }
+                tbody.innerHTML = expired.map(s => {
+                    const daysExpired = Math.floor((now - new Date(s.expires_at)) / (1000*60*60*24));
+                    return `<tr>
+                        <td class="mono">${s.ip}</td>
+                        <td>${badgeForPlan(s.plan)}</td>
+                        <td style="font-size:13px;color:var(--text-secondary);">${s.user_email || '—'}</td>
+                        <td class="mono" style="font-size:12px;">${formatDate(s.expires_at)}</td>
+                        <td><span class="badge badge-expired">${daysExpired} dia${daysExpired !== 1 ? 's' : ''}</span></td>
+                        <td class="actions">
+                            <button class="btn btn-success btn-sm" onclick="reactivateIp(${s.id},'${s.ip}')">Reativar</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteSub(${s.id},'${s.ip}')">Remover</button>
+                        </td>
+                    </tr>`;
+                }).join('');
+            } catch (e) {
+                document.getElementById('expiredTableBody').innerHTML = `<tr><td colspan="6" class="empty-state" style="color:var(--accent-red);">${e.message}</td></tr>`;
+            }
+        }
+
+        async function reactivateIp(id, ip) {
+            const plan = prompt(`Qual plano para reativar o IP ${ip}?`, 'mensal');
+            if (!plan) return;
+            const expiryMap = { mensal: 30, trimestral: 90, anual: 365 };
+            const days = expiryMap[plan] || 30;
+            const expiresAt = new Date(Date.now() + days * 24*60*60*1000).toISOString().slice(0,16);
+            try {
+                await apiFetch(`/api/admin/subscriptions/${id}`, { method: 'PUT', body: JSON.stringify({ plan, status: 'active', expires_at: expiresAt }) });
+                loadExpired();
+                loadDashboard();
+            } catch (e) { alert(e.message); }
+        }
+
+        // ---- PLANS ----
+        async function loadPlans() {
+            try {
+                const subs = await apiFetch('/api/admin/subscriptions');
+                const grouped = {};
+                const planOrder = ['admin', 'anual', 'trimestral', 'mensal', 'free'];
+                const planColors = { admin: '#a855f7', anual: '#f05409', trimestral: '#006ffe', mensal: '#006ffe', free: '#7a7575' };
+                const planLabels = { admin: 'Admin', anual: 'Anual', trimestral: 'Trimestral', mensal: 'Mensal', free: 'Free' };
+                subs.forEach(s => {
+                    if (!grouped[s.plan]) grouped[s.plan] = [];
+                    grouped[s.plan].push(s);
+                });
+                const container = document.getElementById('plansContainer');
+                let html = '';
+                for (const plan of planOrder) {
+                    const ips = grouped[plan] || [];
+                    const color = planColors[plan] || '#7a7575';
+                    html += `
+                        <div class="card" style="border-left:3px solid ${color};">
+                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-md);">
+                                <div class="card-title" style="margin-bottom:0;">${planLabels[plan] || plan} <span style="font-size:13px;color:var(--text-muted);font-weight:400;">(${ips.length} IP${ips.length !== 1 ? 's' : ''})</span></div>
+                            </div>
+                            ${ips.length ? `
+                                <div class="table-wrap">
+                                    <table>
+                                        <thead><tr><th>IP</th><th>Status</th><th>Usuário</th><th>Expira</th><th>Ações</th></tr></thead>
+                                        <tbody>
+                                            ${ips.map(s => `
+                                                <tr>
+                                                    <td class="mono">${s.ip}</td>
+                                                    <td>${badgeForStatus(s.status)}</td>
+                                                    <td style="font-size:13px;color:var(--text-secondary);">${s.user_email || '—'}</td>
+                                                    <td class="mono" style="font-size:12px;">${formatDate(s.expires_at)}</td>
+                                                    <td class="actions">
+                                                        <button class="btn btn-danger btn-sm" onclick="removeIpFromPlan(${s.id},'${s.ip}','${plan}')">Remover IP</button>
+                                                    </td>
+                                                </tr>
+                                            `).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ` : '<p style="color:var(--text-muted);font-size:13px;">Nenhum IP neste plano.</p>'}
+                        </div>
+                    `;
+                }
+                // Any plans not in planOrder
+                for (const plan of Object.keys(grouped)) {
+                    if (planOrder.includes(plan)) continue;
+                    const ips = grouped[plan];
+                    html += `
+                        <div class="card">
+                            <div class="card-title">${plan} <span style="font-size:13px;color:var(--text-muted);font-weight:400;">(${ips.length} IP${ips.length !== 1 ? 's' : ''})</span></div>
+                            <div class="table-wrap">
+                                <table>
+                                    <thead><tr><th>IP</th><th>Status</th><th>Usuário</th><th>Expira</th><th>Ações</th></tr></thead>
+                                    <tbody>
+                                        ${ips.map(s => `
+                                            <tr>
+                                                <td class="mono">${s.ip}</td>
+                                                <td>${badgeForStatus(s.status)}</td>
+                                                <td style="font-size:13px;color:var(--text-secondary);">${s.user_email || '—'}</td>
+                                                <td class="mono" style="font-size:12px;">${formatDate(s.expires_at)}</td>
+                                                <td class="actions">
+                                                    <button class="btn btn-danger btn-sm" onclick="removeIpFromPlan(${s.id},'${s.ip}','${plan}')">Remover IP</button>
+                                                </td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    `;
+                }
+                container.innerHTML = html || '<div class="empty-state">Nenhum IP cadastrado.</div>';
+            } catch (e) {
+                document.getElementById('plansContainer').innerHTML = `<div class="empty-state" style="color:var(--accent-red);">${e.message}</div>`;
+            }
+        }
+
+        async function removeIpFromPlan(id, ip, plan) {
+            if (!confirm(`Remover o IP ${ip} do plano ${plan}? Esta ação não pode ser desfeita.`)) return;
+            try {
+                await apiFetch(`/api/admin/subscriptions/${id}`, { method: 'DELETE' });
+                loadPlans();
+                loadDashboard();
+            } catch (e) { alert(e.message); }
+        }
+
+        // ---- COUPONS ----
+        async function loadCoupons() {
+            try {
+                const coupons = await apiFetch('/api/admin/coupons');
+                const tbody = document.getElementById('couponsTableBody');
+                if (!coupons.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhum cupom cadastrado.</td></tr>'; return; }
+                tbody.innerHTML = coupons.map(c => {
+                    const isExpired = c.expires_at && new Date(c.expires_at) < new Date();
+                    const isExhausted = c.max_uses && c.uses_count >= c.max_uses;
+                    const isActive = c.active && !isExpired && !isExhausted;
+                    const statusBadge = isActive ? '<span class="badge badge-active">Ativo</span>' :
+                        isExpired ? '<span class="badge badge-expired">Expirado</span>' :
+                        isExhausted ? '<span class="badge badge-suspended">Esgotado</span>' :
+                        '<span class="badge badge-suspended">Inativo</span>';
+                    return `<tr>
+                        <td class="mono" style="font-weight:700;color:var(--accent-orange);">${c.code}</td>
+                        <td><span class="badge badge-pro">${c.discount_pct}%</span></td>
+                        <td class="mono">${c.uses_count || 0}</td>
+                        <td class="mono">${c.max_uses || '∞'}</td>
+                        <td class="mono" style="font-size:12px;">${c.expires_at ? formatDate(c.expires_at) : '—'}</td>
+                        <td>${statusBadge}</td>
+                        <td class="actions">
+                            <button class="btn btn-secondary btn-sm" onclick="toggleCoupon(${c.id}, ${c.active ? 0 : 1})">${c.active ? 'Desativar' : 'Ativar'}</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteCoupon(${c.id}, '${c.code}')">Remover</button>
+                        </td>
+                    </tr>`;
+                }).join('');
+            } catch (e) {
+                document.getElementById('couponsTableBody').innerHTML = `<tr><td colspan="7" class="empty-state" style="color:var(--accent-red);">${e.message}</td></tr>`;
+            }
+        }
+
+        async function createCoupon() {
+            const code = document.getElementById('couponCode').value.trim().toUpperCase();
+            const discount = parseFloat(document.getElementById('couponDiscount').value) || 10;
+            const maxUses = document.getElementById('couponMaxUses').value ? parseInt(document.getElementById('couponMaxUses').value) : null;
+            const expires = document.getElementById('couponExpires').value || null;
+            const notes = document.getElementById('couponNotes').value.trim() || null;
+            if (!code) { showAlert('couponFormAlert', 'Código é obrigatório.', 'error'); return; }
+            if (discount < 1 || discount > 100) { showAlert('couponFormAlert', 'Desconto deve ser entre 1% e 100%.', 'error'); return; }
+            try {
+                const result = await apiFetch('/api/admin/coupons', { method: 'POST', body: JSON.stringify({ code, discount_pct: discount, max_uses: maxUses, expires_at: expires, notes }) });
+                showAlert('couponFormAlert', `Cupom ${result.code} criado com sucesso!`, 'success');
+                document.getElementById('couponCode').value = '';
+                document.getElementById('couponDiscount').value = '10';
+                document.getElementById('couponMaxUses').value = '';
+                document.getElementById('couponExpires').value = '';
+                document.getElementById('couponNotes').value = '';
+                loadCoupons();
+            } catch (e) { showAlert('couponFormAlert', e.message, 'error'); }
+        }
+
+        async function toggleCoupon(id, newActive) {
+            try {
+                await apiFetch(`/api/admin/coupons/${id}`, { method: 'PUT', body: JSON.stringify({ active: newActive }) });
+                loadCoupons();
+            } catch (e) { alert(e.message); }
+        }
+
+        async function deleteCoupon(id, code) {
+            if (!confirm(`Remover o cupom ${code}?`)) return;
+            try {
+                await apiFetch(`/api/admin/coupons/${id}`, { method: 'DELETE' });
+                loadCoupons();
+            } catch (e) { alert(e.message); }
+        }
+
+        // ---- IP CHANGE REQUESTS ----
+        async function loadIpChanges() {
+            try {
+                const requests = await apiFetch('/api/admin/ip-changes');
+                const pendingCount = requests.filter(r => r.status === 'pending').length;
+                const badge = document.getElementById('ipChangeCount');
+                if (badge) {
+                    badge.textContent = pendingCount;
+                    badge.style.display = pendingCount > 0 ? 'inline' : 'none';
+                }
+                const tbody = document.getElementById('ipChangesTableBody');
+                if (!requests.length) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhuma solicitação</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = requests.map(r => {
+                    const statusBadge = r.status === 'pending' ? '<span class="badge badge-pending">Pendente</span>' :
+                        r.status === 'approved' ? '<span class="badge badge-approved">Aprovado</span>' :
+                        '<span class="badge badge-rejected">Rejeitado</span>';
+                    const actions = r.status === 'pending' ?
+                        `<button class="btn btn-success btn-sm" onclick="approveIpChange(${r.id})">Aprovar</button>
+                         <button class="btn btn-danger btn-sm" onclick="rejectIpChange(${r.id})">Rejeitar</button>` :
+                        '<span style="color:var(--text-muted);font-size:12px;">—</span>';
+                    return `<tr>
+                        <td class="mono" style="font-size:12px;">#${r.id}</td>
+                        <td style="font-size:13px;">${r.user_email || '—'}</td>
+                        <td class="mono" style="font-size:12px;">${r.old_ip}</td>
+                        <td class="mono" style="font-size:12px;color:var(--accent-orange);">${r.new_ip}</td>
+                        <td class="mono" style="font-size:12px;">${formatDate(r.created_at)}</td>
+                        <td>${statusBadge}</td>
+                        <td class="actions">${actions}</td>
+                    </tr>`;
+                }).join('');
+            } catch (e) {
+                document.getElementById('ipChangesTableBody').innerHTML = '<tr><td colspan="7" class="empty-state">Erro ao carregar</td></tr>';
+            }
+        }
+
+        async function approveIpChange(id) {
+            if (!confirm('Aprovar esta alteração de IP?')) return;
+            try {
+                await apiFetch(`/api/admin/ip-changes/${id}/approve`, { method: 'POST' });
+                loadIpChanges();
+                loadDashboard();
+            } catch (e) { alert(e.message); }
+        }
+
+        async function rejectIpChange(id) {
+            const notes = prompt('Motivo da recusa (opcional):');
+            try {
+                await apiFetch(`/api/admin/ip-changes/${id}/reject`, { method: 'POST', body: JSON.stringify({ notes }) });
+                loadIpChanges();
+            } catch (e) { alert(e.message); }
+        }
+
+        // ---- INIT ----
+        loadDashboard();
+
+        // Responsive dash grid
+        const style = document.createElement('style');
+        style.textContent = '@media(max-width:768px){.dash-grid{grid-template-columns:1fr!important;}}';
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

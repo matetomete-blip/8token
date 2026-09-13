@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout : 8Token</title>
+    <meta name="description" content="Finalize sua assinatura 8Token e comece a usar modelos de IA ilimitados para código.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-primary: #0f0e0e;
+            --bg-card: #1a1818;
+            --bg-card-alt: #141212;
+            --border: #2a2727;
+            --text-primary: #ffffff;
+            --text-secondary: #a8a2a2;
+            --text-muted: #6b6565;
+            --accent-orange: #f05409;
+            --accent-orange-hover: #ff6a1a;
+            --glow-orange: rgba(240, 84, 9, 0.22);
+            --accent-green: #10B981;
+            --space-unit: 4px;
+            --space-sm: calc(var(--space-unit) * 3);
+            --space-md: calc(var(--space-unit) * 4);
+            --space-lg: calc(var(--space-unit) * 6);
+            --space-xl: calc(var(--space-unit) * 8);
+            --space-2xl: calc(var(--space-unit) * 12);
+            --space-3xl: calc(var(--space-unit) * 16);
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-pill: 999px;
+            --transition-fast: 150ms ease;
+        }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        a { color: inherit; text-decoration: none; transition: color var(--transition-fast); }
+        a:hover { color: var(--accent-orange); }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: -20%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 900px;
+            height: 600px;
+            background: radial-gradient(ellipse at center, rgba(240, 84, 9, 0.07) 0%, transparent 65%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .navbar {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+            background: rgba(15, 14, 14, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+        }
+        .navbar-inner {
+            max-width: 1200px; margin: 0 auto; padding: 0 var(--space-lg);
+            display: flex; align-items: center; justify-content: space-between; height: 64px;
+        }
+        .navbar-logo {
+            display: flex; align-items: center; gap: var(--space-sm);
+            font-weight: 800; font-size: 18px; letter-spacing: -0.02em;
+        }
+        .navbar-logo svg { width: 28px; height: 28px; }
+        .navbar-steps {
+            display: flex; align-items: center; gap: var(--space-md);
+            font-size: 13px; color: var(--text-muted); font-weight: 500;
+        }
+        .navbar-steps .step-active { color: var(--text-primary); }
+        .navbar-steps .step-sep { color: var(--border); }
+
+        .checkout-page {
+            padding: calc(64px + var(--space-2xl)) var(--space-lg) var(--space-3xl);
+            max-width: 560px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: var(--space-xl);
+            transition: color var(--transition-fast);
+            font-weight: 500;
+        }
+        .back-link:hover { color: var(--text-primary); }
+        .back-link svg { width: 16px; height: 16px; }
+
+        .checkout-header { margin-bottom: var(--space-2xl); text-align: center; }
+        .checkout-eyebrow {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--accent-orange);
+            margin-bottom: var(--space-sm);
+        }
+        .checkout-title {
+            font-size: 30px;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            line-height: 1.15;
+            margin-bottom: var(--space-sm);
+        }
+        .checkout-title .price-inline { color: var(--text-primary); }
+        .checkout-title .period {
+            font-size: 17px;
+            font-weight: 500;
+            color: var(--text-muted);
+            letter-spacing: 0;
+        }
+        .checkout-subtitle {
+            color: var(--text-secondary);
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        .panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-xl);
+            margin-bottom: var(--space-lg);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255,255,255,0.03) inset;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            color: var(--text-secondary);
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .summary-row:last-of-type { border-bottom: none; }
+        .summary-row .val { font-family: var(--font-mono); color: var(--text-primary); font-weight: 600; }
+
+        .total-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--space-md) var(--space-lg);
+            background: var(--bg-card-alt);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            margin-top: var(--space-md);
+        }
+        .total-label {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+        .total-value {
+            font-family: var(--font-mono);
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .total-value .period {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        /* ── Trust banner (white card, black logo) ── */
+        .trust-banner {
+            background: #ffffff;
+            border: 1px solid #e5e5e5;
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg) var(--space-xl);
+            margin-bottom: var(--space-lg);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+        }
+        .trust-banner::before {
+            content: '';
+            position: absolute;
+            top: -40px; right: -40px;
+            width: 140px; height: 140px;
+            background: radial-gradient(circle, rgba(240, 84, 9, 0.10), transparent 70%);
+            pointer-events: none;
+        }
+        .trust-banner-head {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+            margin-bottom: var(--space-md);
+            padding-bottom: var(--space-md);
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .trust-banner-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+        .trust-banner-logo svg { width: 36px; height: 36px; }
+        .trust-banner-logo-text {
+            font-family: var(--font-sans);
+            font-weight: 800;
+            font-size: 22px;
+            color: #000000;
+            letter-spacing: -0.5px;
+            line-height: 1;
+        }
+        .trust-banner-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #1a1a1a;
+            letter-spacing: -0.01em;
+            line-height: 1.4;
+        }
+        .trust-banner-title .accent { color: #f05409; }
+        .trust-banner-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--space-sm) var(--space-lg);
+        }
+        .trust-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            font-size: 13px;
+            color: #4a4a4a;
+            line-height: 1.45;
+        }
+        .trust-item svg {
+            width: 16px; height: 16px;
+            color: #10B981;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        .trust-item strong { color: #000000; font-weight: 700; }
+        .trust-banner-foot {
+            margin-top: var(--space-md);
+            padding-top: var(--space-md);
+            border-top: 1px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--space-md);
+            flex-wrap: wrap;
+        }
+        .trust-banner-foot-text {
+            font-size: 12px;
+            color: #6b6b6b;
+            line-height: 1.5;
+        }
+        .trust-banner-foot-text strong { color: #f05409; font-weight: 700; }
+        .trust-badges {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            flex-wrap: wrap;
+        }
+        .trust-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: #f5f5f5;
+            border: 1px solid #e5e5e5;
+            border-radius: var(--radius-pill);
+            padding: 4px 10px;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #4a4a4a;
+        }
+        .trust-badge svg { width: 12px; height: 12px; color: #10B981; }
+        @media (max-width: 600px) {
+            .trust-banner-grid { grid-template-columns: 1fr; }
+            .trust-banner { padding: var(--space-md) var(--space-lg); }
+            .trust-banner-head { flex-direction: column; align-items: flex-start; gap: var(--space-sm); }
+        }
+
+        .redirect-card { text-align: center; padding: var(--space-2xl) var(--space-xl); }
+        .redirect-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: -0.01em;
+        }
+        .redirect-desc {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.55;
+            margin-bottom: var(--space-lg);
+        }
+        .redirect-desc strong { color: var(--text-primary); }
+
+        /* ── Waiting / success states (webhook polling) ── */
+        .status-ring {
+            width: 56px; height: 56px;
+            margin: 0 auto var(--space-lg);
+            border: 3px solid var(--border);
+            border-top-color: var(--accent-orange);
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .status-icon {
+            width: 56px; height: 56px;
+            margin: 0 auto var(--space-lg);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.35);
+            color: var(--accent-green);
+        }
+        .status-icon svg { width: 28px; height: 28px; }
+        .status-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.01em; }
+        .status-title.success { color: var(--accent-green); }
+        .status-desc { font-size: 14px; color: var(--text-secondary); line-height: 1.55; margin-bottom: var(--space-lg); }
+        .status-desc strong { color: var(--text-primary); }
+        .poll-meta {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--text-muted);
+            letter-spacing: 0.04em;
+            margin-top: var(--space-md);
+        }
+        .hidden { display: none !important; }
+
+        .btn-cta {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-sm);
+            width: 100%;
+            height: 52px;
+            background: var(--accent-orange);
+            border: none;
+            border-radius: var(--radius-md);
+            color: white;
+            font-size: 15px;
+            font-weight: 700;
+            font-family: var(--font-sans);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            letter-spacing: 0.01em;
+            text-decoration: none;
+        }
+        .btn-cta:hover,
+        .btn-cta:focus,
+        .btn-cta:focus-visible {
+            background: #ffffff;
+            color: var(--accent-orange);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px var(--glow-orange);
+            outline: none;
+        }
+        .btn-cta:hover svg,
+        .btn-cta:focus svg,
+        .btn-cta:focus-visible svg {
+            stroke: var(--accent-orange);
+        }
+        .btn-cta:active { transform: translateY(0); background: #ffffff; color: var(--accent-orange); outline: none; }
+
+        .secure-note {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin-top: var(--space-lg);
+            font-size: 12px;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            letter-spacing: 0.04em;
+        }
+        .secure-note svg { width: 14px; height: 14px; color: var(--accent-green); }
+
+        .checkout-footer {
+            text-align: center;
+            margin-top: var(--space-lg);
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        @media (max-width: 600px) {
+            .checkout-page { padding-left: var(--space-md); padding-right: var(--space-md); }
+            .checkout-title { font-size: 24px; }
+            .panel { padding: var(--space-lg); }
+            .navbar-steps { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-inner">
+            <a href="index.html" class="navbar-logo">
+                <svg viewBox="0 0 48 48" fill="var(--accent-orange)" width="28" height="28">
+                    <path d="M24 4C14 4 8 12 8 22v14c0 2 1 4 3 4h2l3-4h4l3 4h2l3-4h4l3 4h2c2 0 3-2 3-4V22C40 12 34 4 24 4zm-8 22a3 3 0 110-6 3 3 0 010 6zm16 0a3 3 0 110-6 3 3 0 010 6z"/>
+                </svg>
+                8Token
+            </a>
+            <div class="navbar-steps">
+                <span>Plano</span>
+                <span class="step-sep">›</span>
+                <span class="step-active">Pagamento</span>
+                <span class="step-sep">›</span>
+                <span>Confirmação</span>
+            </div>
+        </div>
+    </nav>
+
+    <main class="checkout-page">
+        <a href="index.html#precos" class="back-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            Voltar aos planos
+        </a>
+
+        <div class="checkout-header">
+            <div class="checkout-eyebrow">Assinatura</div>
+            <h1 class="checkout-title">
+                <span id="planName">Trimestral</span> : <span class="price-inline" id="headerPrice">R$ 399</span><span class="period" id="headerPeriod">/trimestre</span>
+            </h1>
+            <p class="checkout-subtitle" id="headerSubtitle">Acesso ilimitado a todos os modelos frontier : sem cobrança por token, sem surpresa na fatura.</p>
+        </div>
+
+        <!-- Trust Banner (White Card / Black Logo) -->
+        <div class="trust-banner">
+            <div class="trust-banner-head">
+                <div class="trust-banner-logo">
+                    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M32 4C18.745 4 8 14.745 8 28v24c0 2.21 1.79 4 4 4 1.1 0 2.1-.45 2.83-1.17L18 51.66l3.17 3.17C21.9 55.55 22.9 56 24 56s2.1-.45 2.83-1.17L30 51.66l3.17 3.17C33.9 55.55 34.9 56 36 56s2.1-.45 2.83-1.17L42 51.66l3.17 3.17C45.9 55.55 46.9 56 48 56c2.21 0 4-1.79 4-4V28C52 14.745 41.255 4 32 4z" fill="#000000"/>
+                        <circle cx="22" cy="26" r="5" fill="#ffffff"/>
+                        <circle cx="42" cy="26" r="5" fill="#ffffff"/>
+                    </svg>
+                    <span class="trust-banner-logo-text">8Token</span>
+                </div>
+                <div class="trust-banner-title">Sem surpresa na fatura. <span class="accent">Uso ilimitado de verdade.</span></div>
+            </div>
+            <div class="trust-banner-grid">
+                <div class="trust-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span><strong>Tokens infinitos</strong> sem quota, sem crédito, sem cobrança por uso</span>
+                </div>
+                <div class="trust-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span><strong>5 modelos frontier</strong> Fable 5.1, Opus 5, Sonnet 5, GPT-6 Astra, GLM 5.3</span>
+                </div>
+                <div class="trust-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span><strong>1 IP por conta</strong> uso pessoal; IP extra disponível no painel após ativar</span>
+                </div>
+                <div class="trust-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span><strong>Cancele quando quiser</strong> sem fidelidade, sem letras miúdas</span>
+                </div>
+            </div>
+            <div class="trust-banner-foot">
+                <div class="trust-banner-foot-text">Preço fixo previsível. <strong>Sem cobrança por token.</strong> Sem teto de uso.</div>
+                <div class="trust-badges">
+                    <span class="trust-badge">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                        SSL Seguro
+                    </span>
+                    <span class="trust-badge">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                        Pix &amp; Cartão
+                    </span>
+                    <span class="trust-badge">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                        Ativação Imediata
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="summary-row">
+                <span id="summaryPlanLabel">Plano Trimestral</span>
+                <span class="val" id="summaryPlanVal">R$ 399,00</span>
+            </div>
+            <div class="summary-row">
+                <span>Período de acesso</span>
+                <span class="val" id="summaryDays">90 dias</span>
+            </div>
+            <div class="summary-row">
+                <span>Modelos incluídos</span>
+                <span class="val">Todos, ilimitado</span>
+            </div>
+            <div class="total-row">
+                <span class="total-label">Total</span>
+                <span class="total-value"><span id="totalValue">R$ 399,00</span><span class="period" id="totalPeriod">/trimestre</span></span>
+            </div>
+        </div>
+
+        <div class="panel redirect-card">
+            <!-- Estado 1: antes de clicar (botão abre checkout em nova aba) -->
+            <div id="stateIdle">
+                <div class="redirect-title">Finalize o pagamento em uma nova aba</div>
+                <p class="redirect-desc">
+                    Clique no botão abaixo para abrir o checkout protegido da <strong>Kirvano</strong> em uma nova aba e pagar com PIX ou cartão.
+                    Esta página permanece aberta e confirma automaticamente assim que o pagamento for aprovado.
+                </p>
+                <button type="button" class="btn-cta" id="payBtn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                    Abrir checkout em nova aba
+                </button>
+                <div class="secure-note">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                    Pagamento 100% seguro · processado pela Kirvano
+                </div>
+            </div>
+
+            <!-- Estado 2: aguardando confirmação do webhook (polling) -->
+            <div id="stateWaiting" class="hidden">
+                <div class="status-ring"></div>
+                <div class="status-title">Aguardando confirmação do pagamento…</div>
+                <p class="status-desc">
+                    Finalize o pagamento na aba da <strong>Kirvano</strong>. Assim que for aprovado, esta página confirma automaticamente e libera o seu acesso.
+                </p>
+                <button type="button" class="btn-cta" id="reopenBtn" style="background:transparent;border:1px solid var(--border);color:var(--text-secondary);box-shadow:none;">
+                    Reabrir aba de pagamento
+                </button>
+                <div class="poll-meta" id="pollMeta">verificando…</div>
+            </div>
+
+            <!-- Estado 3: pagamento confirmado pelo webhook -->
+            <div id="stateSuccess" class="hidden">
+                <div class="status-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+                <div class="status-title success">Pagamento confirmado!</div>
+                <p class="status-desc">
+                    Sua assinatura foi aprovada. O acesso já está sendo liberado na sua conta.
+                </p>
+                <a href="dashboard.html" class="btn-cta" id="goDashboardBtn">
+                    Ir para o painel
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                </a>
+            </div>
+        </div>
+
+        <p class="checkout-footer" id="footerNote">
+            Pagamento único que libera <span id="footerDays">90 dias</span>. Sem renovação automática : você paga de novo quando quiser continuar.
+        </p>
+    </main>
+
+    <script>
+        // Checkout hospedado da Kirvano (modelo oficial : a plataforma NÃO permite embed via iframe
+        // por headers de segurança X-Frame-Options / CSP, para proteger dados de pagamento).
+        // Fluxo correto = resumo do plano aqui + redirect para a URL segura pay.kirvano.com,
+        // passando o plano escolhido e a origem (UTM/src) pelos parâmetros da URL, conforme docs:
+        // https://help.kirvano.com/hc/central-de-ajuda/articles/1765382987-como-preencher-os-campos-do-checkout-pela-url
+        // https://help.kirvano.com/hc/central-de-ajuda/articles/1765383142-como-passar-os-parametros-de-utm-na-url-do-checkout
+        const KIRVANO_BASE = 'https://pay.kirvano.com/be644149-be55-4134-8c4d-f00eedf25343';
+
+        // TODO [PRODUÇÃO]: se a Kirvano disponibilizar um link de checkout distinto por plano
+        // (mensal / trimestral / anual), mapeie cada plano para sua URL específica aqui.
+        // Por enquanto todos apontam para o mesmo checkout e o plano vai como parâmetro src/utm.
+        const PLANS = {
+            mensal: {
+                name: 'Mensal',
+                price: 199.70,
+                period: '/mês',
+                daysLabel: '30 dias',
+                subtitle: 'Preço fixo todos os meses : sem promoção de 1º mês, sem surpresa na fatura.',
+            },
+            trimestral: {
+                name: 'Trimestral',
+                price: 399,
+                period: '/trimestre',
+                daysLabel: '90 dias',
+                subtitle: 'Acesso ilimitado por 90 dias : equivalente a R$ 133/mês. Economia de R$ 200 vs. mensal.',
+            },
+            anual: {
+                name: 'Anual',
+                price: 1100,
+                period: '/ano',
+                daysLabel: '365 dias',
+                subtitle: 'Maior economia : equivalente a R$ 91,67/mês. Pague uma vez, use o ano todo.',
+            },
+        };
+
+        let currentPlan = 'trimestral';
+        let checkoutUrl = KIRVANO_BASE;
+
+        // ── Webhook / confirmação de pagamento ──────────────────────────────
+        // A Kirvano dispara um webhook de "venda aprovada / assinatura criada" para o
+        // SEU backend quando o cliente paga. Este backend grava o status por pedido.
+        // Esta página faz POLLING nesse endpoint até receber "approved" e então mostra sucesso.
+        //
+        // STATUS_ENDPOINT: URL do SEU backend que responde o status do pedido.
+        //   Deve aceitar ?order_id=<id> e retornar JSON: { "status": "pending" | "approved" | "rejected" }
+        //   Exemplo de implementação (Node/Express): recebe o webhook da Kirvano, salva no DB,
+        //   e este GET lê do DB pelo order_id.
+        //
+        // SIMULATE_APPROVAL: enquanto não houver backend, deixe true para testar o fluxo
+        //   (a página simula aprovação após alguns segundos). Em produção, coloque false.
+        const STATUS_ENDPOINT = '/api/checkout/status'; // TODO [PRODUÇÃO]: URL real do seu backend
+        const SIMULATE_APPROVAL = true;                 // TODO [PRODUÇÃO]: false quando o backend existir
+        const POLL_INTERVAL_MS = 5000;                  // verifica a cada 5s
+        const SIMULATE_APPROVE_AFTER_MS = 12000;        // (só simulação) aprova após 12s
+
+        let pollTimer = null;
+        let simulateTimer = null;
+        let currentOrderId = null;
+
+        function fmt(val) {
+            return 'R$ ' + val.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+        function fmtShort(val) {
+            if (Number.isInteger(val)) return 'R$ ' + val.toLocaleString('pt-BR');
+            return fmt(val);
+        }
+
+        function buildCheckoutUrl(planKey) {
+            // Gera um order_id único por tentativa de compra para correlacionar com o webhook.
+            currentOrderId = 'ord_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+            const params = new URLSearchParams({
+                src: 'lp_8token_' + planKey,
+                utm_source: 'landing_8token',
+                utm_medium: 'checkout',
+                utm_campaign: planKey,
+                order_id: currentOrderId,
+            });
+            return KIRVANO_BASE + '?' + params.toString();
+        }
+
+        function showState(state) {
+            document.getElementById('stateIdle').classList.toggle('hidden', state !== 'idle');
+            document.getElementById('stateWaiting').classList.toggle('hidden', state !== 'waiting');
+            document.getElementById('stateSuccess').classList.toggle('hidden', state !== 'success');
+        }
+
+        function stopPolling() {
+            if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+            if (simulateTimer) { clearTimeout(simulateTimer); simulateTimer = null; }
+        }
+
+        function onApproved() {
+            stopPolling();
+            showState('success');
+            // Marca no localStorage que há uma assinatura pendente de ativação (o dashboard pode ler).
+            try {
+                localStorage.setItem('8token_pending_plan', currentPlan);
+                localStorage.setItem('8token_pending_order', currentOrderId || '');
+            } catch (e) { /* ignore */ }
+        }
+
+        function checkStatus() {
+            if (!currentOrderId) return;
+            var meta = document.getElementById('pollMeta');
+            fetch(STATUS_ENDPOINT + '?order_id=' + encodeURIComponent(currentOrderId), {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' },
+            })
+            .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)); })
+            .then(function (data) {
+                if (meta) meta.textContent = 'verificando… · ' + new Date().toLocaleTimeString('pt-BR');
+                if (data && data.status === 'approved') {
+                    onApproved();
+                } else if (data && data.status === 'rejected') {
+                    stopPolling();
+                    if (meta) meta.textContent = 'pagamento não confirmado. Tente novamente.';
+                }
+                // "pending" → continua o polling
+            })
+            .catch(function () {
+                // Endpoint indisponível (ex.: rodando sem backend / file://). Não trava a UI;
+                // apenas atualiza o contador. Em produção isso indicaria problema no backend.
+                if (meta) meta.textContent = 'aguardando resposta do servidor… · ' + new Date().toLocaleTimeString('pt-BR');
+            });
+        }
+
+        function startWaiting() {
+            showState('waiting');
+            if (SIMULATE_APPROVAL) {
+                // Modo de teste: simula o webhook aprovando após alguns segundos.
+                var meta = document.getElementById('pollMeta');
+                var remaining = Math.ceil(SIMULATE_APPROVE_AFTER_MS / 1000);
+                if (meta) meta.textContent = '(modo demonstração) aprovação simulada em ' + remaining + 's…';
+                var tick = setInterval(function () {
+                    remaining -= 1;
+                    if (meta) meta.textContent = '(modo demonstração) aprovação simulada em ' + Math.max(0, remaining) + 's…';
+                    if (remaining <= 0) clearInterval(tick);
+                }, 1000);
+                simulateTimer = setTimeout(onApproved, SIMULATE_APPROVE_AFTER_MS);
+            } else {
+                // Produção: polling real no backend que recebe o webhook da Kirvano.
+                checkStatus();
+                pollTimer = setInterval(checkStatus, POLL_INTERVAL_MS);
+            }
+        }
+
+        function openCheckoutAndWait() {
+            checkoutUrl = buildCheckoutUrl(currentPlan);
+            window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
+            startWaiting();
+        }
+
+        function render() {
+            const p = PLANS[currentPlan];
+
+            document.getElementById('planName').textContent = p.name;
+            document.getElementById('headerPrice').textContent = fmtShort(p.price);
+            document.getElementById('headerPeriod').textContent = p.period;
+            document.getElementById('headerSubtitle').textContent = p.subtitle;
+            document.getElementById('summaryPlanLabel').textContent = 'Plano ' + p.name;
+            document.getElementById('summaryPlanVal').textContent = fmt(p.price);
+            document.getElementById('summaryDays').textContent = p.daysLabel;
+            document.getElementById('totalValue').textContent = fmt(p.price);
+            document.getElementById('totalPeriod').textContent = p.period;
+            document.getElementById('footerDays').textContent = p.daysLabel;
+
+            checkoutUrl = buildCheckoutUrl(currentPlan);
+        }
+
+        function init() {
+            const params = new URLSearchParams(window.location.search);
+            const plan = params.get('plan');
+            if (plan && PLANS[plan]) {
+                currentPlan = plan;
+            }
+            render();
+
+            // Botão principal: abre o checkout em nova aba e entra em "aguardando confirmação".
+            var payBtn = document.getElementById('payBtn');
+            if (payBtn) payBtn.addEventListener('click', openCheckoutAndWait);
+
+            // Botão "reabrir aba de pagamento" (estado waiting).
+            var reopenBtn = document.getElementById('reopenBtn');
+            if (reopenBtn) reopenBtn.addEventListener('click', function () {
+                window.open(checkoutUrl, '_blank', 'noopener,noreferrer');
+            });
+        }
+
+        init();
+    </script>
+</body>
+</html>

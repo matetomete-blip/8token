@@ -1,0 +1,17 @@
+node_modules/
+8token.db
+*.db
+.env
+.env.local
+.vercel/
+analysis_output.txt
+auth_*.txt
+dump_auth.py
+extract_*.py
+parse_semgrep.py
+read_server.py
+lines.txt
+RESUMO-*.txt
+capture-*.mjs
+checkout-banner-*
+design paina 8token/
