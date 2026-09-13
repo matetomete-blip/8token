@@ -293,7 +293,7 @@ Verificado de ponta a ponta com os dois CLIs reais num ciclo completo: rodar um 
 - Documentação da API
 - Status
 
-© 2026 GHOSTCLI — TODOS OS DIREITOS RESERVADOS
+© 2026 8TOKEN — TODOS OS DIREITOS RESERVADOS
 
 [TERMOS] [SLA] [PRIVACIDADE · LGPD]
 
