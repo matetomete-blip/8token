@@ -14,7 +14,7 @@ const ADMIN_SECRET = process.env.ADMIN_SECRET || '8token-admin-change-me';
 
 // Supabase client
 const supabaseUrl = process.env.SUPABASE_URL || 'https://wbkmaeqkypqrkawumdjw.supabase.co';
-const supabaseKey = process.env.SUPABASE_KEY || '';
+const supabaseKey = process.env.SUPABASE_KEY || process.env.service_role || '';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Middleware
