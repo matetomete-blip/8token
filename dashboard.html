@@ -1173,24 +1173,6 @@
             finally { if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Enviar Solicitação'; } }
         }
 
-        // Animate token bars on scroll into view
-        const tokensChart = document.getElementById('tokensChart');
-        if (tokensChart) {
-            const barObserver = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        const bars = entry.target.querySelectorAll('.tokens-bar-fill');
-                        bars.forEach((bar, i) => {
-                            setTimeout(() => {
-                                bar.style.width = bar.getAttribute('data-width') + '%';
-                            }, i * 120);
-                        });
-                        barObserver.unobserve(entry.target);
-                    }
-                });
-            }, { threshold: 0.3 });
-            barObserver.observe(tokensChart);
-        }
-    </script>
+        </script>
 </body>
 </html>

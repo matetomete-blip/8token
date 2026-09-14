@@ -8,7 +8,7 @@ const { OAuth2Client } = require('google-auth-library');
 const crypto = require('crypto');
 
 const app = express();
-const JWT_SECRET = process.env.JWT_SECRET || '8token-secret-key-change-in-production-' + crypto.randomBytes(16).toString('hex');
+const JWT_SECRET = process.env.JWT_SECRET || '8token-jwt-secret-stable-fallback-2026';
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const ADMIN_SECRET = process.env.ADMIN_SECRET || '8token-admin-change-me';
 
