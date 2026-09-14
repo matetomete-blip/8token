@@ -122,28 +122,9 @@ app.post('/api/auth/register', async (req, res) => {
     const { data: existingCustom } = await supabase.from('users').select('id').eq('email', email).single();
     if (existingCustom) return res.status(409).json({ error: 'Email já cadastrado' });
 
-    // Also check Supabase Auth
-    const { data: existingAuth } = await supabase.auth.admin.getUserByEmail(email).catch(() => ({ data: null }));
-    if (existingAuth && existingAuth.user) return res.status(409).json({ error: 'Email já cadastrado' });
-
     const displayName = name || email.split('@')[0];
     const passwordHash = await bcrypt.hash(password, 12);
-
-    // Create in Supabase Auth first (so signInWithPassword works)
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: { name: displayName }
-    });
-
-    let userId;
-    if (authData && authData.user) {
-      userId = authData.user.id;
-    } else {
-      // Fallback: generate UUID if auth creation fails
-      userId = crypto.randomUUID();
-    }
+    const userId = crypto.randomUUID();
 
     // Create in custom users table
     const plan = email === 'matetomete@gmail.com' ? 'admin' : 'free';
@@ -183,35 +164,16 @@ app.post('/api/auth/login', async (req, res) => {
     // Try custom users table first
     let { data: user } = await supabase.from('users').select('*').eq('email', email).single();
 
-    // If not found in custom table, try Supabase Auth (auth.users) and sync
-    if (!user) {
-      const { data: authUser, error: authErr } = await supabase.auth.admin.getUserByEmail(email).catch(() => ({ data: null, error: null }));
-      if (authUser && authUser.user) {
-        // User exists in Supabase Auth but not in custom table — create record
-        const au = authUser.user;
-        const { data: newUser } = await supabase.from('users').insert({
-          id: au.id,
-          email: au.email,
-          name: au.user_metadata?.name || au.user_metadata?.full_name || email.split('@')[0],
-          google_id: au.identities?.[0]?.provider === 'google' ? au.identities[0].id : null,
-          avatar_url: au.user_metadata?.avatar_url || au.user_metadata?.picture || null,
-          plan: email === 'matetomete@gmail.com' ? 'admin' : 'free'
-        }).select().single();
-        user = newUser;
-      }
-    }
-
     if (!user) return res.status(401).json({ error: 'Email ou senha incorretos' });
 
-    // If user has password_hash, verify it
+    // Verify password
     if (user.password_hash) {
       const valid = await bcrypt.compare(password, user.password_hash);
       if (!valid) return res.status(401).json({ error: 'Email ou senha incorretos' });
     } else {
-      // User was created via Supabase Auth — verify via signInWithPassword
+      // No password set yet — try Supabase Auth signIn to verify, then store hash
       const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
       if (signInErr) return res.status(401).json({ error: 'Email ou senha incorretos' });
-      // Store password hash for future logins via custom table
       const passwordHash = await bcrypt.hash(password, 12);
       await supabase.from('users').update({ password_hash: passwordHash }).eq('id', user.id);
     }
@@ -905,15 +867,19 @@ app.post('/api/admin/setup', adminAuth, async (req, res) => {
       results.push({ action: 'promote-admin', email: 'matetomete@gmail.com', status: 'updated', id: adminUser.id });
     } else {
       // Try to sync from Supabase Auth
-      const { data: authData } = await supabase.auth.admin.getUserByEmail('matetomete@gmail.com').catch(() => ({ data: null }));
-      if (authData && authData.user) {
-        const au = authData.user;
-        const { data: newUser } = await supabase.from('users').insert({
-          id: au.id, email: au.email, name: 'Admin', plan: 'admin'
-        }).select().single();
-        results.push({ action: 'promote-admin', email: 'matetomete@gmail.com', status: 'created-from-auth', id: newUser?.id });
+      // Create admin record directly in custom table using the known Supabase Auth UID from the screenshot
+      const knownUid = 'cc492624-1fdd-4d15-92d9-3caea304e662';
+      const { data: newUser, error: insErr } = await supabase.from('users').insert({
+        id: knownUid, email: 'matetomete@gmail.com', name: 'Admin', plan: 'admin'
+      }).select().single();
+      if (newUser) {
+        results.push({ action: 'promote-admin', email: 'matetomete@gmail.com', status: 'created', id: newUser.id });
+      } else if (insErr && insErr.code === '23505') {
+        // Already exists — just promote
+        await supabase.from('users').update({ plan: 'admin' }).eq('email', 'matetomete@gmail.com');
+        results.push({ action: 'promote-admin', email: 'matetomete@gmail.com', status: 'already-exists-promoted' });
       } else {
-        results.push({ action: 'promote-admin', email: 'matetomete@gmail.com', status: 'not-found' });
+        results.push({ action: 'promote-admin', email: 'matetomete@gmail.com', status: 'error', error: insErr?.message });
       }
     }
 
