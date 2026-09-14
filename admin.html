@@ -61,19 +61,28 @@
         .hamburger-btn svg { width: 24px; height: 24px; }
 
         /* Sidebar Drawer */
-        .sidebar-drawer { position: fixed; top: 0; left: -300px; width: 300px; height: 100vh; background: var(--bg-card); border-right: 1px solid var(--border); z-index: 1100; transition: left var(--transition-base); overflow-y: auto; }
+        .sidebar-drawer { position: fixed; top: 0; left: -320px; width: 320px; height: 100vh; background: linear-gradient(180deg, #1e1c1c 0%, #1a1818 100%); border-right: 1px solid var(--border); z-index: 1100; transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1); overflow-y: auto; box-shadow: 4px 0 24px rgba(0,0,0,0.3); }
         .sidebar-drawer.open { left: 0; }
-        .sidebar-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1050; opacity: 0; pointer-events: none; transition: opacity var(--transition-base); }
+        .sidebar-drawer::-webkit-scrollbar { width: 6px; }
+        .sidebar-drawer::-webkit-scrollbar-track { background: transparent; }
+        .sidebar-drawer::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        .sidebar-drawer::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
+        .sidebar-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(2px); z-index: 1050; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
         .sidebar-overlay.open { opacity: 1; pointer-events: auto; }
-        .sidebar-header { padding: var(--space-lg); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
-        .sidebar-title { font-size: 16px; font-weight: 700; color: var(--text-primary); }
-        .sidebar-close { background: none; border: none; cursor: pointer; color: var(--text-secondary); padding: var(--space-xs); }
-        .sidebar-close:hover { color: var(--text-primary); }
+        .sidebar-header { padding: var(--space-xl) var(--space-lg); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, rgba(240,84,9,0.05) 0%, transparent 100%); }
+        .sidebar-title { font-size: 18px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em; }
+        .sidebar-close { background: rgba(255,255,255,0.05); border: 1px solid var(--border); cursor: pointer; color: var(--text-secondary); padding: var(--space-xs); border-radius: var(--radius-sm); transition: all var(--transition-fast); display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; }
+        .sidebar-close:hover { color: var(--text-primary); background: rgba(255,255,255,0.1); border-color: var(--border-hover); transform: rotate(90deg); }
         .sidebar-nav { padding: var(--space-md) 0; }
-        .sidebar-link { display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-md) var(--space-lg); color: var(--text-secondary); font-size: 14px; font-weight: 500; transition: all var(--transition-fast); cursor: pointer; border: none; background: none; width: 100%; text-align: left; }
-        .sidebar-link:hover { background: var(--bg-card-alt); color: var(--text-primary); }
-        .sidebar-link.active { background: rgba(240,84,9,0.1); color: var(--accent-orange); border-left: 3px solid var(--accent-orange); }
-        .sidebar-link svg { width: 18px; height: 18px; flex-shrink: 0; }
+        .sidebar-section-label { padding: var(--space-sm) var(--space-lg); font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-top: var(--space-sm); }
+        .sidebar-link { display: flex; align-items: center; gap: var(--space-md); padding: var(--space-md) var(--space-lg); color: var(--text-secondary); font-size: 14px; font-weight: 500; transition: all 0.2s ease; cursor: pointer; border: none; background: none; width: 100%; text-align: left; position: relative; border-left: 3px solid transparent; }
+        .sidebar-link:hover { background: rgba(255,255,255,0.03); color: var(--text-primary); padding-left: calc(var(--space-lg) + 4px); }
+        .sidebar-link.active { background: linear-gradient(90deg, rgba(240,84,9,0.12) 0%, transparent 100%); color: var(--accent-orange); border-left-color: var(--accent-orange); }
+        .sidebar-link.active svg { color: var(--accent-orange); }
+        .sidebar-link svg { width: 20px; height: 20px; flex-shrink: 0; opacity: 0.7; transition: opacity var(--transition-fast); }
+        .sidebar-link:hover svg { opacity: 1; }
+        .sidebar-link.active svg { opacity: 1; }
+        .sidebar-divider { height: 1px; background: linear-gradient(90deg, transparent 0%, var(--border) 20%, var(--border) 80%, transparent 100%); margin: var(--space-md) var(--space-lg); }
 
         @media (max-width: 768px) {
             .hamburger-btn { display: block; }
@@ -266,7 +275,11 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
                 Solicitações de IP
             </button>
-            <div style="border-top:1px solid var(--border);margin:var(--space-md) 0;"></div>
+            <button class="sidebar-link" onclick="switchTab('webhook'); closeSidebar();">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                Webhook Kirvano
+            </button>
+            <div class="sidebar-divider"></div>
             <button class="sidebar-link" onclick="createTestAccounts(); closeSidebar();" style="color:var(--accent-purple);">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
                 Gerar Contas Teste
@@ -566,6 +579,94 @@
                 </table>
             </div>
         </div>
+
+        <!-- ==================== TAB: WEBHOOK KIRVANO ==================== -->
+        <div class="tab-panel" id="tab-webhook">
+            <div class="card">
+                <div class="card-title">Configuração do Webhook Kirvano</div>
+                <p style="color:var(--text-secondary);font-size:13px;margin-bottom:var(--space-lg);line-height:1.6;">
+                    Configure aqui a URL do webhook e o token secreto que a Kirvano usará para notificar o 8Token sobre vendas aprovadas, recusadas ou chargebacks.
+                    Copie a URL abaixo e cole no painel da Kirvano em <strong>Configurações → Webhooks</strong>.
+                </p>
+                <div id="webhookFormAlert" class="alert"></div>
+
+                <div style="background:var(--bg-card-alt);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-lg);margin-bottom:var(--space-lg);">
+                    <div style="font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:var(--space-sm);">URL do Webhook (cole na Kirvano)</div>
+                    <div style="display:flex;gap:var(--space-sm);align-items:center;">
+                        <input type="text" id="webhookUrlDisplay" class="form-input" readonly style="flex:1;font-family:var(--font-mono);font-size:13px;background:var(--bg-primary);color:var(--accent-orange);cursor:text;" value="">
+                        <button class="btn btn-secondary btn-sm" onclick="copyWebhookUrl()" style="white-space:nowrap;">Copiar</button>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label class="form-label">Token Secreto do Webhook *</label>
+                        <input type="password" id="webhookToken" class="form-input" placeholder="Token que a Kirvano enviará no header X-Webhook-Secret" style="font-family:var(--font-mono);">
+                        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Este token deve ser o mesmo configurado no painel da Kirvano. Ele valida que a requisição veio realmente da Kirvano.</div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">ID do Produto — Mensal</label>
+                        <input type="text" id="kirvanoProductMensal" class="form-input" placeholder="ID do produto mensal na Kirvano" style="font-family:var(--font-mono);font-size:13px;">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">ID do Produto — Trimestral</label>
+                        <input type="text" id="kirvanoProductTrimestral" class="form-input" placeholder="ID do produto trimestral na Kirvano" style="font-family:var(--font-mono);font-size:13px;">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">ID do Produto — Anual</label>
+                        <input type="text" id="kirvanoProductAnual" class="form-input" placeholder="ID do produto anual na Kirvano" style="font-family:var(--font-mono);font-size:13px;">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">URL Checkout — Mensal</label>
+                        <input type="url" id="kirvanoCheckoutMensal" class="form-input" placeholder="https://pay.kirvano.com/checkout/..." style="font-size:13px;">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">URL Checkout — Trimestral</label>
+                        <input type="url" id="kirvanoCheckoutTrimestral" class="form-input" placeholder="https://pay.kirvano.com/checkout/..." style="font-size:13px;">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">URL Checkout — Anual</label>
+                        <input type="url" id="kirvanoCheckoutAnual" class="form-input" placeholder="https://pay.kirvano.com/checkout/..." style="font-size:13px;">
+                    </div>
+                </div>
+
+                <div style="display:flex;gap:var(--space-md);margin-top:var(--space-md);flex-wrap:wrap;">
+                    <button class="btn btn-primary" onclick="saveWebhookConfig()">Salvar Configuração</button>
+                    <button class="btn btn-secondary" onclick="testWebhook()" style="border-color:var(--accent-teal);color:var(--accent-teal);">Testar Webhook</button>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top:var(--space-lg);">
+                <div class="card-title">Logs do Webhook</div>
+                <p style="color:var(--text-secondary);font-size:13px;margin-bottom:var(--space-md);">Últimas requisições recebidas da Kirvano. Use para depurar problemas de integração.</p>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>Data/Hora</th><th>Evento</th><th>Status</th><th>Email</th><th>IP</th><th>Plano</th><th>Detalhes</th></tr></thead>
+                        <tbody id="webhookLogsBody"><tr><td colspan="7" class="empty-state">Carregando...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top:var(--space-lg);">
+                <div class="card-title">Como configurar na Kirvano</div>
+                <div style="font-size:13px;color:var(--text-secondary);line-height:1.8;">
+                    <ol style="padding-left:var(--space-lg);">
+                        <li>Acesse o painel da Kirvano em <a href="https://kirvano.com" target="_blank" style="color:var(--accent-orange);">kirvano.com</a></li>
+                        <li>Vá em <strong>Configurações → Webhooks</strong> (ou Integrações → Webhooks)</li>
+                        <li>Cole a <strong>URL do Webhook</strong> exibida acima no campo "URL de notificação"</li>
+                        <li>Cole o <strong>Token Secreto</strong> no campo de autenticação/secret</li>
+                        <li>Selecione os eventos: <code style="background:var(--bg-primary);padding:2px 6px;border-radius:4px;font-size:12px;">SALE_APPROVED</code>, <code style="background:var(--bg-primary);padding:2px 6px;border-radius:4px;font-size:12px;">SALE_REFUSED</code>, <code style="background:var(--bg-primary);padding:2px 6px;border-radius:4px;font-size:12px;">SALE_CHARGEBACK</code></li>
+                        <li>Salve e use o botão "Testar Webhook" acima para confirmar que está funcionando</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
     </main>
 
     <script>
@@ -622,6 +723,25 @@
             if (name === 'expired') loadExpired();
             if (name === 'coupons') loadCoupons();
             if (name === 'ipchanges') loadIpChanges();
+            if (name === 'webhook') { loadWebhookLogs(); loadWebhookConfig(); }
+        }
+
+        async function loadWebhookConfig() {
+            try {
+                const config = await apiFetch('/api/admin/webhook-config');
+                // Populate URL display
+                const urlInput = document.getElementById('webhookUrlDisplay');
+                if (urlInput) urlInput.value = window.location.origin + '/api/webhooks/kirvano';
+                if (config.configured) {
+                    document.getElementById('webhookToken').value = config.webhook_token || '';
+                    document.getElementById('kirvanoProductMensal').value = config.product_mensal_id || '';
+                    document.getElementById('kirvanoProductTrimestral').value = config.product_trimestral_id || '';
+                    document.getElementById('kirvanoProductAnual').value = config.product_anual_id || '';
+                    document.getElementById('kirvanoCheckoutMensal').value = config.checkout_mensal_url || '';
+                    document.getElementById('kirvanoCheckoutTrimestral').value = config.checkout_trimestral_url || '';
+                    document.getElementById('kirvanoCheckoutAnual').value = config.checkout_anual_url || '';
+                }
+            } catch (e) { console.error('Load webhook config error:', e); }
         }
 
         // ---- DASHBOARD ----
@@ -1107,6 +1227,62 @@
         function closeSidebar() {
             document.getElementById('sidebarDrawer').classList.remove('open');
             document.getElementById('sidebarOverlay').classList.remove('open');
+        }
+
+        // ---- WEBHOOK KIRVANO ----
+        function copyWebhookUrl() {
+            const input = document.getElementById('webhookUrlDisplay');
+            input.select();
+            document.execCommand('copy');
+            showAlert('webhookFormAlert', 'URL copiada!', 'success');
+        }
+
+        async function saveWebhookConfig() {
+            const token = document.getElementById('webhookToken').value;
+            if (!token) { showAlert('webhookFormAlert', 'Token secreto é obrigatório', 'error'); return; }
+            try {
+                await apiFetch('/api/admin/webhook-config', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        webhook_token: token,
+                        product_mensal_id: document.getElementById('kirvanoProductMensal').value,
+                        product_trimestral_id: document.getElementById('kirvanoProductTrimestral').value,
+                        product_anual_id: document.getElementById('kirvanoProductAnual').value,
+                        checkout_mensal_url: document.getElementById('kirvanoCheckoutMensal').value,
+                        checkout_trimestral_url: document.getElementById('kirvanoCheckoutTrimestral').value,
+                        checkout_anual_url: document.getElementById('kirvanoCheckoutAnual').value
+                    })
+                });
+                showAlert('webhookFormAlert', 'Configuração salva com sucesso!', 'success');
+            } catch (e) { showAlert('webhookFormAlert', e.message, 'error'); }
+        }
+
+        async function testWebhook() {
+            try {
+                const result = await apiFetch('/api/admin/webhook-test', { method: 'POST' });
+                showAlert('webhookFormAlert', `Teste OK! Resposta: ${JSON.stringify(result)}`, 'success');
+            } catch (e) { showAlert('webhookFormAlert', 'Erro no teste: ' + e.message, 'error'); }
+        }
+
+        async function loadWebhookLogs() {
+            try {
+                const logs = await apiFetch('/api/admin/webhook-logs');
+                const tbody = document.getElementById('webhookLogsBody');
+                if (!logs.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhum log registrado.</td></tr>'; return; }
+                tbody.innerHTML = logs.map(log => `
+                    <tr>
+                        <td class="mono" style="font-size:12px;">${new Date(log.created_at).toLocaleString('pt-BR')}</td>
+                        <td><span class="badge ${log.event === 'SALE_APPROVED' ? 'badge-pro' : log.event === 'SALE_REFUSED' ? 'badge-danger' : 'badge-warning'}">${log.event}</span></td>
+                        <td>${log.status || '—'}</td>
+                        <td style="font-size:13px;">${log.customer_email || '—'}</td>
+                        <td class="mono" style="font-size:12px;">${log.customer_ip || '—'}</td>
+                        <td>${log.plan || '—'}</td>
+                        <td style="font-size:11px;color:var(--text-muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;">${JSON.stringify(log.payload || {}).substring(0, 100)}...</td>
+                    </tr>
+                `).join('');
+            } catch (e) {
+                document.getElementById('webhookLogsBody').innerHTML = `<tr><td colspan="7" class="empty-state" style="color:var(--accent-red);">${e.message}</td></tr>`;
+            }
         }
 
         async function editAffiliate(id, currentPct) {

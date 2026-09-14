@@ -160,9 +160,13 @@
         /* KPI Row */
         .kpi-row {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(2, 1fr);
             gap: var(--space-md);
             margin-bottom: var(--space-2xl);
+        }
+
+        @media (max-width: 480px) {
+            .kpi-row { grid-template-columns: 1fr; }
         }
 
         .kpi-card {
@@ -623,23 +627,33 @@
         }
 
         /* Hamburger Menu Button */
-        .hamburger-btn { display: none; background: none; border: none; cursor: pointer; padding: var(--space-sm); color: var(--text-primary); }
+        .hamburger-btn { display: none; background: none; border: none; cursor: pointer; padding: var(--space-sm); color: var(--text-primary); transition: transform var(--transition-fast); }
+        .hamburger-btn:hover { transform: scale(1.1); }
         .hamburger-btn svg { width: 24px; height: 24px; }
 
         /* Sidebar Drawer */
-        .sidebar-drawer { position: fixed; top: 0; left: -300px; width: 300px; height: 100vh; background: var(--bg-card); border-right: 1px solid var(--border); z-index: 1100; transition: left var(--transition-base); overflow-y: auto; }
+        .sidebar-drawer { position: fixed; top: 0; left: -320px; width: 320px; height: 100vh; background: linear-gradient(180deg, #252323 0%, #1e1c1c 100%); border-right: 1px solid var(--border); z-index: 1100; transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1); overflow-y: auto; box-shadow: 4px 0 24px rgba(0,0,0,0.4); }
         .sidebar-drawer.open { left: 0; }
-        .sidebar-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1050; opacity: 0; pointer-events: none; transition: opacity var(--transition-base); }
+        .sidebar-drawer::-webkit-scrollbar { width: 6px; }
+        .sidebar-drawer::-webkit-scrollbar-track { background: transparent; }
+        .sidebar-drawer::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        .sidebar-drawer::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
+        .sidebar-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(2px); z-index: 1050; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
         .sidebar-overlay.open { opacity: 1; pointer-events: auto; }
-        .sidebar-header { padding: var(--space-lg); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
-        .sidebar-title { font-size: 16px; font-weight: 700; color: var(--text-primary); }
-        .sidebar-close { background: none; border: none; cursor: pointer; color: var(--text-secondary); padding: var(--space-xs); }
-        .sidebar-close:hover { color: var(--text-primary); }
+        .sidebar-header { padding: var(--space-xl) var(--space-lg); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, rgba(240,84,9,0.05) 0%, transparent 100%); }
+        .sidebar-title { font-size: 18px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em; }
+        .sidebar-close { background: rgba(255,255,255,0.05); border: 1px solid var(--border); cursor: pointer; color: var(--text-secondary); padding: var(--space-xs); border-radius: var(--radius-sm); transition: all var(--transition-fast); display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; }
+        .sidebar-close:hover { color: var(--text-primary); background: rgba(255,255,255,0.1); border-color: var(--border-hover); transform: rotate(90deg); }
         .sidebar-nav { padding: var(--space-md) 0; }
-        .sidebar-link { display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-md) var(--space-lg); color: var(--text-secondary); font-size: 14px; font-weight: 500; transition: all var(--transition-fast); cursor: pointer; border: none; background: none; width: 100%; text-align: left; }
-        .sidebar-link:hover { background: var(--bg-card-alt); color: var(--text-primary); }
-        .sidebar-link.active { background: rgba(240,84,9,0.1); color: var(--accent-orange); border-left: 3px solid var(--accent-orange); }
-        .sidebar-link svg { width: 18px; height: 18px; flex-shrink: 0; }
+        .sidebar-section-label { padding: var(--space-sm) var(--space-lg); font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-top: var(--space-sm); }
+        .sidebar-link { display: flex; align-items: center; gap: var(--space-md); padding: var(--space-md) var(--space-lg); color: var(--text-secondary); font-size: 14px; font-weight: 500; transition: all 0.2s ease; cursor: pointer; border: none; background: none; width: 100%; text-align: left; position: relative; border-left: 3px solid transparent; }
+        .sidebar-link:hover { background: rgba(255,255,255,0.03); color: var(--text-primary); padding-left: calc(var(--space-lg) + 4px); }
+        .sidebar-link.active { background: linear-gradient(90deg, rgba(240,84,9,0.12) 0%, transparent 100%); color: var(--accent-orange); border-left-color: var(--accent-orange); }
+        .sidebar-link.active svg { color: var(--accent-orange); }
+        .sidebar-link svg { width: 20px; height: 20px; flex-shrink: 0; opacity: 0.7; transition: opacity var(--transition-fast); }
+        .sidebar-link:hover svg { opacity: 1; }
+        .sidebar-link.active svg { opacity: 1; }
+        .sidebar-divider { height: 1px; background: linear-gradient(90deg, transparent 0%, var(--border) 20%, var(--border) 80%, transparent 100%); margin: var(--space-md) var(--space-lg); }
 
         /* Responsive */
         @media (max-width: 768px) {
@@ -733,18 +747,8 @@
         <div class="kpi-row">
             <div class="kpi-card">
                 <div class="kpi-label">Plano Atual</div>
-                <div class="kpi-value orange">Trimestral</div>
-                <div class="kpi-sub">Renova em 12/12/2026</div>
-            </div>
-            <div class="kpi-card">
-                <div class="kpi-label">Mensagens este mês</div>
-                <div class="kpi-value">1.247</div>
-                <div class="kpi-sub">Ilimitado, sem limite</div>
-            </div>
-            <div class="kpi-card">
-                <div class="kpi-label">Tokens usados</div>
-                <div class="kpi-value blue">2.4M</div>
-                <div class="kpi-sub">Contexto de 1M por conversa</div>
+                <div class="kpi-value orange" id="kpiPlan">Carregando...</div>
+                <div class="kpi-sub" id="kpiPlanExpiry">—</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-label">Chaves API</div>

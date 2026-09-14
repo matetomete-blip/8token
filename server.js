@@ -993,6 +993,83 @@ app.post('/api/admin/setup', adminAuth, async (req, res) => {
   }
 });
 
+// --- ADMIN: WEBHOOK KIRVANO CONFIG ---
+app.post('/api/admin/webhook-config', adminAuth, async (req, res) => {
+  try {
+    const { webhook_token, product_mensal_id, product_trimestral_id, product_anual_id, checkout_mensal_url, checkout_trimestral_url, checkout_anual_url } = req.body;
+    if (!webhook_token) return res.status(400).json({ error: 'Token do webhook é obrigatório' });
+    // Store config in a settings table (create if not exists)
+    const configData = {
+      key: 'kirvano_config',
+      value: JSON.stringify({
+        webhook_token,
+        product_mensal_id: product_mensal_id || '',
+        product_trimestral_id: product_trimestral_id || '',
+        product_anual_id: product_anual_id || '',
+        checkout_mensal_url: checkout_mensal_url || '',
+        checkout_trimestral_url: checkout_trimestral_url || '',
+        checkout_anual_url: checkout_anual_url || ''
+      }),
+      updated_at: new Date().toISOString()
+    };
+    // Try update first, then insert
+    const { data: existing } = await supabase.from('settings').select('id').eq('key', 'kirvano_config').single();
+    if (existing) {
+      await supabase.from('settings').update({ value: configData.value, updated_at: configData.updated_at }).eq('key', 'kirvano_config');
+    } else {
+      await supabase.from('settings').insert(configData);
+    }
+    res.json({ success: true, message: 'Configuração do webhook salva' });
+  } catch (err) {
+    console.error('Webhook config error:', err);
+    res.status(500).json({ error: 'Erro ao salvar configuração: ' + err.message });
+  }
+});
+
+app.get('/api/admin/webhook-config', adminAuth, async (req, res) => {
+  try {
+    const { data } = await supabase.from('settings').select('value').eq('key', 'kirvano_config').single();
+    if (!data) return res.json({ configured: false });
+    const config = JSON.parse(data.value);
+    res.json({ configured: true, ...config });
+  } catch (err) {
+    res.json({ configured: false });
+  }
+});
+
+app.post('/api/admin/webhook-test', adminAuth, async (req, res) => {
+  try {
+    // Simulate a test webhook event
+    const testPayload = {
+      event: 'SALE_APPROVED',
+      test: true,
+      timestamp: new Date().toISOString(),
+      customer: { email: 'teste@webhook.8token.com' },
+      product: { id: 'test_product' }
+    };
+    // Log the test event
+    await supabase.from('webhook_logs').insert({
+      event: 'TEST_EVENT',
+      status: 'test_ok',
+      customer_email: 'teste@webhook.8token.com',
+      payload: testPayload,
+      created_at: new Date().toISOString()
+    });
+    res.json({ success: true, message: 'Evento de teste registrado nos logs' });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro no teste: ' + err.message });
+  }
+});
+
+app.get('/api/admin/webhook-logs', adminAuth, async (req, res) => {
+  try {
+    const { data } = await supabase.from('webhook_logs').select('*').order('created_at', { ascending: false }).limit(50);
+    res.json(data || []);
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao carregar logs: ' + err.message });
+  }
+});
+
 // Health check
 app.get('/api/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
 
