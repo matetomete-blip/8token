@@ -430,10 +430,24 @@ app.post('/api/user/change-ip', authenticateToken, async (req, res) => {
 });
 
 app.get('/api/user/ip-info', authenticateToken, async (req, res) => {
-  const { data: sub } = await supabase.from('ip_subscriptions').select('ip, additional_ip, has_additional_ip, plan, status, expires_at').eq('user_id', req.user.id).eq('status', 'active').single();
-  if (!sub) return res.json({ ip: null, additional_ip: null, has_additional_ip: false, plan: null });
-  const { data: pending } = await supabase.from('ip_change_requests').select('new_ip, created_at').eq('user_id', req.user.id).eq('status', 'pending').single();
-  res.json({ ...sub, has_additional_ip: !!sub.has_additional_ip, pending_ip_change: pending ? { new_ip: pending.new_ip, requested_at: pending.created_at } : null });
+  // Get ALL active subscriptions for this user (supports multiple IPs)
+  const { data: subs } = await supabase.from('ip_subscriptions').select('id, ip, additional_ip, has_additional_ip, plan, status, expires_at, created_at').eq('user_id', req.user.id).eq('status', 'active').order('created_at', { ascending: false });
+  if (!subs || !subs.length) return res.json({ ip: null, additional_ip: null, has_additional_ip: false, plan: null, all_ips: [] });
+  // Primary = most recent subscription
+  const primary = subs[0];
+  // Collect all unique IPs
+  const allIps = subs.map(s => ({ id: s.id, ip: s.ip, plan: s.plan, status: s.status, expires_at: s.expires_at }));
+  const { data: pending } = await supabase.from('ip_change_requests').select('new_ip, created_at').eq('user_id', req.user.id).eq('status', 'pending').single().catch(() => ({ data: null }));
+  res.json({
+    ip: primary.ip,
+    additional_ip: primary.additional_ip,
+    has_additional_ip: !!primary.has_additional_ip,
+    plan: primary.plan,
+    status: primary.status,
+    expires_at: primary.expires_at,
+    all_ips: allIps,
+    pending_ip_change: pending ? { new_ip: pending.new_ip, requested_at: pending.created_at } : null
+  });
 });
 
 // --- ADMIN ROUTES ---
