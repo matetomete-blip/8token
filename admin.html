@@ -482,7 +482,7 @@
     </main>
 
     <script>
-        const API_BASE = window.location.port === '3001' ? window.location.origin : window.location.origin.replace(/:\d+$/, ':3001');
+        const API_BASE = ''; // Usa URL relativa — funciona em localhost e em produção (Vercel)
         let allSubs = [];
         let allActivations = [];
         let allAffiliates = [];
