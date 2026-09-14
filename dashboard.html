@@ -838,7 +838,7 @@
     </main>
 
     <script>
-        const API_BASE = 'http://localhost:3001';
+        const API_BASE = ''; // Usa URL relativa — funciona em localhost e em produção (Vercel)
 
         // Verifica autenticação
         if (!localStorage.getItem('8token_token')) {
@@ -868,13 +868,14 @@
         }
         loadUserData();
 
-        // Check if current IP has admin plan — show/hide admin link
+        // Check admin access from logged-in user data (not IP-based)
         // Also check expiry warning
+        const storedUser = JSON.parse(localStorage.getItem('8token_user') || '{}');
+        const adminLink = document.getElementById('adminLink');
+        if (adminLink && storedUser.plan === 'admin') {
+            adminLink.style.display = 'inline-flex';
+        }
         fetch('/api/ip/status').then(r => r.json()).then(data => {
-            const link = document.getElementById('adminLink');
-            if (link && data.authorized && data.plan === 'admin') {
-                link.style.display = 'inline-flex';
-            }
             // Expiry banner
             const banner = document.getElementById('expiryBanner');
             const text = document.getElementById('expiryBannerText');
