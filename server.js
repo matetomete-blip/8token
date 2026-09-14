@@ -219,12 +219,34 @@ app.post('/api/auth/google', async (req, res) => {
       user.name = user.name || name;
     }
 
+    // Auto-promote matetomete@gmail.com to admin via Google login too
+    if (email === 'matetomete@gmail.com' && user.plan !== 'admin') {
+      await supabase.from('users').update({ plan: 'admin' }).eq('id', user.id);
+      user.plan = 'admin';
+    }
+
     const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '30d' });
     await ensureIpRecord(req.clientIp, user.id);
     res.json({ token, user: { id: user.id, email: user.email, name: user.name || name, plan: user.plan } });
   } catch (err) {
     console.error('Google auth error:', err);
     res.status(500).json({ error: 'Erro na autenticação com Google' });
+  }
+});
+
+// --- ADMIN: SET PASSWORD (reset admin password directly) ---
+app.post('/api/admin/set-password', adminAuth, async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ error: 'Email e senha são obrigatórios' });
+    if (password.length < 6) return res.status(400).json({ error: 'Senha deve ter pelo menos 6 caracteres' });
+    const passwordHash = await bcrypt.hash(password, 12);
+    const { data, error } = await supabase.from('users').update({ password_hash: passwordHash }).eq('email', email).select().single();
+    if (error || !data) return res.status(404).json({ error: 'Usuário não encontrado: ' + email });
+    res.json({ success: true, message: 'Senha atualizada para ' + email });
+  } catch (err) {
+    console.error('Set password error:', err);
+    res.status(500).json({ error: 'Erro ao definir senha: ' + err.message });
   }
 });
 
