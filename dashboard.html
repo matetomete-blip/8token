@@ -952,7 +952,41 @@
             document.getElementById('sidebarDrawer').classList.remove('open');
             document.getElementById('sidebarOverlay').classList.remove('open');
         }
-        fetch('/api/ip/status').then(r => r.json()).then(data => {
+        // Load user profile for KPI plan display
+        fetch(API_BASE + '/api/user/profile', { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('8token_token') } })
+        .then(r => r.json()).then(profile => {
+            const kpiPlan = document.getElementById('kpiPlan');
+            const kpiExpiry = document.getElementById('kpiPlanExpiry');
+            const planNames = { mensal: 'Mensal', trimestral: 'Trimestral', anual: 'Anual', admin: 'Admin', free: 'Grátis' };
+            if (kpiPlan) kpiPlan.textContent = planNames[profile.plan] || profile.plan || '—';
+            if (kpiExpiry && profile.plan_expires_at) {
+                kpiExpiry.textContent = 'Renova em ' + new Date(profile.plan_expires_at).toLocaleDateString('pt-BR');
+            } else if (kpiExpiry) {
+                kpiExpiry.textContent = profile.plan === 'admin' ? 'Acesso permanente' : 'Sem data de renovação';
+            }
+            // Expiry banner check
+            if (profile.plan_expires_at) {
+                const daysLeft = Math.ceil((new Date(profile.plan_expires_at) - new Date()) / (1000*60*60*24));
+                const banner = document.getElementById('expiryBanner');
+                const text = document.getElementById('expiryBannerText');
+                if (daysLeft <= 7 && daysLeft > 0 && banner) {
+                    text.textContent = `Seu plano ${planNames[profile.plan] || profile.plan} expira em ${daysLeft} dia(s). Renove agora!`;
+                    banner.style.display = 'block';
+                } else if (daysLeft <= 0 && banner) {
+                    text.textContent = `Seu plano ${planNames[profile.plan] || profile.plan} expirou! Renove agora.`;
+                    banner.style.display = 'block';
+                }
+            }
+        }).catch(() => {});
+
+        // IP status — use authenticated endpoint
+        fetch(API_BASE + '/api/user/ip-info', { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('8token_token') } })
+        .then(r => r.json()).then(data => {
+            // This is handled by loadIpInfo() below — just ensure no stale fetch('/api/ip/status') remains
+        }).catch(() => {});
+
+        // Removed: old fetch('/api/ip/status') that failed behind Vercel proxy
+        if (false) { fetch('/api/ip/status').then(r => r.json()).then(data => {
             // Expiry banner
             const banner = document.getElementById('expiryBanner');
             const text = document.getElementById('expiryBannerText');
