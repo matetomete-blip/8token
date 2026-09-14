@@ -512,11 +512,22 @@
         // 4. Adicionar tratamento de erro para token expirado (redirecionar para login com mensagem)
         // 5. Considerar adicionar "Esqueceu a senha?" funcional com envio de email de reset
 
-        const API_BASE = 'http://localhost:3001'; // TODO: alterar para URL de produção
+        const API_BASE = ''; // Usa URL relativa — funciona em localhost e em produção (Vercel)
+
+        // Suporte a redirect pós-login (ex: checkout.html?plan=trimestral)
+        function getRedirectUrl() {
+            var params = new URLSearchParams(window.location.search);
+            var redirect = params.get('redirect');
+            if (redirect) {
+                try { return decodeURIComponent(redirect); } catch(e) { return redirect; }
+            }
+            return 'dashboard.html';
+        }
+        var REDIRECT_AFTER_LOGIN = getRedirectUrl();
 
         // If already logged in with valid token, redirect
         if (localStorage.getItem('8token_token')) {
-            window.location.href = 'dashboard.html';
+            window.location.href = REDIRECT_AFTER_LOGIN;
         }
 
         function showAlert(message, type) {
@@ -571,7 +582,7 @@
                                 const data = await res.json();
                                 if (data.token) {
                                     setLoggedIn(data.token, data.user);
-                                    window.location.href = 'dashboard.html';
+                                    window.location.href = REDIRECT_AFTER_LOGIN;
                                 } else {
                                     showAlert(data.error || 'Erro no login com Google', 'error');
                                 }
@@ -597,7 +608,7 @@
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
                 setLoggedIn(data.token, data.user);
-                window.location.href = 'dashboard.html';
+                window.location.href = REDIRECT_AFTER_LOGIN;
             } catch (e) {
                 showAlert(e.message || 'Erro no login com Google', 'error');
                 resetGoogleBtn();
@@ -629,7 +640,7 @@
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
                 setLoggedIn(data.token, data.user);
-                window.location.href = 'dashboard.html';
+                window.location.href = REDIRECT_AFTER_LOGIN;
             } catch (err) {
                 showAlert(err.message, 'error');
                 btn.disabled = false;
@@ -663,7 +674,7 @@
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
                 setLoggedIn(data.token, data.user);
-                window.location.href = 'dashboard.html';
+                window.location.href = REDIRECT_AFTER_LOGIN;
             } catch (err) {
                 showAlert(err.message, 'error');
                 btn.disabled = false;

@@ -118,20 +118,60 @@ app.post('/api/auth/register', async (req, res) => {
     if (!email || !password) return res.status(400).json({ error: 'Email e senha são obrigatórios' });
     if (password.length < 6) return res.status(400).json({ error: 'Senha deve ter pelo menos 6 caracteres' });
 
-    const { data: existing } = await supabase.from('users').select('id').eq('email', email).single();
-    if (existing) return res.status(409).json({ error: 'Email já cadastrado' });
+    // Check if already exists in custom table
+    const { data: existingCustom } = await supabase.from('users').select('id').eq('email', email).single();
+    if (existingCustom) return res.status(409).json({ error: 'Email já cadastrado' });
 
-    const passwordHash = await bcrypt.hash(password, 12);
+    // Also check Supabase Auth
+    const { data: existingAuth } = await supabase.auth.admin.getUserByEmail(email).catch(() => ({ data: null }));
+    if (existingAuth && existingAuth.user) return res.status(409).json({ error: 'Email já cadastrado' });
+
     const displayName = name || email.split('@')[0];
-    const { data: newUser, error } = await supabase.from('users').insert({ email, password_hash: passwordHash, name: displayName }).select().single();
-    if (error) throw error;
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    // Create in Supabase Auth first (so signInWithPassword works)
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { name: displayName }
+    });
+
+    let userId;
+    if (authData && authData.user) {
+      userId = authData.user.id;
+    } else {
+      // Fallback: generate UUID if auth creation fails
+      userId = crypto.randomUUID();
+    }
+
+    // Create in custom users table
+    const plan = email === 'matetomete@gmail.com' ? 'admin' : 'free';
+    const { data: newUser, error } = await supabase.from('users').insert({
+      id: userId,
+      email,
+      password_hash: passwordHash,
+      name: displayName,
+      plan
+    }).select().single();
+
+    if (error) {
+      // If insert fails (e.g. duplicate), try to find existing
+      const { data: found } = await supabase.from('users').select('*').eq('email', email).single();
+      if (found) {
+        const token = jwt.sign({ id: found.id, email: found.email }, JWT_SECRET, { expiresIn: '30d' });
+        await ensureIpRecord(req.clientIp, found.id);
+        return res.json({ token, user: { id: found.id, email: found.email, name: found.name, plan: found.plan } });
+      }
+      throw error;
+    }
 
     const token = jwt.sign({ id: newUser.id, email }, JWT_SECRET, { expiresIn: '30d' });
     await ensureIpRecord(req.clientIp, newUser.id);
-    res.json({ token, user: { id: newUser.id, email, name: displayName } });
+    res.json({ token, user: { id: newUser.id, email, name: displayName, plan } });
   } catch (err) {
     console.error('Register error:', err);
-    res.status(500).json({ error: 'Erro interno do servidor' });
+    res.status(500).json({ error: 'Erro ao criar conta: ' + (err.message || 'Erro interno') });
   }
 });
 
@@ -140,12 +180,47 @@ app.post('/api/auth/login', async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email e senha são obrigatórios' });
 
-    const { data: user } = await supabase.from('users').select('*').eq('email', email).single();
-    if (!user) return res.status(401).json({ error: 'Email ou senha incorretos' });
-    if (!user.password_hash) return res.status(401).json({ error: 'Esta conta usa login com Google.' });
+    // Try custom users table first
+    let { data: user } = await supabase.from('users').select('*').eq('email', email).single();
 
-    const valid = await bcrypt.compare(password, user.password_hash);
-    if (!valid) return res.status(401).json({ error: 'Email ou senha incorretos' });
+    // If not found in custom table, try Supabase Auth (auth.users) and sync
+    if (!user) {
+      const { data: authUser, error: authErr } = await supabase.auth.admin.getUserByEmail(email).catch(() => ({ data: null, error: null }));
+      if (authUser && authUser.user) {
+        // User exists in Supabase Auth but not in custom table — create record
+        const au = authUser.user;
+        const { data: newUser } = await supabase.from('users').insert({
+          id: au.id,
+          email: au.email,
+          name: au.user_metadata?.name || au.user_metadata?.full_name || email.split('@')[0],
+          google_id: au.identities?.[0]?.provider === 'google' ? au.identities[0].id : null,
+          avatar_url: au.user_metadata?.avatar_url || au.user_metadata?.picture || null,
+          plan: email === 'matetomete@gmail.com' ? 'admin' : 'free'
+        }).select().single();
+        user = newUser;
+      }
+    }
+
+    if (!user) return res.status(401).json({ error: 'Email ou senha incorretos' });
+
+    // If user has password_hash, verify it
+    if (user.password_hash) {
+      const valid = await bcrypt.compare(password, user.password_hash);
+      if (!valid) return res.status(401).json({ error: 'Email ou senha incorretos' });
+    } else {
+      // User was created via Supabase Auth — verify via signInWithPassword
+      const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
+      if (signInErr) return res.status(401).json({ error: 'Email ou senha incorretos' });
+      // Store password hash for future logins via custom table
+      const passwordHash = await bcrypt.hash(password, 12);
+      await supabase.from('users').update({ password_hash: passwordHash }).eq('id', user.id);
+    }
+
+    // Auto-promote matetomete@gmail.com to admin
+    if (email === 'matetomete@gmail.com' && user.plan !== 'admin') {
+      await supabase.from('users').update({ plan: 'admin' }).eq('id', user.id);
+      user.plan = 'admin';
+    }
 
     const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '30d' });
     await ensureIpRecord(req.clientIp, user.id);
@@ -816,6 +891,117 @@ app.get('/api/invoices', authenticateToken, async (req, res) => {
 app.get('/api/usage', authenticateToken, async (req, res) => {
   const { data } = await supabase.from('usage_logs').select('*').eq('user_id', req.user.id).order('created_at', { ascending: false }).limit(100);
   res.json(data || []);
+});
+
+// --- ADMIN: SETUP (one-time: promote admin + create test accounts) ---
+app.post('/api/admin/setup', adminAuth, async (req, res) => {
+  try {
+    const results = [];
+
+    // 1. Promote matetomete@gmail.com to admin in custom table
+    const { data: adminUser } = await supabase.from('users').select('*').eq('email', 'matetomete@gmail.com').single();
+    if (adminUser) {
+      await supabase.from('users').update({ plan: 'admin' }).eq('id', adminUser.id);
+      results.push({ action: 'promote-admin', email: 'matetomete@gmail.com', status: 'updated', id: adminUser.id });
+    } else {
+      // Try to sync from Supabase Auth
+      const { data: authData } = await supabase.auth.admin.getUserByEmail('matetomete@gmail.com').catch(() => ({ data: null }));
+      if (authData && authData.user) {
+        const au = authData.user;
+        const { data: newUser } = await supabase.from('users').insert({
+          id: au.id, email: au.email, name: 'Admin', plan: 'admin'
+        }).select().single();
+        results.push({ action: 'promote-admin', email: 'matetomete@gmail.com', status: 'created-from-auth', id: newUser?.id });
+      } else {
+        results.push({ action: 'promote-admin', email: 'matetomete@gmail.com', status: 'not-found' });
+      }
+    }
+
+    // 2. Create 5 test accounts
+    const testAccounts = [
+      { email: 'admin@test.8token.com', password: 'admin123', name: 'Admin Teste', plan: 'admin', ip: '127.0.0.1', ipStatus: 'active', ipPlan: 'admin' },
+      { email: 'afiliado@test.8token.com', password: 'afiliado123', name: 'Afiliado Teste', plan: 'free', ip: null, ipStatus: null, ipPlan: null, affiliate: true, commission: 15 },
+      { email: 'subafiliado@test.8token.com', password: 'sub123', name: 'Subafiliado Teste', plan: 'free', ip: null, ipStatus: null, ipPlan: null, affiliate: true, commission: 10 },
+      { email: 'ativo@test.8token.com', password: 'ativo123', name: 'Usuário Ativo', plan: 'mensal', ip: '192.168.1.100', ipStatus: 'active', ipPlan: 'mensal', expiresDays: 30 },
+      { email: 'expirado@test.8token.com', password: 'expirado123', name: 'Usuário Expirado', plan: 'mensal', ip: '192.168.1.101', ipStatus: 'expired', ipPlan: 'mensal', expiresDays: -5 },
+    ];
+
+    for (const acct of testAccounts) {
+      try {
+        // Check if already exists
+        const { data: existing } = await supabase.from('users').select('id').eq('email', acct.email).single();
+        if (existing) {
+          // Update plan if needed
+          await supabase.from('users').update({ plan: acct.plan, name: acct.name }).eq('id', existing.id);
+          results.push({ action: 'test-account', email: acct.email, status: 'already-exists-updated', id: existing.id });
+          continue;
+        }
+
+        const passwordHash = await bcrypt.hash(acct.password, 12);
+        const planExpiresAt = acct.expiresDays !== undefined
+          ? new Date(Date.now() + acct.expiresDays * 24 * 60 * 60 * 1000).toISOString()
+          : null;
+
+        const { data: newUser, error: insertErr } = await supabase.from('users').insert({
+          email: acct.email,
+          password_hash: passwordHash,
+          name: acct.name,
+          plan: acct.plan,
+          plan_expires_at: planExpiresAt
+        }).select().single();
+
+        if (insertErr || !newUser) {
+          results.push({ action: 'test-account', email: acct.email, status: 'error', error: insertErr?.message });
+          continue;
+        }
+
+        // Create IP subscription if needed
+        if (acct.ip) {
+          const ipExpiresAt = acct.expiresDays !== undefined
+            ? new Date(Date.now() + acct.expiresDays * 24 * 60 * 60 * 1000).toISOString()
+            : null;
+          await supabase.from('ip_subscriptions').insert({
+            ip: acct.ip,
+            user_id: newUser.id,
+            plan: acct.ipPlan,
+            status: acct.ipStatus,
+            expires_at: ipExpiresAt
+          });
+        }
+
+        // Create affiliate record if needed
+        if (acct.affiliate) {
+          const code = 'aff_' + crypto.randomBytes(6).toString('hex');
+          await supabase.from('affiliates').insert({
+            user_id: newUser.id,
+            commission_pct: acct.commission,
+            code
+          });
+        }
+
+        results.push({ action: 'test-account', email: acct.email, status: 'created', id: newUser.id });
+      } catch (acctErr) {
+        results.push({ action: 'test-account', email: acct.email, status: 'error', error: acctErr.message });
+      }
+    }
+
+    // 3. Link subaffiliate to affiliate
+    const { data: affUser } = await supabase.from('users').select('id').eq('email', 'afiliado@test.8token.com').single();
+    const { data: subUser } = await supabase.from('users').select('id').eq('email', 'subafiliado@test.8token.com').single();
+    if (affUser && subUser) {
+      const { data: affRecord } = await supabase.from('affiliates').select('id').eq('user_id', affUser.id).single();
+      const { data: subRecord } = await supabase.from('affiliates').select('id').eq('user_id', subUser.id).single();
+      if (affRecord && subRecord) {
+        await supabase.from('affiliates').update({ parent_affiliate_id: affRecord.id }).eq('id', subRecord.id);
+        results.push({ action: 'link-subaffiliate', status: 'linked', parent: affRecord.id, child: subRecord.id });
+      }
+    }
+
+    res.json({ success: true, results });
+  } catch (err) {
+    console.error('Setup error:', err);
+    res.status(500).json({ error: 'Erro no setup: ' + err.message });
+  }
 });
 
 // Health check
