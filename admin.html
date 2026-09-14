@@ -208,6 +208,7 @@
                 <span class="navbar-badge">Admin</span>
             </a>
             <div class="navbar-nav">
+                <button class="btn btn-secondary btn-sm" onclick="createTestAccounts()" style="border-color:var(--accent-purple);color:var(--accent-purple);">⚡ Gerar Contas Teste</button>
                 <a href="dashboard.html" class="btn btn-secondary btn-sm">Dashboard</a>
                 <a href="index.html" class="btn btn-secondary btn-sm">Site</a>
             </div>
@@ -715,11 +716,48 @@
                     <td style="font-size:13px;color:var(--text-muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${(s.notes||'').replace(/"/g,'&quot;')}">${s.notes || '—'}</td>
                     <td class="mono" style="font-size:12px;color:var(--text-muted);">${formatDate(s.updated_at)}</td>
                     <td class="actions">
+                        <button class="btn btn-success btn-sm" onclick="validateIp('${s.ip}')">Validar</button>
+                        <button class="btn btn-secondary btn-sm" onclick="invalidateIp('${s.ip}')">Desvalidar</button>
                         <button class="btn btn-secondary btn-sm" onclick="editSub(${s.id})">Editar</button>
                         <button class="btn btn-danger btn-sm" onclick="deleteSub(${s.id},'${s.ip}')">Remover</button>
                     </td>
                 </tr>
             `).join('');
+        }
+
+        async function validateIp(ip) {
+            try {
+                await apiFetch('/api/admin/ips/validate', { method: 'POST', body: JSON.stringify({ ip, status: 'active' }) });
+                showAlert('userFormAlert', `IP ${ip} validado com sucesso!`, 'success');
+                loadSubscriptions();
+                loadDashboard();
+            } catch (e) { showAlert('userFormAlert', e.message, 'error'); }
+        }
+
+        async function invalidateIp(ip) {
+            if (!confirm(`Desvalidar o IP ${ip}? O status será alterado para suspenso.`)) return;
+            try {
+                await apiFetch('/api/admin/ips/invalidate', { method: 'POST', body: JSON.stringify({ ip }) });
+                showAlert('userFormAlert', `IP ${ip} desvalidado.`, 'success');
+                loadSubscriptions();
+                loadDashboard();
+            } catch (e) { showAlert('userFormAlert', e.message, 'error'); }
+        }
+
+        async function createTestAccounts() {
+            if (!confirm('Isso criará 5 contas teste (admin, afiliado, subafiliado, usuário ativo, usuário expirado). Continuar?')) return;
+            try {
+                const result = await apiFetch('/api/admin/test-accounts/create', { method: 'POST' });
+                let msg = 'Contas criadas:\n';
+                result.accounts.forEach(a => {
+                    msg += `\n[${a.type}] ${a.email} / ${a.password}`;
+                    if (a.code) msg += ` (código: ${a.code})`;
+                });
+                alert(msg);
+                loadSubscriptions();
+                loadAffiliates();
+                loadDashboard();
+            } catch (e) { alert(e.message); }
         }
 
         async function loadSubscriptions() {
@@ -846,7 +884,7 @@
                 const tbody = document.getElementById('affiliatesTableBody');
                 if (!allAffiliates.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Nenhum afiliado cadastrado.</td></tr>'; return; }
                 tbody.innerHTML = allAffiliates.map(a => `
-                    <tr>
+                    <tr draggable="true" data-affiliate-id="${a.id}" ondragstart="handleDragStart(event, ${a.id})" ondragover="handleDragOver(event)" ondrop="handleDrop(event, ${a.id})" ondragleave="handleDragLeave(event)" style="cursor:move;">
                         <td class="mono">#${a.id}</td>
                         <td style="font-size:13px;">${a.user_email || '—'}<br><span style="font-size:11px;color:var(--text-muted);">${a.user_name || ''}</span></td>
                         <td class="mono" style="font-size:12px;">${a.code}</td>
@@ -863,6 +901,62 @@
             } catch (e) {
                 document.getElementById('affiliatesTableBody').innerHTML = `<tr><td colspan="8" class="empty-state" style="color:var(--accent-red);">${e.message}</td></tr>`;
             }
+        }
+
+        let draggedAffiliateId = null;
+
+        function handleDragStart(event, affiliateId) {
+            draggedAffiliateId = affiliateId;
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', affiliateId);
+            event.target.style.opacity = '0.5';
+        }
+
+        function handleDragOver(event) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+            event.currentTarget.style.background = 'rgba(240, 84, 9, 0.15)';
+        }
+
+        function handleDragLeave(event) {
+            event.currentTarget.style.background = '';
+        }
+
+        async function handleDrop(event, targetAffiliateId) {
+            event.preventDefault();
+            event.currentTarget.style.background = '';
+            event.currentTarget.style.opacity = '1';
+
+            if (draggedAffiliateId === targetAffiliateId) {
+                draggedAffiliateId = null;
+                return;
+            }
+
+            const draggedAff = allAffiliates.find(a => a.id === draggedAffiliateId);
+            const targetAff = allAffiliates.find(a => a.id === targetAffiliateId);
+
+            if (!draggedAff || !targetAff) {
+                draggedAffiliateId = null;
+                return;
+            }
+
+            if (!confirm(`Tornar ${draggedAff.user_email || draggedAff.code} subafiliado de ${targetAff.user_email || targetAff.code}?`)) {
+                draggedAffiliateId = null;
+                return;
+            }
+
+            try {
+                await apiFetch(`/api/admin/affiliates/${draggedAffiliateId}/sub-affiliate`, {
+                    method: 'POST',
+                    body: JSON.stringify({ parent_affiliate_id: targetAffiliateId })
+                });
+                showAlert('affFormAlert', `${draggedAff.code} agora é subafiliado de ${targetAff.code}`, 'success');
+                loadAffiliates();
+            } catch (e) {
+                showAlert('affFormAlert', e.message, 'error');
+            }
+
+            draggedAffiliateId = null;
         }
 
         async function addAffiliate() {

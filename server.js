@@ -440,6 +440,229 @@ app.delete('/api/admin/subscriptions/:id', adminAuth, async (req, res) => {
   res.json({ success: true });
 });
 
+// --- ADMIN: IP VALIDATION (Hermes API) ---
+app.post('/api/admin/ips/validate', adminAuth, async (req, res) => {
+  const { ip, status = 'active', plan = 'mensal', expires_at } = req.body;
+  if (!ip) return res.status(400).json({ error: 'IP é obrigatório' });
+  
+  const { data: sub } = await supabase.from('ip_subscriptions').select('*').eq('ip', ip).single();
+  if (sub) {
+    const update = { status };
+    if (plan) update.plan = plan;
+    if (expires_at) update.expires_at = expires_at;
+    await supabase.from('ip_subscriptions').update(update).eq('ip', ip);
+  } else {
+    const expiresAt = expires_at || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    await supabase.from('ip_subscriptions').insert({ ip, status, plan, expires_at: expiresAt });
+  }
+  res.json({ success: true, ip, status, plan });
+});
+
+app.post('/api/admin/ips/invalidate', adminAuth, async (req, res) => {
+  const { ip } = req.body;
+  if (!ip) return res.status(400).json({ error: 'IP é obrigatório' });
+  await supabase.from('ip_subscriptions').update({ status: 'suspended' }).eq('ip', ip);
+  res.json({ success: true, ip, status: 'suspended' });
+});
+
+app.get('/api/admin/ips/:ip/status', adminAuth, async (req, res) => {
+  const { ip } = req.params;
+  const { data: sub } = await supabase.from('ip_subscriptions').select('*, users(email, name)').eq('ip', ip).single();
+  if (!sub) return res.status(404).json({ error: 'IP não encontrado' });
+  
+  const now = new Date();
+  let effectiveStatus = sub.status;
+  if (sub.expires_at && new Date(sub.expires_at) < now && sub.status === 'active') {
+    effectiveStatus = 'expired';
+    await supabase.from('ip_subscriptions').update({ status: 'expired' }).eq('ip', ip);
+  }
+  
+  res.json({ 
+    ip: sub.ip, 
+    status: effectiveStatus, 
+    plan: sub.plan, 
+    expires_at: sub.expires_at,
+    user: sub.users ? { email: sub.users.email, name: sub.users.name } : null,
+    additional_ip: sub.additional_ip,
+    has_additional_ip: sub.has_additional_ip
+  });
+});
+
+// --- ADMIN: SUB-AFFILIATES ---
+app.post('/api/admin/affiliates/:id/sub-affiliate', adminAuth, async (req, res) => {
+  const { parent_affiliate_id } = req.body;
+  const { id } = req.params;
+  
+  if (!parent_affiliate_id) return res.status(400).json({ error: 'parent_affiliate_id é obrigatório' });
+  
+  const { data: parent } = await supabase.from('affiliates').select('*').eq('id', parent_affiliate_id).single();
+  if (!parent) return res.status(404).json({ error: 'Afiliado pai não encontrado' });
+  
+  const { data: child } = await supabase.from('affiliates').select('*').eq('id', id).single();
+  if (!child) return res.status(404).json({ error: 'Afiliado filho não encontrado' });
+  
+  await supabase.from('affiliates').update({ parent_affiliate_id }).eq('id', id);
+  res.json({ success: true, message: `Afiliado ${child.code} agora é subafiliado de ${parent.code}` });
+});
+
+app.delete('/api/admin/affiliates/:id/sub-affiliate', adminAuth, async (req, res) => {
+  const { id } = req.params;
+  await supabase.from('affiliates').update({ parent_affiliate_id: null }).eq('id', id);
+  res.json({ success: true });
+});
+
+app.get('/api/admin/affiliates/:id/tree', adminAuth, async (req, res) => {
+  const { id } = req.params;
+  
+  // Busca afiliado e todos os subafiliados recursivamente
+  const { data: affiliate } = await supabase.from('affiliates').select('*, users(email, name)').eq('id', id).single();
+  if (!affiliate) return res.status(404).json({ error: 'Afiliado não encontrado' });
+  
+  const { data: allAffiliates } = await supabase.from('affiliates').select('*, users(email, name)');
+  
+  function buildTree(affiliateId) {
+    const aff = allAffiliates.find(a => a.id === affiliateId);
+    if (!aff) return null;
+    
+    const children = allAffiliates
+      .filter(a => a.parent_affiliate_id === affiliateId)
+      .map(a => buildTree(a.id))
+      .filter(Boolean);
+    
+    return { ...aff, children };
+  }
+  
+  res.json(buildTree(id));
+});
+
+// --- ADMIN: TEST ACCOUNTS ---
+app.post('/api/admin/test-accounts/create', adminAuth, async (req, res) => {
+  try {
+    const accounts = [];
+    
+    // Admin
+    const adminEmail = 'admin@test.8token.com';
+    const adminPass = await bcrypt.hash('admin123', 12);
+    const { data: adminUser } = await supabase.from('users').insert({ 
+      email: adminEmail, 
+      password_hash: adminPass, 
+      name: 'Admin Teste' 
+    }).select().single();
+    await supabase.from('ip_subscriptions').insert({ 
+      ip: '127.0.0.1', 
+      user_id: adminUser.id, 
+      plan: 'admin', 
+      status: 'active',
+      expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    accounts.push({ type: 'admin', email: adminEmail, password: 'admin123' });
+    
+    // Afiliado
+    const affEmail = 'afiliado@test.8token.com';
+    const affPass = await bcrypt.hash('afiliado123', 12);
+    const { data: affUser } = await supabase.from('users').insert({ 
+      email: affEmail, 
+      password_hash: affPass, 
+      name: 'Afiliado Teste' 
+    }).select().single();
+    const { data: affiliate } = await supabase.from('affiliates').insert({ 
+      user_id: affUser.id, 
+      commission_pct: 15, 
+      code: 'aff_test_' + crypto.randomBytes(4).toString('hex') 
+    }).select().single();
+    accounts.push({ type: 'affiliate', email: affEmail, password: 'afiliado123', code: affiliate.code });
+    
+    // Subafiliado
+    const subAffEmail = 'subafiliado@test.8token.com';
+    const subAffPass = await bcrypt.hash('sub123', 12);
+    const { data: subAffUser } = await supabase.from('users').insert({ 
+      email: subAffEmail, 
+      password_hash: subAffPass, 
+      name: 'Subafiliado Teste' 
+    }).select().single();
+    const { data: subAffiliate } = await supabase.from('affiliates').insert({ 
+      user_id: subAffUser.id, 
+      commission_pct: 10, 
+      code: 'subaff_test_' + crypto.randomBytes(4).toString('hex'),
+      parent_affiliate_id: affiliate.id
+    }).select().single();
+    accounts.push({ type: 'sub-affiliate', email: subAffEmail, password: 'sub123', code: subAffiliate.code });
+    
+    // Usuário com plano ativo
+    const activeEmail = 'ativo@test.8token.com';
+    const activePass = await bcrypt.hash('ativo123', 12);
+    const { data: activeUser } = await supabase.from('users').insert({ 
+      email: activeEmail, 
+      password_hash: activePass, 
+      name: 'Usuário Ativo',
+      plan: 'mensal',
+      plan_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+    }).select().single();
+    await supabase.from('ip_subscriptions').insert({ 
+      ip: '192.168.1.100', 
+      user_id: activeUser.id, 
+      plan: 'mensal', 
+      status: 'active',
+      expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    accounts.push({ type: 'active-user', email: activeEmail, password: 'ativo123' });
+    
+    // Usuário com plano expirado
+    const expiredEmail = 'expirado@test.8token.com';
+    const expiredPass = await bcrypt.hash('expirado123', 12);
+    const { data: expiredUser } = await supabase.from('users').insert({ 
+      email: expiredEmail, 
+      password_hash: expiredPass, 
+      name: 'Usuário Expirado',
+      plan: 'mensal',
+      plan_expires_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+    }).select().single();
+    await supabase.from('ip_subscriptions').insert({ 
+      ip: '192.168.1.101', 
+      user_id: expiredUser.id, 
+      plan: 'mensal', 
+      status: 'expired',
+      expires_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+    });
+    accounts.push({ type: 'expired-user', email: expiredEmail, password: 'expirado123' });
+    
+    res.json({ success: true, accounts });
+  } catch (err) {
+    console.error('Test accounts error:', err);
+    res.status(500).json({ error: 'Erro ao criar contas teste' });
+  }
+});
+
+// --- ADMIN: EXPIRED PLANS NOTIFICATION ---
+app.get('/api/admin/expired-plans', adminAuth, async (req, res) => {
+  const now = new Date().toISOString();
+  const { data } = await supabase.from('ip_subscriptions')
+    .select('*, users(email, name)')
+    .eq('status', 'active')
+    .lt('expires_at', now);
+  
+  // Atualiza status para expired
+  if (data && data.length > 0) {
+    await supabase.from('ip_subscriptions')
+      .update({ status: 'expired' })
+      .in('id', data.map(d => d.id));
+  }
+  
+  res.json({ expired: data || [], count: (data || []).length });
+});
+
+app.get('/api/admin/expiring-soon', adminAuth, async (req, res) => {
+  const now = new Date();
+  const in7days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
+  const { data } = await supabase.from('ip_subscriptions')
+    .select('*, users(email, name)')
+    .eq('status', 'active')
+    .gt('expires_at', now.toISOString())
+    .lt('expires_at', in7days);
+  
+  res.json({ expiring: data || [], count: (data || []).length });
+});
+
 // --- ADMIN: ACTIVATIONS ---
 app.get('/api/admin/activations', adminAuth, async (req, res) => {
   const { data } = await supabase.from('ip_activation_requests').select('*, users(email, name)').order('created_at', { ascending: false });

@@ -18,3 +18,4 @@ design paina 8token/
 .vercel
 .gstack/
 .gstack/
+.env*

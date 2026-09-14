@@ -725,6 +725,7 @@
                     <div>
                         <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">IP Principal</div>
                         <div id="ipMainValue" style="font-family:var(--font-mono);font-size:18px;font-weight:700;color:var(--accent-blue);">Carregando...</div>
+                        <div id="ipStatusBadge" style="display:inline-flex;align-items:center;padding:2px 10px;font-size:11px;font-weight:600;border-radius:var(--radius-pill);text-transform:uppercase;letter-spacing:0.03em;margin-top:4px;background:rgba(122,117,117,0.15);color:var(--text-muted);">Carregando...</div>
                         <div id="ipPendingChange" style="display:none;font-size:12px;color:var(--accent-amber);margin-top:4px;"></div>
                     </div>
                     <button class="btn-upgrade" id="ipChangeToggleBtn" onclick="toggleIpChangeForm()" style="background:transparent;border:1px solid var(--border);color:var(--text-secondary);font-size:13px;height:36px;padding:0 var(--space-md);">Solicitar Alteração</button>
@@ -823,92 +824,15 @@
             </div>
         </div>
 
-        <!-- Tokens Consumed by Model -->
+        <!-- Plano Ativo -->
         <div class="dash-section">
-            <div class="dash-section-title">Tokens Consumidos por Modelo</div>
-            <div class="tokens-chart-card" id="tokensChart">
-                <div class="tokens-chart-header">
-                    <div>
-                        <div class="tokens-chart-title">Consumo este mês</div>
-                        <div class="tokens-chart-subtitle">Setembro 2026 · todos os modelos</div>
-                    </div>
-                    <div class="tokens-chart-total">
-                        <div class="tokens-chart-total-value">168.7B</div>
-                        <div class="tokens-chart-total-label">Total de tokens</div>
-                    </div>
+            <div class="dash-section-title">Seu Plano</div>
+            <div class="plan-card">
+                <div class="plan-info">
+                    <div class="plan-name" id="planName">Carregando...</div>
+                    <div class="plan-details" id="planDetails">Aguarde...</div>
                 </div>
-
-                <div class="tokens-bar-list">
-                    <!-- Claude Fable 5.1 — 94B -->
-                    <div class="tokens-bar-item">
-                        <div class="tokens-bar-label">
-                            <span class="tokens-bar-name">Claude Fable 5.1</span>
-                            <span class="tokens-bar-provider">Anthropic · Max</span>
-                        </div>
-                        <div class="tokens-bar-track">
-                            <div class="tokens-bar-fill fable" data-width="100"></div>
-                        </div>
-                        <div class="tokens-bar-value">94.0<span class="unit">B</span></div>
-                    </div>
-
-                    <!-- Claude Opus 5 — 38.2B -->
-                    <div class="tokens-bar-item">
-                        <div class="tokens-bar-label">
-                            <span class="tokens-bar-name">Claude Opus 5</span>
-                            <span class="tokens-bar-provider">Anthropic · Pro</span>
-                        </div>
-                        <div class="tokens-bar-track">
-                            <div class="tokens-bar-fill opus" data-width="40.6"></div>
-                        </div>
-                        <div class="tokens-bar-value">38.2<span class="unit">B</span></div>
-                    </div>
-
-                    <!-- Claude Sonnet 5 — 21.5B -->
-                    <div class="tokens-bar-item">
-                        <div class="tokens-bar-label">
-                            <span class="tokens-bar-name">Claude Sonnet 5</span>
-                            <span class="tokens-bar-provider">Anthropic · Pro</span>
-                        </div>
-                        <div class="tokens-bar-track">
-                            <div class="tokens-bar-fill sonnet" data-width="22.9"></div>
-                        </div>
-                        <div class="tokens-bar-value">21.5<span class="unit">B</span></div>
-                    </div>
-
-                    <!-- GLM 5.3 — 11.8B -->
-                    <div class="tokens-bar-item">
-                        <div class="tokens-bar-label">
-                            <span class="tokens-bar-name">GLM 5.3</span>
-                            <span class="tokens-bar-provider">Z.AI · Pro</span>
-                        </div>
-                        <div class="tokens-bar-track">
-                            <div class="tokens-bar-fill glm" data-width="12.6"></div>
-                        </div>
-                        <div class="tokens-bar-value">11.8<span class="unit">B</span></div>
-                    </div>
-
-                    <!-- GPT-6 Astra — 3.2B -->
-                    <div class="tokens-bar-item">
-                        <div class="tokens-bar-label">
-                            <span class="tokens-bar-name">GPT-6 Astra</span>
-                            <span class="tokens-bar-provider">OpenAI · Max</span>
-                        </div>
-                        <div class="tokens-bar-track">
-                            <div class="tokens-bar-fill gpt" data-width="3.4"></div>
-                        </div>
-                        <div class="tokens-bar-value">3.2<span class="unit">B</span></div>
-                    </div>
-                </div>
-
-                <div class="tokens-chart-footer">
-                    <div class="tokens-chart-note">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="20 6 9 17 4 12"/>
-                        </svg>
-                        Uso ilimitado, sem cobrança extra por token
-                    </div>
-                    <div class="tokens-chart-period">01/09 – 13/09/2026</div>
-                </div>
+                <button class="btn-upgrade" id="upgradeBtn" onclick="window.location.href='account.html'">Gerenciar Plano</button>
             </div>
         </div>
     </main>
@@ -1048,6 +972,21 @@
                 const data = await res.json();
                 const ipMainEl = document.getElementById('ipMainValue');
                 if (ipMainEl) ipMainEl.textContent = data.ip || 'Nenhum IP registrado';
+                
+                const statusBadge = document.getElementById('ipStatusBadge');
+                if (statusBadge) {
+                    let status = data.status || 'unknown';
+                    let color = 'var(--text-muted)';
+                    let bg = 'rgba(122,117,117,0.15)';
+                    let label = status;
+                    if (status === 'active') { color = 'var(--accent-green)'; bg = 'rgba(16,185,129,0.12)'; label = 'Ativo'; }
+                    else if (status === 'expired') { color = 'var(--accent-red)'; bg = 'rgba(244,63,94,0.12)'; label = 'Expirado'; }
+                    else if (status === 'suspended') { color = 'var(--accent-amber)'; bg = 'rgba(245,158,11,0.12)'; label = 'Suspenso'; }
+                    statusBadge.style.color = color;
+                    statusBadge.style.background = bg;
+                    statusBadge.textContent = label;
+                }
+
                 const pendingEl = document.getElementById('ipPendingChange');
                 if (pendingEl && data.pending_ip_change) {
                     pendingEl.style.display = 'block';

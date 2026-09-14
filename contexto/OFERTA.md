@@ -1,4 +1,4 @@
-# Conhecimento da Oferta — 4TOKEN / GhostCLI
+# Conhecimento da Oferta — 8Token
 
 > Última atualização: 2026-09-13
 
