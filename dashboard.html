@@ -622,23 +622,81 @@
             .tokens-chart-total { text-align: left; }
         }
 
+        /* Hamburger Menu Button */
+        .hamburger-btn { display: none; background: none; border: none; cursor: pointer; padding: var(--space-sm); color: var(--text-primary); }
+        .hamburger-btn svg { width: 24px; height: 24px; }
+
+        /* Sidebar Drawer */
+        .sidebar-drawer { position: fixed; top: 0; left: -300px; width: 300px; height: 100vh; background: var(--bg-card); border-right: 1px solid var(--border); z-index: 1100; transition: left var(--transition-base); overflow-y: auto; }
+        .sidebar-drawer.open { left: 0; }
+        .sidebar-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1050; opacity: 0; pointer-events: none; transition: opacity var(--transition-base); }
+        .sidebar-overlay.open { opacity: 1; pointer-events: auto; }
+        .sidebar-header { padding: var(--space-lg); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+        .sidebar-title { font-size: 16px; font-weight: 700; color: var(--text-primary); }
+        .sidebar-close { background: none; border: none; cursor: pointer; color: var(--text-secondary); padding: var(--space-xs); }
+        .sidebar-close:hover { color: var(--text-primary); }
+        .sidebar-nav { padding: var(--space-md) 0; }
+        .sidebar-link { display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-md) var(--space-lg); color: var(--text-secondary); font-size: 14px; font-weight: 500; transition: all var(--transition-fast); cursor: pointer; border: none; background: none; width: 100%; text-align: left; }
+        .sidebar-link:hover { background: var(--bg-card-alt); color: var(--text-primary); }
+        .sidebar-link.active { background: rgba(240,84,9,0.1); color: var(--accent-orange); border-left: 3px solid var(--accent-orange); }
+        .sidebar-link svg { width: 18px; height: 18px; flex-shrink: 0; }
+
         /* Responsive */
         @media (max-width: 768px) {
+            .hamburger-btn { display: block; }
+            .navbar-right { display: none; }
             .plan-card { flex-direction: column; align-items: flex-start; }
             .plan-price { text-align: left; }
             .kpi-row { grid-template-columns: repeat(2, 1fr); }
+            .dashboard { padding-left: var(--space-md); padding-right: var(--space-md); }
         }
 
         @media (max-width: 480px) {
             .kpi-row { grid-template-columns: 1fr; }
-            .dashboard { padding-left: var(--space-md); padding-right: var(--space-md); }
         }
     </style>
 </head>
 <body>
+    <!-- Sidebar Drawer -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+    <div class="sidebar-drawer" id="sidebarDrawer">
+        <div class="sidebar-header">
+            <span class="sidebar-title">Menu</span>
+            <button class="sidebar-close" onclick="closeSidebar()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div class="sidebar-nav">
+            <button class="sidebar-link active" onclick="window.location.href='dashboard.html'; closeSidebar();">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                Dashboard
+            </button>
+            <button class="sidebar-link" onclick="window.location.href='account.html'; closeSidebar();">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Minha Conta
+            </button>
+            <button class="sidebar-link" onclick="window.location.href='affiliate.html'; closeSidebar();">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                Afiliados
+            </button>
+            <button class="sidebar-link" id="sidebarAdminLink" style="display:none;" onclick="window.location.href='admin.html'; closeSidebar();">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                Painel Admin
+            </button>
+            <div style="border-top:1px solid var(--border);margin:var(--space-md) 0;"></div>
+            <button class="sidebar-link" onclick="handleLogout(); closeSidebar();" style="color:var(--accent-red);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Sair
+            </button>
+        </div>
+    </div>
+
     <!-- Navbar -->
     <nav class="navbar">
         <div class="navbar-inner">
+            <button class="hamburger-btn" onclick="openSidebar()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
             <a href="index.html" class="navbar-logo">
                 <svg viewBox="0 0 48 48" fill="var(--accent-orange)" width="28" height="28">
                     <path d="M24 4C14 4 8 12 8 22v14c0 2 1 4 3 4h2l3-4h4l3 4h2l3-4h4l3 4h2c2 0 3-2 3-4V22C40 12 34 4 24 4zm-8 22a3 3 0 110-6 3 3 0 010 6zm16 0a3 3 0 110-6 3 3 0 010 6z"/>
@@ -872,8 +930,23 @@
         // Also check expiry warning
         const storedUser = JSON.parse(localStorage.getItem('8token_user') || '{}');
         const adminLink = document.getElementById('adminLink');
+        const sidebarAdminLink = document.getElementById('sidebarAdminLink');
         if (adminLink && storedUser.plan === 'admin') {
             adminLink.style.display = 'inline-flex';
+        }
+        if (sidebarAdminLink && storedUser.plan === 'admin') {
+            sidebarAdminLink.style.display = 'flex';
+        }
+
+        // ---- SIDEBAR DRAWER ----
+        function openSidebar() {
+            document.getElementById('sidebarDrawer').classList.add('open');
+            document.getElementById('sidebarOverlay').classList.add('open');
+        }
+
+        function closeSidebar() {
+            document.getElementById('sidebarDrawer').classList.remove('open');
+            document.getElementById('sidebarOverlay').classList.remove('open');
         }
         fetch('/api/ip/status').then(r => r.json()).then(data => {
             // Expiry banner

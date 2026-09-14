@@ -476,8 +476,9 @@ app.get('/api/admin/subscriptions', adminAuth, async (req, res) => {
 app.post('/api/admin/subscriptions', adminAuth, async (req, res) => {
   const { ip, user_id, plan, status, notes, expires_at } = req.body;
   if (!ip) return res.status(400).json({ error: 'IP é obrigatório' });
+  // Allow multiple IPs per user — only check if this exact IP already exists
   const { data: existing } = await supabase.from('ip_subscriptions').select('id').eq('ip', ip).single();
-  if (existing) return res.status(409).json({ error: 'IP já existe' });
+  if (existing) return res.status(409).json({ error: 'Este IP já está cadastrado' });
   const { data } = await supabase.from('ip_subscriptions').insert({ ip, user_id, plan: plan || 'free', status: status || 'active', notes, expires_at }).select().single();
   res.json(data);
 });

@@ -56,6 +56,32 @@
         .navbar-badge { font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: var(--radius-pill); background: rgba(240,84,9,0.15); color: var(--accent-orange); text-transform: uppercase; letter-spacing: 0.05em; margin-left: var(--space-xs); }
         .navbar-nav { display: flex; align-items: center; gap: var(--space-sm); flex-shrink: 0; }
 
+        /* Hamburger Menu Button */
+        .hamburger-btn { display: none; background: none; border: none; cursor: pointer; padding: var(--space-sm); color: var(--text-primary); }
+        .hamburger-btn svg { width: 24px; height: 24px; }
+
+        /* Sidebar Drawer */
+        .sidebar-drawer { position: fixed; top: 0; left: -300px; width: 300px; height: 100vh; background: var(--bg-card); border-right: 1px solid var(--border); z-index: 1100; transition: left var(--transition-base); overflow-y: auto; }
+        .sidebar-drawer.open { left: 0; }
+        .sidebar-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1050; opacity: 0; pointer-events: none; transition: opacity var(--transition-base); }
+        .sidebar-overlay.open { opacity: 1; pointer-events: auto; }
+        .sidebar-header { padding: var(--space-lg); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+        .sidebar-title { font-size: 16px; font-weight: 700; color: var(--text-primary); }
+        .sidebar-close { background: none; border: none; cursor: pointer; color: var(--text-secondary); padding: var(--space-xs); }
+        .sidebar-close:hover { color: var(--text-primary); }
+        .sidebar-nav { padding: var(--space-md) 0; }
+        .sidebar-link { display: flex; align-items: center; gap: var(--space-sm); padding: var(--space-md) var(--space-lg); color: var(--text-secondary); font-size: 14px; font-weight: 500; transition: all var(--transition-fast); cursor: pointer; border: none; background: none; width: 100%; text-align: left; }
+        .sidebar-link:hover { background: var(--bg-card-alt); color: var(--text-primary); }
+        .sidebar-link.active { background: rgba(240,84,9,0.1); color: var(--accent-orange); border-left: 3px solid var(--accent-orange); }
+        .sidebar-link svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+        @media (max-width: 768px) {
+            .hamburger-btn { display: block; }
+            .navbar-nav { display: none; }
+            .tabs-inner { padding: 0 var(--space-md); }
+            .page { padding: 144px var(--space-md) 64px; }
+        }
+
         /* Tabs */
         .tabs-bar { background: var(--bg-card); border-bottom: 1px solid var(--border); position: sticky; top: 64px; z-index: 900; }
         .tabs-inner { max-width: 1400px; margin: 0 auto; padding: 0 var(--space-lg); display: flex; gap: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -198,8 +224,69 @@
     </style>
 </head>
 <body>
+    <!-- Sidebar Drawer -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+    <div class="sidebar-drawer" id="sidebarDrawer">
+        <div class="sidebar-header">
+            <span class="sidebar-title">Menu</span>
+            <button class="sidebar-close" onclick="closeSidebar()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div class="sidebar-nav">
+            <button class="sidebar-link active" onclick="switchTab('dashboard'); closeSidebar();">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                Dashboard
+            </button>
+            <button class="sidebar-link" onclick="switchTab('users'); closeSidebar();">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Usuários / IPs
+            </button>
+            <button class="sidebar-link" onclick="switchTab('activations'); closeSidebar();">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                Ativação de IPs
+            </button>
+            <button class="sidebar-link" onclick="switchTab('affiliates'); closeSidebar();">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                Afiliados
+            </button>
+            <button class="sidebar-link" onclick="switchTab('plans'); closeSidebar();">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                Planos
+            </button>
+            <button class="sidebar-link" onclick="switchTab('expired'); closeSidebar();">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                Expirados
+            </button>
+            <button class="sidebar-link" onclick="switchTab('coupons'); closeSidebar();">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                Cupons
+            </button>
+            <button class="sidebar-link" onclick="switchTab('ipchanges'); closeSidebar();">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                Solicitações de IP
+            </button>
+            <div style="border-top:1px solid var(--border);margin:var(--space-md) 0;"></div>
+            <button class="sidebar-link" onclick="createTestAccounts(); closeSidebar();" style="color:var(--accent-purple);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                Gerar Contas Teste
+            </button>
+            <a href="dashboard.html" class="sidebar-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                Dashboard Usuário
+            </a>
+            <a href="index.html" class="sidebar-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                Site Público
+            </a>
+        </div>
+    </div>
+
     <nav class="navbar">
         <div class="navbar-inner">
+            <button class="hamburger-btn" onclick="openSidebar()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
             <a href="index.html" class="navbar-logo">
                 <svg viewBox="0 0 48 48" fill="var(--accent-orange)" width="28" height="28">
                     <path d="M24 4C14 4 8 12 8 22v14c0 2 1 4 3 4h2l3-4h4l3 4h2l3-4h4l3 4h2c2 0 3-2 3-4V22C40 12 34 4 24 4zm-8 22a3 3 0 110-6 3 3 0 010 6zm16 0a3 3 0 110-6 3 3 0 010 6z"/>
@@ -883,21 +970,61 @@
                 allAffiliates = await apiFetch('/api/admin/affiliates');
                 const tbody = document.getElementById('affiliatesTableBody');
                 if (!allAffiliates.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Nenhum afiliado cadastrado.</td></tr>'; return; }
-                tbody.innerHTML = allAffiliates.map(a => `
-                    <tr draggable="true" data-affiliate-id="${a.id}" ondragstart="handleDragStart(event, ${a.id})" ondragover="handleDragOver(event)" ondrop="handleDrop(event, ${a.id})" ondragleave="handleDragLeave(event)" style="cursor:move;">
-                        <td class="mono">#${a.id}</td>
-                        <td style="font-size:13px;">${a.user_email || '—'}<br><span style="font-size:11px;color:var(--text-muted);">${a.user_name || ''}</span></td>
-                        <td class="mono" style="font-size:12px;">${a.code}</td>
-                        <td><span class="badge badge-pro">${a.commission_pct}%</span></td>
-                        <td class="mono">${a.total_referrals || 0}</td>
-                        <td class="mono">${a.paid_referrals || 0}</td>
-                        <td class="mono">R$ ${(a.total_commission_base || 0).toFixed(2)}</td>
-                        <td class="actions">
-                            <button class="btn btn-secondary btn-sm" onclick="editAffiliate(${a.id}, ${a.commission_pct})">Editar %</button>
-                            <button class="btn btn-danger btn-sm" onclick="removeAffiliate(${a.id})">Remover</button>
-                        </td>
-                    </tr>
-                `).join('');
+
+                // Build tree structure
+                const affiliatesWithChildren = allAffiliates.map(a => ({ ...a, children: [] }));
+                const affiliateMap = {};
+                affiliatesWithChildren.forEach(a => { affiliateMap[a.id] = a; });
+
+                // Find root affiliates (no parent) and attach children
+                const rootAffiliates = [];
+                affiliatesWithChildren.forEach(a => {
+                    if (a.parent_affiliate_id && affiliateMap[a.parent_affiliate_id]) {
+                        affiliateMap[a.parent_affiliate_id].children.push(a);
+                    } else {
+                        rootAffiliates.push(a);
+                    }
+                });
+
+                // Render with hierarchy
+                let html = '';
+                function renderAffiliate(a, level = 0) {
+                    const indent = level * 40;
+                    const arrow = level > 0 ? '<span style="color:var(--accent-orange);margin-right:8px;">↳</span>' : '';
+                    const parentInfo = a.parent_affiliate_id && affiliateMap[a.parent_affiliate_id]
+                        ? `<br><span style="font-size:10px;color:var(--text-muted);">Sub de: ${affiliateMap[a.parent_affiliate_id].code}</span>`
+                        : '';
+
+                    html += `
+                        <tr draggable="true" data-affiliate-id="${a.id}" ondragstart="handleDragStart(event, ${a.id})" ondragover="handleDragOver(event)" ondrop="handleDrop(event, ${a.id})" ondragleave="handleDragLeave(event)" style="cursor:move;">
+                            <td class="mono">#${a.id}</td>
+                            <td style="font-size:13px;padding-left:${indent}px;">
+                                ${arrow}${a.user_email || '—'}${parentInfo}<br>
+                                <span style="font-size:11px;color:var(--text-muted);padding-left:${indent + (level > 0 ? 20 : 0)}px;">${a.user_name || ''}</span>
+                            </td>
+                            <td class="mono" style="font-size:12px;">${a.code}</td>
+                            <td>
+                                <span class="badge badge-pro">${a.commission_pct}%</span>
+                                ${a.parent_affiliate_id ? `<br><span style="font-size:10px;color:var(--accent-teal);">Mãe recebe: ${affiliateMap[a.parent_affiliate_id]?.commission_pct || 0}%</span>` : ''}
+                            </td>
+                            <td class="mono">${a.total_referrals || 0}</td>
+                            <td class="mono">${a.paid_referrals || 0}</td>
+                            <td class="mono">R$ ${(a.total_commission_base || 0).toFixed(2)}</td>
+                            <td class="actions">
+                                <button class="btn btn-secondary btn-sm" onclick="editAffiliateCommission(${a.id}, ${a.commission_pct}, ${a.parent_affiliate_id || 'null'})">Editar %</button>
+                                <button class="btn btn-danger btn-sm" onclick="removeAffiliate(${a.id})">Remover</button>
+                            </td>
+                        </tr>
+                    `;
+
+                    // Render children
+                    if (a.children && a.children.length > 0) {
+                        a.children.forEach(child => renderAffiliate(child, level + 1));
+                    }
+                }
+
+                rootAffiliates.forEach(a => renderAffiliate(a, 0));
+                tbody.innerHTML = html;
             } catch (e) {
                 document.getElementById('affiliatesTableBody').innerHTML = `<tr><td colspan="8" class="empty-state" style="color:var(--accent-red);">${e.message}</td></tr>`;
             }
@@ -971,6 +1098,17 @@
             } catch (e) { showAlert('affFormAlert', e.message, 'error'); }
         }
 
+        // ---- SIDEBAR DRAWER ----
+        function openSidebar() {
+            document.getElementById('sidebarDrawer').classList.add('open');
+            document.getElementById('sidebarOverlay').classList.add('open');
+        }
+
+        function closeSidebar() {
+            document.getElementById('sidebarDrawer').classList.remove('open');
+            document.getElementById('sidebarOverlay').classList.remove('open');
+        }
+
         async function editAffiliate(id, currentPct) {
             const newPct = prompt(`Nova comissão % (atual: ${currentPct}%):`, currentPct);
             if (newPct === null) return;
@@ -978,6 +1116,74 @@
                 await apiFetch(`/api/admin/affiliates/${id}`, { method: 'PUT', body: JSON.stringify({ commission_pct: parseFloat(newPct) }) });
                 loadAffiliates();
             } catch (e) { alert(e.message); }
+        }
+
+        async function editAffiliateCommission(id, currentPct, parentId) {
+            // Modal for editing commission with parent info
+            const modal = document.createElement('div');
+            modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:9999;';
+
+            const parentInfo = parentId ? allAffiliates.find(a => a.id === parentId) : null;
+            const parentCommission = parentInfo ? parentInfo.commission_pct : 0;
+
+            modal.innerHTML = `
+                <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-xl);max-width:400px;width:90%;">
+                    <h3 style="margin-bottom:var(--space-md);color:var(--text-primary);">Editar Comissão</h3>
+                    <div style="margin-bottom:var(--space-md);">
+                        <label style="display:block;font-size:13px;color:var(--text-secondary);margin-bottom:var(--space-xs);">Comissão do Afiliado (%)</label>
+                        <input type="number" id="modalCommission" value="${currentPct}" min="0" max="100" step="0.5" style="width:100%;padding:var(--space-sm);background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;">
+                    </div>
+                    ${parentId ? `
+                    <div style="margin-bottom:var(--space-md);padding:var(--space-sm);background:rgba(16,185,129,0.1);border-radius:var(--radius-sm);border-left:3px solid var(--accent-green);">
+                        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;">Afiliado Mãe</div>
+                        <div style="font-size:13px;color:var(--text-primary);">${parentInfo?.user_email || parentInfo?.code || 'N/A'}</div>
+                        <div style="font-size:12px;color:var(--accent-green);margin-top:4px;">Comissão da mãe: ${parentCommission}%</div>
+                    </div>
+                    <div style="margin-bottom:var(--space-md);">
+                        <label style="display:block;font-size:13px;color:var(--text-secondary);margin-bottom:var(--space-xs);">Comissão da Mãe (%)</label>
+                        <input type="number" id="modalParentCommission" value="${parentCommission}" min="0" max="100" step="0.5" style="width:100%;padding:var(--space-sm);background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;">
+                    </div>
+                    ` : ''}
+                    <div style="display:flex;gap:var(--space-sm);justify-content:flex-end;">
+                        <button onclick="this.closest('div[style*=fixed]').remove()" style="padding:var(--space-sm) var(--space-md);background:transparent;border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-secondary);cursor:pointer;">Cancelar</button>
+                        <button id="modalSaveBtn" style="padding:var(--space-sm) var(--space-md);background:var(--accent-orange);border:none;border-radius:var(--radius-sm);color:white;cursor:pointer;font-weight:600;">Salvar</button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            document.getElementById('modalSaveBtn').onclick = async () => {
+                const newPct = parseFloat(document.getElementById('modalCommission').value);
+                if (isNaN(newPct) || newPct < 0 || newPct > 100) {
+                    alert('Comissão deve ser entre 0 e 100%');
+                    return;
+                }
+
+                try {
+                    // Update affiliate commission
+                    await apiFetch(`/api/admin/affiliates/${id}`, {
+                        method: 'PUT',
+                        body: JSON.stringify({ commission_pct: newPct })
+                    });
+
+                    // Update parent commission if exists
+                    if (parentId) {
+                        const newParentPct = parseFloat(document.getElementById('modalParentCommission').value);
+                        if (!isNaN(newParentPct) && newParentPct >= 0 && newParentPct <= 100) {
+                            await apiFetch(`/api/admin/affiliates/${parentId}`, {
+                                method: 'PUT',
+                                body: JSON.stringify({ commission_pct: newParentPct })
+                            });
+                        }
+                    }
+
+                    modal.remove();
+                    loadAffiliates();
+                } catch (e) {
+                    alert(e.message);
+                }
+            };
         }
 
         async function removeAffiliate(id) {
