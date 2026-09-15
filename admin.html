@@ -330,6 +330,7 @@
             <button class="tab-btn" onclick="switchTab('expired')">Expirados <span class="tab-count" id="expiredCount" style="display:none;">0</span></button>
             <button class="tab-btn" onclick="switchTab('coupons')">Cupons</button>
             <button class="tab-btn" onclick="switchTab('ipchanges')">Solicitações de IP <span class="tab-count" id="ipChangeCount" style="display:none;">0</span></button>
+            <button class="tab-btn" onclick="switchTab('notifications')">🔔 Notificações</button>
         </div>
     </div>
 
@@ -536,6 +537,71 @@
                     <thead><tr><th>ID</th><th>Usuário</th><th>IP Atual</th><th>IP Solicitado</th><th>Data</th><th>Status</th><th>Ações</th></tr></thead>
                     <tbody id="ipChangesTableBody"><tr><td colspan="7" class="empty-state">Carregando...</td></tr></tbody>
                 </table>
+            </div>
+        </div>
+
+        <!-- ==================== TAB: NOTIFICATIONS ==================== -->
+        <div class="tab-panel" id="tab-notifications">
+            <p style="color:var(--text-secondary);font-size:14px;margin-bottom:var(--space-lg);">Envie notificações para todos os usuários ou filtre por plano específico. As notificações aparecem no sininho do dashboard e na página de notificações dos usuários.</p>
+
+            <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-xl);margin-bottom:var(--space-xl);">
+                <h3 style="font-size:16px;font-weight:700;margin-bottom:var(--space-lg);color:var(--text-primary);">📢 Enviar Nova Notificação</h3>
+
+                <div style="display:grid;gap:var(--space-md);">
+                    <div>
+                        <label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-xs);">Título *</label>
+                        <input type="text" id="notifTitle" placeholder="Ex: Manutenção programada" style="width:100%;padding:10px 14px;background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font-sans);" />
+                    </div>
+
+                    <div>
+                        <label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-xs);">Mensagem *</label>
+                        <textarea id="notifMessage" rows="4" placeholder="Escreva a mensagem da notificação..." style="width:100%;padding:10px 14px;background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font-sans);resize:vertical;"></textarea>
+                    </div>
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-md);">
+                        <div>
+                            <label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-xs);">Tipo</label>
+                            <select id="notifType" style="width:100%;padding:10px 14px;background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font-sans);">
+                                <option value="info">ℹ️ Info</option>
+                                <option value="success">✅ Sucesso</option>
+                                <option value="warning">⚠️ Aviso</option>
+                                <option value="error">❌ Erro</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-xs);">Plano Alvo</label>
+                            <select id="notifTargetPlan" style="width:100%;padding:10px 14px;background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font-sans);">
+                                <option value="all">🌍 Todos os usuários</option>
+                                <option value="free">Free</option>
+                                <option value="mensal">Mensal</option>
+                                <option value="trimestral">Trimestral</option>
+                                <option value="anual">Anual</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button onclick="sendBroadcastNotification()" id="sendNotifBtn" style="padding:12px 24px;background:var(--accent-orange);color:white;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;transition:all var(--transition-fast);margin-top:var(--space-sm);" onmouseover="this.style.background='var(--accent-orange-hover)'" onmouseout="this.style.background='var(--accent-orange)'">
+                        🚀 Enviar Notificação
+                    </button>
+
+                    <div id="notifSendStatus" style="display:none;padding:var(--space-md);border-radius:var(--radius-sm);font-size:13px;font-weight:600;"></div>
+                </div>
+            </div>
+
+            <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-xl);">
+                <h3 style="font-size:16px;font-weight:700;margin-bottom:var(--space-lg);color:var(--text-primary);">📊 Estatísticas Rápidas</h3>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:var(--space-md);">
+                    <div style="padding:var(--space-md);background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-sm);">
+                        <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">Total de Usuários</div>
+                        <div style="font-size:24px;font-weight:700;color:var(--accent-orange);" id="totalUsersCount">-</div>
+                    </div>
+                    <div style="padding:var(--space-md);background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-sm);">
+                        <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">Notificações Enviadas</div>
+                        <div style="font-size:24px;font-weight:700;color:var(--accent-green);" id="totalNotifsCount">-</div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -746,6 +812,7 @@
             if (name === 'users') loadSubscriptions();
             if (name === 'activations') loadActivations();
             if (name === 'affiliates') loadAffiliates();
+            if (name === 'notifications') loadNotifStats();
             if (name === 'plans') loadPlans();
             if (name === 'expired') loadExpired();
             if (name === 'coupons') loadCoupons();
@@ -1672,6 +1739,65 @@
                 await apiFetch(`/api/admin/ip-changes/${id}/reject`, { method: 'POST', body: JSON.stringify({ notes }) });
                 loadIpChanges();
             } catch (e) { alert(e.message); }
+        }
+
+        // ---- NOTIFICATIONS BROADCAST ----
+        async function sendBroadcastNotification() {
+            const title = document.getElementById('notifTitle').value.trim();
+            const message = document.getElementById('notifMessage').value.trim();
+            const type = document.getElementById('notifType').value;
+            const targetPlan = document.getElementById('notifTargetPlan').value;
+            const statusEl = document.getElementById('notifSendStatus');
+            const btn = document.getElementById('sendNotifBtn');
+
+            if (!title || !message) {
+                statusEl.style.display = 'block';
+                statusEl.style.background = 'rgba(244,63,94,0.1)';
+                statusEl.style.color = 'var(--accent-red)';
+                statusEl.style.border = '1px solid rgba(244,63,94,0.3)';
+                statusEl.textContent = '❌ Título e mensagem são obrigatórios.';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '⏳ Enviando...';
+            statusEl.style.display = 'none';
+
+            try {
+                const res = await apiFetch('/api/admin/notifications/broadcast', {
+                    method: 'POST',
+                    body: JSON.stringify({ title, message, type, target_plan: targetPlan })
+                });
+                statusEl.style.display = 'block';
+                statusEl.style.background = 'rgba(16,185,129,0.1)';
+                statusEl.style.color = 'var(--accent-green)';
+                statusEl.style.border = '1px solid rgba(16,185,129,0.3)';
+                statusEl.textContent = '✅ ' + (res.message || 'Notificação enviada com sucesso!');
+                document.getElementById('notifTitle').value = '';
+                document.getElementById('notifMessage').value = '';
+                loadNotifStats();
+            } catch (e) {
+                statusEl.style.display = 'block';
+                statusEl.style.background = 'rgba(244,63,94,0.1)';
+                statusEl.style.color = 'var(--accent-red)';
+                statusEl.style.border = '1px solid rgba(244,63,94,0.3)';
+                statusEl.textContent = '❌ Erro: ' + e.message;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🚀 Enviar Notificação';
+            }
+        }
+
+        async function loadNotifStats() {
+            try {
+                const [usersRes, notifsRes] = await Promise.all([
+                    apiFetch('/api/admin/stats'),
+                    fetch(API_BASE + '/api/admin/notifications/count', { headers: { 'x-admin-secret': localStorage.getItem('8token_admin_secret') || '' } }).catch(() => null)
+                ]);
+                if (usersRes) {
+                    document.getElementById('totalUsersCount').textContent = usersRes.total_users || usersRes.totalUsers || '-';
+                }
+            } catch (e) { console.error('Notif stats error:', e); }
         }
 
         // ---- INIT ----

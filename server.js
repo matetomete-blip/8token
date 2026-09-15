@@ -352,25 +352,103 @@ app.post('/api/webhooks/kirvano', async (req, res) => {
     const plan = resolvePlanFromKirvano(payload.products);
     if (!customerEmail || !plan) return res.json({ received: true, warning: 'Missing data' });
 
-    const { data: user } = await supabase.from('users').select('id').eq('email', customerEmail).single();
+    const { data: user } = await supabase.from('users').select('id, plan').eq('email', customerEmail).single();
     if (!user) return res.json({ received: true, warning: 'User not found' });
 
     const expiresAt = new Date(Date.now() + (PLAN_EXPIRY_MS[plan] || 30 * 24 * 60 * 60 * 1000)).toISOString();
-    await supabase.from('users').update({ plan, plan_expires_at: expiresAt }).eq('id', user.id);
+    const previousPlan = user.plan;
 
-    const { data: sub } = await supabase.from('ip_subscriptions').select('id').eq('user_id', user.id).eq('status', 'active').single();
-    if (sub) {
-      await supabase.from('ip_subscriptions').update({ plan, status: 'active', expires_at: expiresAt }).eq('id', sub.id);
+    // Atomic update: users.plan + ip_subscriptions + invoice + audit log
+    // Step 1: Update users.plan atomically
+    const { error: userUpdateErr } = await supabase
+      .from('users')
+      .update({ plan, plan_expires_at: expiresAt, updated_at: new Date().toISOString() })
+      .eq('id', user.id);
+    if (userUpdateErr) {
+      console.error('[Kirvano Webhook] Failed to update user plan:', userUpdateErr);
+      return res.status(500).json({ error: 'Failed to update user' });
     }
 
-    // Create activation request
+    // Step 2: Upsert ip_subscriptions (source of truth for plan/status)
+    const { data: existingSub } = await supabase
+      .from('ip_subscriptions')
+      .select('id, plan')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    let subId = null;
+    if (existingSub) {
+      const { error: subUpdateErr } = await supabase
+        .from('ip_subscriptions')
+        .update({ plan, status: 'active', expires_at: expiresAt, auto_renew: true })
+        .eq('id', existingSub.id);
+      if (subUpdateErr) {
+        console.error('[Kirvano Webhook] Failed to update subscription:', subUpdateErr);
+      }
+      subId = existingSub.id;
+    } else {
+      // No active subscription — create one using the request IP or a placeholder
+      const ip = req.clientIp || 'pending-activation';
+      const { data: newSub, error: subInsertErr } = await supabase
+        .from('ip_subscriptions')
+        .insert({ user_id: user.id, ip, plan, status: 'active', expires_at: expiresAt, auto_renew: true })
+        .select('id')
+        .single();
+      if (subInsertErr) {
+        console.error('[Kirvano Webhook] Failed to create subscription:', subInsertErr);
+      } else {
+        subId = newSub.id;
+      }
+    }
+
+    // Step 3: Update/create invoice with kirvano_sale_id and paid_by_webhook
+    const { data: existingInvoice } = await supabase
+      .from('invoices')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('plan', plan)
+      .eq('status', 'pending')
+      .limit(1)
+      .single();
+
+    if (existingInvoice) {
+      await supabase
+        .from('invoices')
+        .update({ status: 'paid', paid_at: new Date().toISOString(), kirvano_sale_id: payload.sale_id, paid_by_webhook: true })
+        .eq('id', existingInvoice.id);
+    } else {
+      await supabase.from('invoices').insert({
+        user_id: user.id,
+        plan,
+        amount: PLAN_PRICES[plan] || 0,
+        status: 'paid',
+        paid_at: new Date().toISOString(),
+        kirvano_sale_id: payload.sale_id,
+        paid_by_webhook: true
+      });
+    }
+
+    // Step 4: Audit log for plan change via webhook
+    if (previousPlan !== plan) {
+      await supabase.from('plan_audit_log').insert({
+        user_id: user.id,
+        actor: 'webhook',
+        action: 'sale_approved',
+        field_changed: 'plan',
+        old_value: previousPlan,
+        new_value: plan
+      });
+    }
+
+    // Step 5: Create activation request
     const apiKey = generateApiKey();
     await supabase.from('ip_activation_requests').insert({
       user_id: user.id, ip: req.clientIp, plan, status: 'pending', api_key: apiKey,
       gateway_url: `https://api.8token.com/v1`, kirvano_sale_id: payload.sale_id
     });
-
-    await supabase.from('invoices').update({ status: 'paid', paid_at: new Date().toISOString() }).eq('user_id', user.id).eq('plan', plan).eq('status', 'pending');
   }
 
   res.json({ received: true });
@@ -1165,6 +1243,505 @@ app.get('/api/user/gateway-url', authenticateToken, async (req, res) => {
   const { data: setting } = await supabase.from('site_settings').select('value').eq('key', 'gateway_url').single();
   const gatewayUrl = setting?.value || 'https://ghostcli.dev/v1';
   res.json({ gateway_url: gatewayUrl });
+});
+
+// =============================================================================
+// CRM DASHBOARD ENDPOINTS
+// =============================================================================
+
+// Helper: compute effective status from subscription data
+function computeCrmStatus(sub) {
+  if (!sub) return 'none';
+  if (sub.status === 'cancelled') return 'cancelled';
+  if (sub.expires_at && new Date(sub.expires_at) <= new Date()) return 'expired';
+  if (sub.status === 'active') return 'active';
+  return sub.status || 'none';
+}
+
+// GET /api/admin/crm/users — paginated, filterable user list for CRM table
+app.get('/api/admin/crm/users', adminAuth, async (req, res) => {
+  try {
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const perPage = Math.min(100, Math.max(1, parseInt(req.query.per_page) || 25));
+    const search = (req.query.search || '').trim();
+    const statusFilter = req.query.status || '';
+    const planFilter = req.query.plan || '';
+    const expiryWindow = req.query.expiry_window || ''; // 'this_month', 'next_month', 'expiring_7d'
+
+    // Build base query for users with their active subscriptions via JOIN
+    let query = supabase
+      .from('users')
+      .select('id, email, name, plan, created_at, updated_at, last_login_at', { count: 'exact' })
+      .order('created_at', { ascending: false });
+
+    // Search filter
+    if (search) {
+      query = query.or(`email.ilike.%${search}%,name.ilike.%${search}%`);
+    }
+
+    // Plan filter
+    if (planFilter) {
+      query = query.eq('plan', planFilter);
+    }
+
+    // Pagination
+    const from = (page - 1) * perPage;
+    const to = from + perPage - 1;
+    query = query.range(from, to);
+
+    const { data: users, error, count } = await query;
+    if (error) throw error;
+
+    // For each user, fetch IPs and compute status
+    const enrichedUsers = [];
+    for (const u of (users || [])) {
+      const { data: subs } = await supabase
+        .from('ip_subscriptions')
+        .select('ip, status, plan, expires_at, has_additional_ip, additional_ip')
+        .eq('user_id', u.id)
+        .order('created_at', { ascending: false });
+
+      const ips = (subs || []).map(s => ({
+        ip: s.ip,
+        status: s.status,
+        plan: s.plan,
+        expires_at: s.expires_at,
+        is_additional: !!s.has_additional_ip
+      }));
+
+      // Effective plan/status from most recent active subscription (canonical source)
+      const activeSub = (subs || []).find(s => s.status === 'active');
+      const effectivePlan = activeSub ? activeSub.plan : (u.plan || 'free');
+      const effectiveStatus = computeCrmStatus(activeSub || (subs && subs[0]));
+
+      // Status filter (applied post-enrichment since it depends on subscription)
+      if (statusFilter && effectiveStatus !== statusFilter) continue;
+
+      // Expiry window filter
+      if (expiryWindow && activeSub && activeSub.expires_at) {
+        const expDate = new Date(activeSub.expires_at);
+        const now = new Date();
+        if (expiryWindow === 'this_month') {
+          if (expDate.getMonth() !== now.getMonth() || expDate.getFullYear() !== now.getFullYear()) continue;
+        } else if (expiryWindow === 'next_month') {
+          const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+          const afterNextMonth = new Date(now.getFullYear(), now.getMonth() + 2, 1);
+          if (expDate < nextMonth || expDate >= afterNextMonth) continue;
+        } else if (expiryWindow === 'expiring_7d') {
+          const in7d = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+          if (expDate < now || expDate > in7d) continue;
+        }
+      }
+
+      // Last webhook event for this user
+      const { data: lastWebhook } = await supabase
+        .from('webhook_logs')
+        .select('created_at')
+        .eq('sale_id', null) // generic match
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      enrichedUsers.push({
+        id: u.id,
+        email: u.email,
+        name: u.name,
+        plan: effectivePlan,
+        status: effectiveStatus,
+        expires_at: activeSub ? activeSub.expires_at : null,
+        last_login_at: u.last_login_at || null,
+        updated_at: u.updated_at || u.created_at,
+        ip_count: ips.length,
+        ips,
+        created_at: u.created_at,
+        last_webhook_event: lastWebhook ? lastWebhook.created_at : null
+      });
+    }
+
+    // Compute segment counts (full scan, not paginated)
+    const { data: allUsers } = await supabase.from('users').select('id, plan');
+    const segments = { active_paid: 0, free_only: 0, expired: 0, cancelled: 0, no_subscription: 0 };
+    for (const au of (allUsers || [])) {
+      const { data: aSub } = await supabase
+        .from('ip_subscriptions')
+        .select('status, plan, expires_at')
+        .eq('user_id', au.id)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      const st = computeCrmStatus(aSub);
+      if (st === 'active' && aSub && aSub.plan !== 'free' && aSub.plan !== 'admin') segments.active_paid++;
+      else if (st === 'active' && (!aSub || aSub.plan === 'free')) segments.free_only++;
+      else if (st === 'expired') segments.expired++;
+      else if (st === 'cancelled') segments.cancelled++;
+      else segments.no_subscription++;
+    }
+
+    res.json({
+      users: enrichedUsers,
+      pagination: { page, per_page: perPage, total: count || 0 },
+      segments
+    });
+  } catch (err) {
+    console.error('CRM users error:', err);
+    res.status(500).json({ error: 'Erro ao carregar usuários CRM: ' + err.message });
+  }
+});
+
+// GET /api/admin/crm/users/:id — full user detail for side panel
+app.get('/api/admin/crm/users/:id', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const { data: user, error: userErr } = await supabase
+      .from('users')
+      .select('id, email, name, plan, created_at, updated_at, last_login_at')
+      .eq('id', id)
+      .single();
+    if (userErr || !user) return res.status(404).json({ error: 'Usuário não encontrado' });
+
+    // Subscriptions
+    const { data: subscriptions } = await supabase
+      .from('ip_subscriptions')
+      .select('id, ip, plan, status, expires_at, auto_renew, cancellation_reason, renewed_from_id, created_at')
+      .eq('user_id', id)
+      .order('created_at', { ascending: false });
+
+    const activeSub = (subscriptions || []).find(s => s.status === 'active');
+    const effectiveStatus = computeCrmStatus(activeSub || (subscriptions && subscriptions[0]));
+
+    // Invoices
+    const { data: invoices } = await supabase
+      .from('invoices')
+      .select('id, amount, status, paid_by_webhook, kirvano_sale_id, created_at')
+      .eq('user_id', id)
+      .order('created_at', { ascending: false });
+
+    // Audit log
+    const { data: audit_log } = await supabase
+      .from('plan_audit_log')
+      .select('id, actor, action, field_changed, old_value, new_value, created_at')
+      .eq('user_id', id)
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    // IP history (all subscriptions including inactive)
+    const { data: ipHistoryRaw } = await supabase
+      .from('ip_subscriptions')
+      .select('ip, status, plan, created_at, expires_at')
+      .eq('user_id', id)
+      .order('created_at', { ascending: true });
+
+    // Deduplicate IPs and compute first/last seen
+    const ipMap = {};
+    for (const rec of (ipHistoryRaw || [])) {
+      if (!ipMap[rec.ip]) {
+        ipMap[rec.ip] = { ip: rec.ip, first_seen: rec.created_at, last_seen: rec.created_at, is_active: rec.status === 'active' };
+      } else {
+        ipMap[rec.ip].last_seen = rec.created_at;
+        if (rec.status === 'active') ipMap[rec.ip].is_active = true;
+      }
+    }
+    const ip_history = Object.values(ipMap);
+
+    res.json({
+      user: {
+        ...user,
+        status: effectiveStatus,
+        expires_at: activeSub ? activeSub.expires_at : null
+      },
+      subscriptions: subscriptions || [],
+      invoices: invoices || [],
+      audit_log: audit_log || [],
+      ip_history
+    });
+  } catch (err) {
+    console.error('CRM user detail error:', err);
+    res.status(500).json({ error: 'Erro ao carregar detalhes do usuário: ' + err.message });
+  }
+});
+
+// PUT /api/admin/crm/users/:id — admin edit user data and plan
+app.put('/api/admin/crm/users/:id', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, email, plan } = req.body;
+
+    const { data: user } = await supabase.from('users').select('id, plan').eq('id', id).single();
+    if (!user) return res.status(404).json({ error: 'Usuário não encontrado' });
+
+    const updateFields = {};
+    if (name !== undefined) updateFields.name = name;
+    if (email !== undefined) updateFields.email = email;
+    if (plan !== undefined) updateFields.plan = plan;
+    updateFields.updated_at = new Date().toISOString();
+
+    const { error: updateErr } = await supabase.from('users').update(updateFields).eq('id', id);
+    if (updateErr) throw updateErr;
+
+    // Sync plan to active subscriptions if plan changed
+    let syncedCount = 0;
+    if (plan !== undefined && plan !== user.plan) {
+      const { data: activeSubs } = await supabase
+        .from('ip_subscriptions')
+        .select('id')
+        .eq('user_id', id)
+        .eq('status', 'active');
+
+      if (activeSubs && activeSubs.length > 0) {
+        const ids = activeSubs.map(s => s.id);
+        await supabase.from('ip_subscriptions').update({ plan }).in('id', ids);
+        syncedCount = ids.length;
+      }
+
+      // Audit log
+      const { data: auditEntry } = await supabase
+        .from('plan_audit_log')
+        .insert({
+          user_id: id,
+          actor: 'admin',
+          action: 'plan_change',
+          field_changed: 'plan',
+          old_value: user.plan,
+          new_value: plan
+        })
+        .select('id')
+        .single();
+
+      return res.json({
+        success: true,
+        user: { id, plan, updated_at: updateFields.updated_at },
+        synced_subscriptions: syncedCount,
+        audit_entry_id: auditEntry ? auditEntry.id : null
+      });
+    }
+
+    res.json({
+      success: true,
+      user: { id, plan: plan || user.plan, updated_at: updateFields.updated_at },
+      synced_subscriptions: 0,
+      audit_entry_id: null
+    });
+  } catch (err) {
+    console.error('CRM user update error:', err);
+    res.status(500).json({ error: 'Erro ao atualizar usuário: ' + err.message });
+  }
+});
+
+// POST /api/admin/crm/users/:id/sync-plan — force sync users.plan with ip_subscriptions
+app.post('/api/admin/crm/users/:id/sync-plan', adminAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const { data: user } = await supabase.from('users').select('id, plan').eq('id', id).single();
+    if (!user) return res.status(404).json({ error: 'Usuário não encontrado' });
+
+    // Source of truth: most recent active subscription
+    const { data: activeSub } = await supabase
+      .from('ip_subscriptions')
+      .select('plan')
+      .eq('user_id', id)
+      .eq('status', 'active')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    const canonicalPlan = activeSub ? activeSub.plan : 'free';
+    const previousPlan = user.plan;
+
+    if (previousPlan === canonicalPlan) {
+      return res.json({
+        success: true,
+        previous_user_plan: previousPlan,
+        new_user_plan: canonicalPlan,
+        subscriptions_updated: 0,
+        audit_entry_id: null
+      });
+    }
+
+    // Update user plan
+    await supabase.from('users').update({ plan: canonicalPlan, updated_at: new Date().toISOString() }).eq('id', id);
+
+    // Audit log
+    const { data: auditEntry } = await supabase
+      .from('plan_audit_log')
+      .insert({
+        user_id: id,
+        actor: 'admin',
+        action: 'sync_plan',
+        field_changed: 'plan',
+        old_value: previousPlan,
+        new_value: canonicalPlan
+      })
+      .select('id')
+      .single();
+
+    res.json({
+      success: true,
+      previous_user_plan: previousPlan,
+      new_user_plan: canonicalPlan,
+      subscriptions_updated: 0,
+      audit_entry_id: auditEntry ? auditEntry.id : null
+    });
+  } catch (err) {
+    console.error('CRM sync-plan error:', err);
+    res.status(500).json({ error: 'Erro ao sincronizar plano: ' + err.message });
+  }
+});
+
+// GET /api/admin/crm/metrics/expiry — KPI cards: expiry metrics
+app.get('/api/admin/crm/metrics/expiry', adminAuth, async (req, res) => {
+  try {
+    const now = new Date();
+    const endOfThisMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    const endOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 2, 0, 23, 59, 59, 999);
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    // Active total
+    const { count: activeTotal } = await supabase
+      .from('ip_subscriptions')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'active')
+      .neq('plan', 'free')
+      .neq('plan', 'admin');
+
+    // Expiring this month (active, expires_at between now and end of month)
+    const { count: expiringThisMonth } = await supabase
+      .from('ip_subscriptions')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'active')
+      .gte('expires_at', now.toISOString())
+      .lte('expires_at', endOfThisMonth.toISOString());
+
+    // Expiring next month
+    const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const { count: expiringNextMonth } = await supabase
+      .from('ip_subscriptions')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'active')
+      .gte('expires_at', startOfNextMonth.toISOString())
+      .lte('expires_at', endOfNextMonth.toISOString());
+
+    // Churn rate 30d: expired in last 30 days / active total
+    const { count: recentlyExpired } = await supabase
+      .from('ip_subscriptions')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'expired')
+      .gte('expires_at', thirtyDaysAgo.toISOString())
+      .lte('expires_at', now.toISOString());
+
+    const churnRate30d = (activeTotal || 0) > 0
+      ? Math.round(((recentlyExpired || 0) / (activeTotal || 1)) * 10000) / 100
+      : 0;
+
+    // Expiring by week (next 4 weeks)
+    const expiringByWeek = [];
+    for (let w = 0; w < 4; w++) {
+      const weekStart = new Date(now.getTime() + w * 7 * 24 * 60 * 60 * 1000);
+      const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+      const { count } = await supabase
+        .from('ip_subscriptions')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'active')
+        .gte('expires_at', weekStart.toISOString())
+        .lt('expires_at', weekEnd.toISOString());
+      expiringByWeek.push({ week_start: weekStart.toISOString(), count: count || 0 });
+    }
+
+    res.json({
+      expiring_this_month: expiringThisMonth || 0,
+      expiring_next_month: expiringNextMonth || 0,
+      active_total: activeTotal || 0,
+      churn_rate_30d: churnRate30d,
+      expiring_by_week: expiringByWeek
+    });
+  } catch (err) {
+    console.error('CRM expiry metrics error:', err);
+    res.status(500).json({ error: 'Erro ao carregar métricas de expiração: ' + err.message });
+  }
+});
+
+// GET /api/admin/crm/revenue/projection — MRR and revenue projection
+app.get('/api/admin/crm/revenue/projection', adminAuth, async (req, res) => {
+  try {
+    const { data: activeSubs } = await supabase
+      .from('ip_subscriptions')
+      .select('plan, expires_at')
+      .eq('status', 'active')
+      .neq('plan', 'free')
+      .neq('plan', 'admin');
+
+    const mrrByPlan = { mensal: 0, trimestral: 0, anual: 0 };
+    let projectedNext30d = 0;
+    let projectedNext90d = 0;
+    const now = new Date();
+    const in30d = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const in90d = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
+
+    for (const sub of (activeSubs || [])) {
+      const price = PLAN_PRICES[sub.plan] || 0;
+      if (!price) continue;
+
+      // Monthly normalized revenue
+      let monthlyRevenue = 0;
+      if (sub.plan === 'mensal') monthlyRevenue = price;
+      else if (sub.plan === 'trimestral') monthlyRevenue = price / 3;
+      else if (sub.plan === 'anual') monthlyRevenue = price / 12;
+
+      mrrByPlan[sub.plan] = (mrrByPlan[sub.plan] || 0) + monthlyRevenue;
+
+      // Projection: only count if subscription is still active in the window
+      if (sub.expires_at) {
+        const expDate = new Date(sub.expires_at);
+        if (expDate > now && expDate <= in30d) projectedNext30d += price;
+        if (expDate > now && expDate <= in90d) projectedNext90d += price;
+      }
+    }
+
+    const mrrTotal = Object.values(mrrByPlan).reduce((sum, v) => sum + v, 0);
+
+    res.json({
+      mrr_total: Math.round(mrrTotal * 100) / 100,
+      mrr_by_plan: {
+        mensal: Math.round((mrrByPlan.mensal || 0) * 100) / 100,
+        trimestral: Math.round((mrrByPlan.trimestral || 0) * 100) / 100,
+        anual: Math.round((mrrByPlan.anual || 0) * 100) / 100
+      },
+      projected_next_30d: Math.round(projectedNext30d * 100) / 100,
+      projected_next_90d: Math.round(projectedNext90d * 100) / 100,
+      currency: 'BRL'
+    });
+  } catch (err) {
+    console.error('CRM revenue projection error:', err);
+    res.status(500).json({ error: 'Erro ao calcular projeção de receita: ' + err.message });
+  }
+});
+
+// GET /api/admin/crm/ip-history/:user_id — full IP history for audit
+app.get('/api/admin/crm/ip-history/:user_id', adminAuth, async (req, res) => {
+  try {
+    const { user_id } = req.params;
+
+    const { data: records } = await supabase
+      .from('ip_subscriptions')
+      .select('id, ip, status, plan, created_at, expires_at')
+      .eq('user_id', user_id)
+      .order('created_at', { ascending: true });
+
+    const ipRecords = (records || []).map(r => ({
+      ip: r.ip,
+      status: r.status === 'active' && r.expires_at && new Date(r.expires_at) <= new Date() ? 'inactive' : r.status,
+      plan: r.plan,
+      first_seen: r.created_at,
+      last_seen: r.expires_at || r.created_at,
+      subscription_id: r.id
+    }));
+
+    res.json({ user_id, ip_records: ipRecords });
+  } catch (err) {
+    console.error('CRM IP history error:', err);
+    res.status(500).json({ error: 'Erro ao carregar histórico de IPs: ' + err.message });
+  }
 });
 
 // Health check

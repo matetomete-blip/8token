@@ -751,6 +751,25 @@
             </a>
             <div class="navbar-right">
                 <a href="admin.html" id="adminLink" style="display:none;font-size:13px;font-weight:600;color:#a855f7;padding:6px 12px;border:1px solid rgba(168,85,247,0.4);border-radius:var(--radius-sm);background:rgba(168,85,247,0.1);transition:all var(--transition-fast);" onmouseover="this.style.background='rgba(168,85,247,0.2)'" onmouseout="this.style.background='rgba(168,85,247,0.1)'">⚙ Painel Admin</a>
+                <!-- Notification Bell -->
+                <div class="notif-bell-wrap">
+                    <button class="notif-bell-btn" onclick="toggleNotifDropdown(event)" aria-label="Notificações">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                        <span class="notif-badge hidden" id="notifBadge">0</span>
+                    </button>
+                    <div class="notif-dropdown" id="notifDropdown">
+                        <div class="notif-dropdown-header">
+                            <span class="notif-dropdown-title">Notificações</span>
+                            <button class="notif-dropdown-link" onclick="markAllReadDash()">Marcar todas lidas</button>
+                        </div>
+                        <div class="notif-dropdown-list" id="notifDropdownList">
+                            <div class="notif-dropdown-empty">Carregando...</div>
+                        </div>
+                        <div class="notif-dropdown-footer">
+                            <a href="notifications.html">Ver todas as notificações →</a>
+                        </div>
+                    </div>
+                </div>
                 <a href="account.html" style="font-size:13px;color:var(--text-secondary);padding:6px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);transition:all var(--transition-fast);" onmouseover="this.style.borderColor='var(--accent-orange)';this.style.color='var(--accent-orange)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-secondary)'">Minha Conta</a>
                 <div class="navbar-user">
                     <div class="navbar-avatar">U</div>
@@ -1006,23 +1025,25 @@
         }).then(profile => {
             const kpiPlan = document.getElementById('kpiPlan');
             const kpiExpiry = document.getElementById('kpiPlanExpiry');
+            // Admin vê como "Anual" no dashboard de usuário
+            const displayPlan = profile.plan === 'admin' ? 'anual' : profile.plan;
             const planNames = { mensal: 'Mensal', trimestral: 'Trimestral', anual: 'Anual', admin: 'Admin', free: 'Grátis' };
-            if (kpiPlan) kpiPlan.textContent = planNames[profile.plan] || profile.plan || '—';
+            if (kpiPlan) kpiPlan.textContent = planNames[displayPlan] || displayPlan || '—';
             if (kpiExpiry && profile.plan_expires_at) {
                 kpiExpiry.textContent = 'Renova em ' + new Date(profile.plan_expires_at).toLocaleDateString('pt-BR');
             } else if (kpiExpiry) {
                 kpiExpiry.textContent = profile.plan === 'admin' ? 'Acesso permanente' : 'Sem data de renovação';
             }
-            // Expiry banner check
-            if (profile.plan_expires_at) {
+            // Expiry banner check (skip for admin — they see as "Anual" with permanent access)
+            if (profile.plan_expires_at && profile.plan !== 'admin') {
                 const daysLeft = Math.ceil((new Date(profile.plan_expires_at) - new Date()) / (1000*60*60*24));
                 const banner = document.getElementById('expiryBanner');
                 const text = document.getElementById('expiryBannerText');
                 if (daysLeft <= 7 && daysLeft > 0 && banner) {
-                    text.textContent = `Seu plano ${planNames[profile.plan] || profile.plan} expira em ${daysLeft} dia(s). Renove agora!`;
+                    text.textContent = `Seu plano ${planNames[displayPlan] || displayPlan} expira em ${daysLeft} dia(s). Renove agora!`;
                     banner.style.display = 'block';
                 } else if (daysLeft <= 0 && banner) {
-                    text.textContent = `Seu plano ${planNames[profile.plan] || profile.plan} expirou! Renove agora.`;
+                    text.textContent = `Seu plano ${planNames[displayPlan] || displayPlan} expirou! Renove agora.`;
                     banner.style.display = 'block';
                 }
             }
@@ -1242,6 +1263,117 @@
                 }
             } catch (e) { showIpFeedback('Erro de conexão. Tente novamente.', false); }
             finally { if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Enviar Solicitação'; } }
+        }
+
+        // ---- NOTIFICATIONS ----
+        let dashNotifications = [];
+
+        function timeAgoDash(dateStr) {
+            const now = new Date();
+            const date = new Date(dateStr);
+            const diffMs = now - date;
+            const diffMin = Math.floor(diffMs / 60000);
+            const diffHr = Math.floor(diffMs / 3600000);
+            const diffDay = Math.floor(diffMs / 86400000);
+            if (diffMin < 1) return 'agora';
+            if (diffMin < 60) return diffMin + ' min';
+            if (diffHr < 24) return diffHr + 'h';
+            if (diffDay < 7) return diffDay + 'd';
+            return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+        }
+
+        function escHtmlDash(str) {
+            const d = document.createElement('div');
+            d.textContent = str || '';
+            return d.innerHTML;
+        }
+
+        function toggleNotifDropdown(e) {
+            if (e) e.stopPropagation();
+            const dd = document.getElementById('notifDropdown');
+            dd.classList.toggle('open');
+            if (dd.classList.contains('open')) loadDashNotifications();
+        }
+
+        document.addEventListener('click', function(e) {
+            const dd = document.getElementById('notifDropdown');
+            const wrap = document.querySelector('.notif-bell-wrap');
+            if (dd && wrap && !wrap.contains(e.target)) dd.classList.remove('open');
+        });
+
+        async function loadDashNotifications() {
+            try {
+                const token = localStorage.getItem('8token_token');
+                const res = await fetch(API_BASE + '/api/notifications', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!res.ok) return;
+                dashNotifications = await res.json();
+                renderNotifDropdown();
+                updateNotifBadge();
+            } catch (e) { console.error('Notif load error:', e); }
+        }
+
+        function renderNotifDropdown() {
+            const list = document.getElementById('notifDropdownList');
+            if (!list) return;
+            const recent = dashNotifications.slice(0, 5);
+            if (!recent.length) {
+                list.innerHTML = '<div class="notif-dropdown-empty">Nenhuma notificação ainda</div>';
+                return;
+            }
+            list.innerHTML = recent.map(n => `
+                <div class="notif-dropdown-item ${n.read ? '' : 'unread'}" onclick="markReadDash(${n.id})">
+                    <div class="notif-dropdown-item-title">${escHtmlDash(n.title)}</div>
+                    <div class="notif-dropdown-item-msg">${escHtmlDash(n.message)}</div>
+                    <div class="notif-dropdown-item-time">${timeAgoDash(n.created_at)}</div>
+                </div>
+            `).join('');
+        }
+
+        function updateNotifBadge() {
+            const badge = document.getElementById('notifBadge');
+            if (!badge) return;
+            const unread = dashNotifications.filter(n => !n.read).length;
+            if (unread > 0) {
+                badge.textContent = unread > 9 ? '9+' : unread;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        async function markReadDash(id) {
+            try {
+                const token = localStorage.getItem('8token_token');
+                await fetch(API_BASE + '/api/notifications/' + id + '/read', {
+                    method: 'PUT',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const n = dashNotifications.find(x => x.id === id);
+                if (n) n.read = true;
+                renderNotifDropdown();
+                updateNotifBadge();
+            } catch (e) { console.error(e); }
+        }
+
+        async function markAllReadDash() {
+            try {
+                const token = localStorage.getItem('8token_token');
+                await fetch(API_BASE + '/api/notifications/read-all', {
+                    method: 'PUT',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                dashNotifications.forEach(n => n.read = true);
+                renderNotifDropdown();
+                updateNotifBadge();
+            } catch (e) { console.error(e); }
+        }
+
+        // Load notifications on page init
+        if (localStorage.getItem('8token_token')) {
+            loadDashNotifications();
+            setInterval(loadDashNotifications, 60000);
         }
 
         </script>
