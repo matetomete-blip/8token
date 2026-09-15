@@ -1084,6 +1084,89 @@ app.get('/api/admin/webhook-logs', adminAuth, async (req, res) => {
   }
 });
 
+// --- ADMIN: BROADCAST NOTIFICATION ---
+app.post('/api/admin/notifications/broadcast', adminAuth, async (req, res) => {
+  try {
+    const { title, message, type = 'info', target_plan = 'all' } = req.body;
+    if (!title || !message) return res.status(400).json({ error: 'Título e mensagem são obrigatórios' });
+
+    // Busca usuários pelo plano alvo
+    let query = supabase.from('users').select('id');
+    if (target_plan && target_plan !== 'all') {
+      query = query.eq('plan', target_plan);
+    }
+    const { data: users, error: fetchErr } = await query;
+    if (fetchErr) throw fetchErr;
+    if (!users || !users.length) return res.status(404).json({ error: 'Nenhum usuário encontrado para este plano' });
+
+    // Insere notificação para cada usuário
+    const notifications = users.map(u => ({
+      user_id: u.id,
+      title,
+      message,
+      type,
+      read: false
+    }));
+
+    // Supabase aceita até 1000 inserts por chamada
+    const batchSize = 500;
+    for (let i = 0; i < notifications.length; i += batchSize) {
+      const batch = notifications.slice(i, i + batchSize);
+      const { error } = await supabase.from('notifications').insert(batch);
+      if (error) throw error;
+    }
+
+    res.json({ success: true, count: users.length, message: `Notificação enviada para ${users.length} usuário(s)` });
+  } catch (err) {
+    console.error('Broadcast notification error:', err);
+    res.status(500).json({ error: 'Erro ao enviar notificação: ' + err.message });
+  }
+});
+
+// --- USER: UNREAD COUNT ---
+app.get('/api/notifications/unread-count', authenticateToken, async (req, res) => {
+  const { count } = await supabase.from('notifications')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', req.user.id)
+    .eq('read', false);
+  res.json({ count: count || 0 });
+});
+
+// --- ADMIN: SITE SETTINGS (gateway URL, etc.) ---
+app.get('/api/admin/settings', adminAuth, async (req, res) => {
+  const { data } = await supabase.from('site_settings').select('*');
+  const settings = {};
+  (data || []).forEach(row => { settings[row.key] = row.value; });
+  res.json(settings);
+});
+
+app.put('/api/admin/settings', adminAuth, async (req, res) => {
+  const entries = Object.entries(req.body);
+  if (!entries.length) return res.status(400).json({ error: 'Nenhuma configuração enviada.' });
+  for (const [key, value] of entries) {
+    await supabase.from('site_settings').upsert({ key, value: String(value), updated_at: new Date().toISOString() }, { onConflict: 'key' });
+  }
+  res.json({ success: true, message: `${entries.length} configuração(ões) salva(s).` });
+});
+
+// Public endpoint: returns gateway URL only for authenticated users with active plan
+app.get('/api/user/gateway-url', authenticateToken, async (req, res) => {
+  // Verify user has at least one active paid subscription
+  const { data: subs } = await supabase
+    .from('ip_subscriptions')
+    .select('id')
+    .eq('user_id', req.user.id)
+    .eq('status', 'active')
+    .neq('plan', 'free')
+    .limit(1);
+  if (!subs || !subs.length) {
+    return res.status(403).json({ error: 'Plano ativo necessário para acessar o gateway.' });
+  }
+  const { data: setting } = await supabase.from('site_settings').select('value').eq('key', 'gateway_url').single();
+  const gatewayUrl = setting?.value || 'https://ghostcli.dev/v1';
+  res.json({ gateway_url: gatewayUrl });
+});
+
 // Health check
 app.get('/api/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
 

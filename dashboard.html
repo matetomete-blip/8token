@@ -135,6 +135,38 @@
             color: var(--accent-red);
         }
 
+        /* Notification Bell */
+        .notif-bell-wrap { position: relative; }
+        .notif-bell-btn { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); transition: all var(--transition-fast); position: relative; }
+        .notif-bell-btn:hover { border-color: var(--accent-orange); color: var(--accent-orange); }
+        .notif-bell-btn svg { width: 18px; height: 18px; }
+        .notif-badge { position: absolute; top: -4px; right: -4px; min-width: 16px; height: 16px; border-radius: 50%; background: var(--accent-orange); color: white; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; padding: 0 4px; box-shadow: 0 0 6px rgba(240,84,9,0.5); line-height: 1; }
+        .notif-badge.hidden { display: none; }
+        .notif-dropdown { position: absolute; top: calc(100% + 8px); right: 0; width: 340px; max-height: 420px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: 0 8px 32px rgba(0,0,0,0.4); overflow: hidden; z-index: 200; display: none; }
+        .notif-dropdown.open { display: block; }
+        .notif-dropdown-header { display: flex; align-items: center; justify-content: space-between; padding: var(--space-md) var(--space-lg); border-bottom: 1px solid var(--border); }
+        .notif-dropdown-title { font-size: 14px; font-weight: 700; }
+        .notif-dropdown-link { font-size: 12px; color: var(--accent-orange); font-weight: 600; cursor: pointer; background: none; border: none; transition: opacity var(--transition-fast); }
+        .notif-dropdown-link:hover { opacity: 0.8; }
+        .notif-dropdown-list { max-height: 320px; overflow-y: auto; }
+        .notif-dropdown-list::-webkit-scrollbar { width: 4px; }
+        .notif-dropdown-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+        .notif-dropdown-item { padding: var(--space-md) var(--space-lg); border-bottom: 1px solid var(--border); cursor: pointer; transition: background var(--transition-fast); position: relative; }
+        .notif-dropdown-item:last-child { border-bottom: none; }
+        .notif-dropdown-item:hover { background: rgba(255,255,255,0.03); }
+        .notif-dropdown-item.unread { background: rgba(240,84,9,0.04); }
+        .notif-dropdown-item.unread::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent-orange); }
+        .notif-dropdown-item-title { font-size: 13px; font-weight: 600; margin-bottom: 2px; color: var(--text-primary); }
+        .notif-dropdown-item-msg { font-size: 12px; color: var(--text-secondary); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .notif-dropdown-item-time { font-size: 10px; color: var(--text-muted); margin-top: 4px; font-family: var(--font-mono); }
+        .notif-dropdown-empty { padding: var(--space-xl); text-align: center; color: var(--text-muted); font-size: 13px; }
+        .notif-dropdown-footer { padding: var(--space-sm) var(--space-lg); border-top: 1px solid var(--border); text-align: center; }
+        .notif-dropdown-footer a { font-size: 12px; color: var(--accent-orange); font-weight: 600; }
+
+        @media (max-width: 768px) {
+            .notif-dropdown { width: 280px; right: -60px; }
+        }
+
         /* Dashboard Layout */
         .dashboard {
             max-width: 1200px;
@@ -872,7 +904,7 @@
                     <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;">URL do gateway (base URL)</div>
                     <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-md);flex-wrap:wrap;">
                         <code id="gatewayUrl" style="font-family:var(--font-mono);font-size:15px;font-weight:600;color:var(--accent-blue);user-select:all;">URL DO SEU GATEWAY</code>
-                        <button class="btn-icon" title="Copiar URL" onclick="copyText('URL DO SEU GATEWAY', this)">
+                        <button class="btn-icon" id="copyGatewayBtn" title="Copiar URL" onclick="copyText(GATEWAY_URL, this)">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
                                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
@@ -902,6 +934,15 @@
     <script>
         const API_BASE = ''; // Usa URL relativa — funciona em localhost e em produção (Vercel)
 
+        // Logout — definido no topo para estar disponível em todos os fetches
+        function handleLogout() {
+            localStorage.removeItem('8token_token');
+            localStorage.removeItem('8token_logged_in');
+            localStorage.removeItem('8token_email');
+            localStorage.removeItem('8token_user');
+            window.location.href = 'login.html';
+        }
+
         // Verifica autenticação
         if (!localStorage.getItem('8token_token')) {
             window.location.href = 'login.html';
@@ -921,6 +962,10 @@
                 const res = await fetch(API_BASE + '/api/user/profile', {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
+                if (res.status === 401 || res.status === 403) {
+                    handleLogout();
+                    return;
+                }
                 if (res.ok) {
                     const user = await res.json();
                     if (emailSpan) emailSpan.textContent = user.email;
@@ -954,7 +999,11 @@
         }
         // Load user profile for KPI plan display
         fetch(API_BASE + '/api/user/profile', { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('8token_token') } })
-        .then(r => r.json()).then(profile => {
+        .then(r => {
+            if (r.status === 401 || r.status === 403) { handleLogout(); throw new Error('auth'); }
+            if (!r.ok) throw new Error('API error ' + r.status);
+            return r.json();
+        }).then(profile => {
             const kpiPlan = document.getElementById('kpiPlan');
             const kpiExpiry = document.getElementById('kpiPlanExpiry');
             const planNames = { mensal: 'Mensal', trimestral: 'Trimestral', anual: 'Anual', admin: 'Admin', free: 'Grátis' };
@@ -981,7 +1030,11 @@
 
         // IP status — use authenticated endpoint
         fetch(API_BASE + '/api/user/ip-info', { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('8token_token') } })
-        .then(r => r.json()).then(data => {
+        .then(r => {
+            if (r.status === 401 || r.status === 403) { handleLogout(); throw new Error('auth'); }
+            if (!r.ok) throw new Error('API error ' + r.status);
+            return r.json();
+        }).then(data => {
             // This is handled by loadIpInfo() below — just ensure no stale fetch('/api/ip/status') remains
         }).catch(() => {});
 
@@ -1006,41 +1059,58 @@
                 const dashMain = document.getElementById('dashMain');
                 if (dashMain) dashMain.style.paddingTop = '152px';
             }
-        }).catch(() => {});
-
-        function handleLogout() {
-            localStorage.removeItem('8token_token');
-            localStorage.removeItem('8token_logged_in');
-            localStorage.removeItem('8token_email');
-            localStorage.removeItem('8token_user');
-            window.location.href = 'login.html';
-        }
+        }).catch(() => {}); }
 
         // ── Chave API (acesso restrito: só assinantes) ──────────────────────
-        // Gateway e chave bearer estáticos fornecidos. A chave SÓ aparece para quem
-        // comprou um plano. O gate lê o flag de assinatura do localStorage
-        // (8token_has_plan) — definido quando o webhook de venda/assinatura confirma
-        // o pagamento. Sem esse flag, a seção mostra o estado bloqueado.
-        const GATEWAY_URL = 'URL DO SEU GATEWAY';
+        // Gateway URL é buscada dinamicamente via /api/user/gateway-url (só retorna
+        // para usuários com plano ativo pago). A chave bearer é estática por enquanto.
+        let GATEWAY_URL = '';
         const API_KEY_REAL = 'gcli_2c7Gqtld8tdiIk5JK4FWTRlUWUXGsoN3';
         const API_KEY_MASKED = 'gcli_••••••••••••••••••••••••••••';
         let apiKeyVisible = false;
 
+        async function fetchGatewayUrl() {
+            try {
+                const token = localStorage.getItem('8token_token');
+                const res = await fetch(API_BASE + '/api/user/gateway-url', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    GATEWAY_URL = data.gateway_url || '';
+                    return true;
+                }
+                return false;
+            } catch {
+                return false;
+            }
+        }
+
         function hasActivePlan() {
-            // Em produção, valide contra o backend (não confie só no localStorage).
-            // Por enquanto: flag setado após confirmação de pagamento / login de assinante.
             return localStorage.getItem('8token_has_plan') === 'true';
         }
 
-        function renderApiAccess() {
+        async function renderApiAccess() {
             const locked = document.getElementById('apiLocked');
             const unlocked = document.getElementById('apiUnlocked');
             if (!locked || !unlocked) return;
             if (hasActivePlan()) {
-                locked.style.display = 'none';
-                unlocked.style.display = 'block';
-                const valEl = document.getElementById('apiKeyValue');
-                if (valEl) valEl.textContent = API_KEY_MASKED; // começa mascarada
+                // Busca URL do gateway via API (valida plano ativo no backend)
+                const hasAccess = await fetchGatewayUrl();
+                if (hasAccess && GATEWAY_URL) {
+                    locked.style.display = 'none';
+                    unlocked.style.display = 'block';
+                    const valEl = document.getElementById('apiKeyValue');
+                    if (valEl) valEl.textContent = API_KEY_MASKED;
+                    const gwEl = document.getElementById('gatewayUrl');
+                    if (gwEl) gwEl.textContent = GATEWAY_URL;
+                    // Atualiza botão de copiar URL
+                    const copyBtn = document.querySelector('[onclick*="copyText"]');
+                    if (copyBtn) copyBtn.setAttribute('onclick', `copyText('${GATEWAY_URL}', this)`);
+                } else {
+                    locked.style.display = 'flex';
+                    unlocked.style.display = 'none';
+                }
             } else {
                 locked.style.display = 'flex';
                 unlocked.style.display = 'none';
@@ -1071,7 +1141,7 @@
             navigator.clipboard.writeText(text).then(() => flashCopied(btn)).catch(() => {});
         }
 
-        renderApiAccess();
+        (async () => { await renderApiAccess(); })();
 
         // ── IP Authorization ──
         async function loadIpInfo() {
@@ -1080,6 +1150,7 @@
                 const res = await fetch(API_BASE + '/api/user/ip-info', {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
+                if (res.status === 401 || res.status === 403) { handleLogout(); return; }
                 if (!res.ok) return;
                 const data = await res.json();
                 const ipMainEl = document.getElementById('ipMainValue');

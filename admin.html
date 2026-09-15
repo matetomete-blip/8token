@@ -279,6 +279,10 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
                 Webhook Kirvano
             </button>
+            <button class="sidebar-link" onclick="switchTab('settings'); closeSidebar();">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                Configurações
+            </button>
             <div class="sidebar-divider"></div>
             <button class="sidebar-link" onclick="createTestAccounts(); closeSidebar();" style="color:var(--accent-purple);">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
@@ -667,6 +671,29 @@
                 </div>
             </div>
         </div>
+
+        <!-- Settings Tab -->
+        <div class="tab-panel" id="tab-settings">
+            <div class="card">
+                <div class="card-title">Configurações Globais</div>
+                <p style="color:var(--text-secondary);font-size:13px;margin-bottom:var(--space-lg);line-height:1.6;">
+                    Configure valores globais do sistema. A URL do gateway abaixo é a mesma para todos os usuários com plano ativo e aparece no dashboard do cliente.
+                </p>
+                <div id="settingsAlert" class="alert"></div>
+
+                <div class="form-row">
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label class="form-label">URL do Gateway (Base URL)</label>
+                        <input type="url" id="settingGatewayUrl" class="form-input" placeholder="https://ghostcli.dev/v1" style="font-family:var(--font-mono);font-size:13px;">
+                        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Esta URL é exibida no dashboard de todos os assinantes. Use o formato completo incluindo <code style="background:var(--bg-primary);padding:2px 6px;border-radius:4px;font-size:12px;">/v1</code> se necessário.</div>
+                    </div>
+                </div>
+
+                <div style="display:flex;gap:var(--space-md);margin-top:var(--space-md);">
+                    <button class="btn btn-primary" onclick="saveSettings()">Salvar Configurações</button>
+                </div>
+            </div>
+        </div>
     </main>
 
     <script>
@@ -723,6 +750,7 @@
             if (name === 'expired') loadExpired();
             if (name === 'coupons') loadCoupons();
             if (name === 'ipchanges') loadIpChanges();
+            if (name === 'settings') loadSettings();
             if (name === 'webhook') { loadWebhookLogs(); loadWebhookConfig(); }
         }
 
@@ -1282,6 +1310,31 @@
                 `).join('');
             } catch (e) {
                 document.getElementById('webhookLogsBody').innerHTML = `<tr><td colspan="7" class="empty-state" style="color:var(--accent-red);">${e.message}</td></tr>`;
+            }
+        }
+
+        // ── Settings ────────────────────────────────────────────────
+        async function loadSettings() {
+            try {
+                const settings = await apiFetch('/api/admin/settings');
+                const input = document.getElementById('settingGatewayUrl');
+                if (input) input.value = settings.gateway_url || 'https://ghostcli.dev/v1';
+            } catch (e) {
+                showAlert('settingsAlert', 'Erro ao carregar configurações: ' + e.message, 'error');
+            }
+        }
+
+        async function saveSettings() {
+            const gatewayUrl = document.getElementById('settingGatewayUrl')?.value?.trim();
+            if (!gatewayUrl) { showAlert('settingsAlert', 'URL do gateway não pode ser vazia.', 'error'); return; }
+            try {
+                await apiFetch('/api/admin/settings', {
+                    method: 'PUT',
+                    body: JSON.stringify({ gateway_url: gatewayUrl })
+                });
+                showAlert('settingsAlert', 'Configurações salvas com sucesso!', 'success');
+            } catch (e) {
+                showAlert('settingsAlert', 'Erro ao salvar: ' + e.message, 'error');
             }
         }
 

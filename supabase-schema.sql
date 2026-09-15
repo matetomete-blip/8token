@@ -140,6 +140,17 @@ CREATE TABLE IF NOT EXISTS webhook_logs (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- Site Settings (global config editable from admin panel)
+CREATE TABLE IF NOT EXISTS site_settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Default gateway URL
+INSERT INTO site_settings (key, value) VALUES ('gateway_url', 'https://ghostcli.dev/v1')
+ON CONFLICT (key) DO NOTHING;
+
 -- Enable RLS but allow service_role full access
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ip_subscriptions ENABLE ROW LEVEL SECURITY;
