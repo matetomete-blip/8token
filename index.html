@@ -428,12 +428,63 @@
             font-weight: 500;
         }
 
+        @media (max-width: 768px) {
+            .status-indicator { display: none; }
+        }
+
+        /* Model highlight description */
+        .model-highlight {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 12px 14px;
+            background: rgba(240, 84, 9, 0.06);
+            border-left: 3px solid var(--accent-orange);
+            border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+            margin-top: var(--space-sm);
+        }
+        .model-highlight-icon {
+            flex-shrink: 0;
+            width: 18px;
+            height: 18px;
+            margin-top: 1px;
+            color: var(--accent-orange);
+        }
+        .model-highlight-text {
+            font-size: 13px;
+            line-height: 1.55;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        .champion-highlight {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 14px 16px;
+            background: rgba(240, 84, 9, 0.08);
+            border-left: 3px solid var(--accent-orange);
+            border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+        }
+        .champion-highlight-icon {
+            flex-shrink: 0;
+            width: 20px;
+            height: 20px;
+            margin-top: 1px;
+            color: var(--accent-orange);
+        }
+        .champion-highlight-text {
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
         .status-dot {
             width: 8px;
             height: 8px;
             background: var(--accent-green);
             border-radius: 50%;
-            animation: pulse 2s infinite;
+            animation: pulse 3s ease-in-out infinite;
         }
 
         @keyframes pulse {
@@ -524,8 +575,8 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            animation: infinityGlow 3s ease-in-out infinite;
-            filter: drop-shadow(0 0 40px rgba(240, 84, 9, 0.3));
+            animation: infinityGlow 5s ease-in-out infinite;
+            filter: drop-shadow(0 0 15px rgba(240, 84, 9, 0.2));
             user-select: none;
             position: relative;
             z-index: 1;
@@ -586,8 +637,9 @@
             stroke-linejoin: round;
             stroke-dasharray: 200 800;
             stroke-dashoffset: 0;
-            animation: infinityTrace 3s linear infinite;
-            filter: drop-shadow(0 0 15px rgba(255, 255, 255, 1)) drop-shadow(0 0 30px rgba(255, 255, 255, 0.7));
+            animation: infinityTrace 4s linear infinite;
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.8));
+            will-change: stroke-dashoffset;
         }
 
         @keyframes infinityTrace {
@@ -656,8 +708,8 @@
             background-clip: text;
             position: relative;
             display: inline-block;
-            animation: eyebrowShimmer 4s linear infinite;
-            filter: drop-shadow(0 0 8px rgba(240, 84, 9, 0.3));
+            animation: eyebrowShimmer 6s linear infinite;
+            filter: drop-shadow(0 0 4px rgba(240, 84, 9, 0.2));
         }
 
         .hero-eyebrow-glow .cap {
@@ -752,7 +804,7 @@
                 0 0 22px rgba(240, 84, 9, 0.75),
                 0 0 38px rgba(255, 140, 66, 0.6),
                 0 0 60px rgba(240, 84, 9, 0.45);
-            animation: heroShoutPulse 2.4s ease-in-out infinite;
+            animation: heroShoutPulse 4s ease-in-out infinite;
         }
 
         .hero-title-shout::after {
@@ -771,7 +823,7 @@
             -webkit-text-fill-color: transparent;
             color: transparent;
             pointer-events: none;
-            animation: heroShoutSweep 3s linear infinite;
+            animation: heroShoutSweep 6s linear infinite;
             mix-blend-mode: screen;
         }
 
@@ -822,7 +874,7 @@
                 rgba(255, 255, 255, 0.4) 50%,
                 transparent 100%
             );
-            animation: textShine 3s ease-in-out infinite;
+            animation: textShine 5s ease-in-out infinite;
             pointer-events: none;
             mix-blend-mode: overlay;
         }
@@ -910,7 +962,7 @@
             overflow: hidden;
             max-width: 900px;
             margin: 0 auto;
-            box-shadow: 0 0 40px rgba(240, 84, 9, 0.08), 0 20px 60px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
         }
 
         .terminal-titlebar {
@@ -1316,7 +1368,7 @@
             line-height: 1.15;
             letter-spacing: -0.04em;
             font-variant-numeric: tabular-nums;
-            text-shadow: 0 0 60px rgba(240, 84, 9, 0.15);
+            text-shadow: 0 0 30px rgba(240, 84, 9, 0.1);
         }
 
         .tc-main-number .tc-unit {
@@ -1514,7 +1566,7 @@
             background: #f05409;
             border-radius: 50%;
             opacity: 0;
-            animation: tcFloat 6s ease-in-out infinite;
+            animation: tcFloat 10s ease-in-out infinite;
         }
 
         @keyframes tcFloat {
@@ -1570,11 +1622,164 @@
         /* ========================================
            MODELS CATALOG
            ======================================== */
+
+        /* --- Champion tier (Fable 5.1 + GPT-6 Astra) --- */
+        .champions-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: var(--space-lg);
+            margin-top: var(--space-xl);
+        }
+
+        .champion-card {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-md);
+            overflow: hidden;
+            border: 1px solid var(--accent-orange);
+            background: linear-gradient(135deg, rgba(240, 84, 9, 0.06) 0%, var(--bg-card) 50%);
+            box-shadow: 0 0 20px rgba(240, 84, 9, 0.12), 0 0 60px rgba(240, 84, 9, 0.04);
+            transition: box-shadow 0.3s ease, transform 0.3s ease;
+        }
+
+        .champion-card:hover {
+            box-shadow: 0 0 30px rgba(240, 84, 9, 0.2), 0 0 80px rgba(240, 84, 9, 0.08);
+            transform: translateY(-2px);
+        }
+
+        .champion-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-orange), transparent);
+        }
+
+        .champion-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--accent-orange);
+            padding: 5px 12px;
+            background: rgba(240, 84, 9, 0.1);
+            border: 1px solid rgba(240, 84, 9, 0.25);
+            border-radius: var(--radius-pill);
+            width: fit-content;
+        }
+
+        .champion-badge svg {
+            width: 14px;
+            height: 14px;
+            fill: var(--accent-orange);
+        }
+
+        .champion-name {
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+        }
+
+        .champion-provider {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .champion-description {
+            font-size: 15px;
+            color: var(--text-secondary);
+            line-height: 1.65;
+        }
+
+        .champion-specs {
+            display: flex;
+            gap: var(--space-lg);
+            padding: var(--space-md) 0;
+            border-top: 1px solid rgba(240, 84, 9, 0.15);
+            border-bottom: 1px solid rgba(240, 84, 9, 0.15);
+        }
+
+        .champion-spec {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .champion-spec-label {
+            font-size: 10px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .champion-spec-value {
+            font-size: 16px;
+            font-weight: 700;
+            font-family: var(--font-mono);
+            color: var(--text-primary);
+        }
+
+        .champion-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: var(--space-sm);
+        }
+
+        .champion-price {
+            font-size: 13px;
+            font-family: var(--font-mono);
+            color: var(--text-muted);
+        }
+
+        .champion-price strong {
+            color: var(--text-secondary);
+        }
+
+        .champion-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .champion-tag {
+            font-size: 11px;
+            padding: 3px 10px;
+            background: rgba(240, 84, 9, 0.08);
+            border: 1px solid rgba(240, 84, 9, 0.15);
+            border-radius: var(--radius-pill);
+            color: var(--accent-orange);
+            font-weight: 500;
+        }
+
+        /* --- Secondary models grid --- */
+        .models-secondary-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-top: var(--space-2xl);
+            margin-bottom: var(--space-md);
+            padding-bottom: var(--space-sm);
+            border-bottom: 1px solid var(--border);
+        }
+
         .models-grid {
             display: grid;
             grid-template-columns: 1fr;
             gap: var(--space-md);
-            margin-top: var(--space-xl);
         }
 
         .model-card {
@@ -1586,7 +1791,7 @@
 
         .model-card.featured {
             border-color: var(--accent-orange);
-            box-shadow: 0 0 20px var(--glow-orange);
+            box-shadow: 0 0 10px var(--glow-orange);
         }
 
         .model-header {
@@ -1698,6 +1903,7 @@
         }
 
         @media (min-width: 640px) {
+            .champions-grid { grid-template-columns: repeat(2, 1fr); }
             .models-grid { grid-template-columns: repeat(2, 1fr); }
         }
 
@@ -2086,7 +2292,7 @@
             width: 100%;
             height: 100%;
             background: linear-gradient(90deg, transparent, rgba(255, 140, 66, 0.1), transparent);
-            animation: badge-shimmer 3s ease-in-out infinite;
+            animation: badge-shimmer 6s ease-in-out infinite;
         }
 
         @keyframes badge-shimmer {
@@ -2120,7 +2326,7 @@
         .vs-highlight {
             color: #ff8c42;
             font-weight: 800;
-            text-shadow: 0 0 20px rgba(240, 84, 9, 0.3);
+            text-shadow: 0 0 10px rgba(240, 84, 9, 0.2);
         }
 
         .vs-math {
@@ -2137,7 +2343,7 @@
             background: rgba(0, 0, 0, 0.4);
             border: 1px solid rgba(255, 255, 255, 0.08);
             margin-bottom: 16px;
-            backdrop-filter: blur(4px);
+            /* backdrop-filter removed for performance */
         }
 
         .vs-math-item small {
@@ -2156,7 +2362,7 @@
             color: #4ade80;
             font-weight: 800;
             font-size: 18px;
-            text-shadow: 0 0 12px rgba(74, 222, 128, 0.3);
+            text-shadow: 0 0 6px rgba(74, 222, 128, 0.2);
         }
 
         .vs-sub {
@@ -2211,7 +2417,7 @@
         .vs-compare-card-win {
             background: linear-gradient(180deg, rgba(240, 84, 9, 0.14) 0%, rgba(240, 84, 9, 0.04) 100%);
             border-color: rgba(240, 84, 9, 0.4);
-            box-shadow: 0 0 24px rgba(240, 84, 9, 0.12);
+            box-shadow: 0 0 12px rgba(240, 84, 9, 0.08);
         }
 
         .vs-compare-label {
@@ -2238,7 +2444,7 @@
 
         .vs-compare-card-win .vs-compare-price {
             color: #ff8c42;
-            text-shadow: 0 0 18px rgba(240, 84, 9, 0.35);
+            text-shadow: 0 0 8px rgba(240, 84, 9, 0.2);
         }
 
         .vs-compare-price span {
@@ -2300,7 +2506,7 @@
             font-size: 18px;
             font-weight: 800;
             color: #4ade80;
-            text-shadow: 0 0 12px rgba(74, 222, 128, 0.3);
+            text-shadow: 0 0 6px rgba(74, 222, 128, 0.2);
         }
 
         .vs-savings-divider {
@@ -2393,7 +2599,7 @@
 
         .pricing-card.popular {
             border-color: var(--accent-orange);
-            box-shadow: 0 0 30px var(--glow-orange);
+            box-shadow: 0 0 15px var(--glow-orange);
         }
 
         .pricing-badge {
@@ -3173,13 +3379,13 @@
                     </div>
 
                     <h1 class="hero-title fade-in">
-                        Os melhores modelos para código,<br>
-                        <span class="hero-title-shout">TOKENS ILIMITADOS.</span>
+                        <span style="display:block;font-size:16px;font-weight:500;color:var(--text-muted);margin-bottom:8px;letter-spacing:0.02em;">Uma assinatura</span>
+                        <span class="hero-title-shout" style="font-size:32px;">Tokens Infinitos</span><br>
+                        <span style="font-size:20px;font-weight:600;color:var(--text-secondary);">Modelos de ponta</span>
                     </h1>
 
                     <p class="hero-description fade-in">
-                        Claude Fable 5.1, GPT-6 Astra, Claude Opus 5, Claude Sonnet 5 e GLM 5.3.
-                        Uma assinatura, uso ilimitado, nunca pague por token. <strong style="color:#ff8c42;">1 IP por conta.</strong>
+                        Claude Fable 5.1, GPT-6 Astra, Opus 5, Sonnet 5 e GLM 5.3 — uso ilimitado, nunca pague por token. <strong style="color:#ff8c42;">1 IP por conta.</strong>
                     </p>
 
                     <div class="hero-actions fade-in">
@@ -3332,74 +3538,97 @@
                 </p>
             </div>
 
+            <!-- Champion Models -->
+            <div class="champions-grid">
+                <!-- Claude Fable 5.1 — CAMPEÃO -->
+                <div class="card champion-card fade-in">
+                    <div class="champion-badge">
+                        <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg>
+                        Modelo Campeão
+                    </div>
+                    <div>
+                        <div class="champion-provider">Anthropic</div>
+                        <div class="champion-name">Claude Fable 5.1</div>
+                    </div>
+                    <p class="champion-description">
+                        O modelo mais capaz da Anthropic. Raciocínio sempre ativo e resistência para horas de trabalho autônomo — para quando o problema é realmente difícil e não admite atalhos.
+                    </p>
+                    <div class="champion-highlight">
+                        <svg class="champion-highlight-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                        <span class="champion-highlight-text">Máxima capacidade disponível — raciocínio profundo para problemas que não admitem atalhos.</span>
+                    </div>
+                    <div class="champion-tags">
+                        <span class="champion-tag">Reasoning</span>
+                        <span class="champion-tag">Agentic</span>
+                        <span class="champion-tag">Code</span>
+                        <span class="champion-tag">Vision</span>
+                    </div>
+                    <div class="champion-specs">
+                        <div class="champion-spec">
+                            <span class="champion-spec-label">Contexto</span>
+                            <span class="champion-spec-value">1M tokens</span>
+                        </div>
+                        <div class="champion-spec">
+                            <span class="champion-spec-label">Output Máx</span>
+                            <span class="champion-spec-value">128K tokens</span>
+                        </div>
+                        <div class="champion-spec">
+                            <span class="champion-spec-label">Preço de Lista</span>
+                            <span class="champion-spec-value">$10 / $50 por 1M</span>
+                        </div>
+                    </div>
+                    <div class="champion-footer">
+                        <span class="champion-price">Na 8Token: <strong>ilimitado, incluso no plano</strong></span>
+                        <span class="model-tier tier-unlimited">Ilimitado</span>
+                    </div>
+                </div>
+
+                <!-- GPT-6 Astra — CAMPEÃO -->
+                <div class="card champion-card fade-in">
+                    <div class="champion-badge">
+                        <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg>
+                        Modelo Campeão
+                    </div>
+                    <div>
+                        <div class="champion-provider">OpenAI</div>
+                        <div class="champion-name">GPT-6 Astra</div>
+                    </div>
+                    <p class="champion-description">
+                        O modelo de fronteira da OpenAI para trabalho agêntico longo, com janela de 1M e raciocínio contínuo. A referência para pipelines complexos que rodam sozinhos.
+                    </p>
+                    <div class="champion-highlight">
+                        <svg class="champion-highlight-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                        <span class="champion-highlight-text">Trabalho agêntico longo com janela de 1M — pipelines complexos que rodam sozinhos.</span>
+                    </div>
+                    <div class="champion-tags">
+                        <span class="champion-tag">Reasoning</span>
+                        <span class="champion-tag">Agentic</span>
+                        <span class="champion-tag">Code</span>
+                    </div>
+                    <div class="champion-specs">
+                        <div class="champion-spec">
+                            <span class="champion-spec-label">Contexto</span>
+                            <span class="champion-spec-value">1M tokens</span>
+                        </div>
+                        <div class="champion-spec">
+                            <span class="champion-spec-label">Output Máx</span>
+                            <span class="champion-spec-value">128K tokens</span>
+                        </div>
+                        <div class="champion-spec">
+                            <span class="champion-spec-label">Preço de Lista</span>
+                            <span class="champion-spec-value">$2.50 / $12 por 1M</span>
+                        </div>
+                    </div>
+                    <div class="champion-footer">
+                        <span class="champion-price">Na 8Token: <strong>ilimitado, incluso no plano</strong></span>
+                        <span class="model-tier tier-unlimited">Ilimitado</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Secondary Models -->
+            <div class="models-secondary-label">Também inclusos — uso ilimitado</div>
             <div class="models-grid">
-                <!-- Claude Fable 5.1 : DESTAQUE #1 -->
-                <div class="card model-card featured fade-in">
-                    <div class="model-header">
-                        <div>
-                            <div class="model-provider">Anthropic</div>
-                            <div class="model-name">Claude Fable 5.1</div>
-                        </div>
-                        <span class="model-tier tier-unlimited">Ilimitado</span>
-                    </div>
-                    <p class="model-description">
-                        O modelo mais capaz da Anthropic. Raciocínio sempre ativo e resistência para horas de trabalho autônomo, para quando o problema é realmente difícil.
-                    </p>
-                    <div class="model-tags">
-                        <span class="model-tag">Reasoning</span>
-                        <span class="model-tag">Agentic</span>
-                        <span class="model-tag">Code</span>
-                        <span class="model-tag">Vision</span>
-                    </div>
-                    <div class="model-specs">
-                        <div class="spec-item">
-                            <span class="spec-label">Contexto</span>
-                            <span class="spec-value">1M tokens</span>
-                        </div>
-                        <div class="spec-item">
-                            <span class="spec-label">Output Máx</span>
-                            <span class="spec-value">128K tokens</span>
-                        </div>
-                    </div>
-                    <div class="model-price">
-                        <div class="price-label">Preço de Lista</div>
-                        <div class="price-value">$10.00 / $50.00 por 1M</div>
-                    </div>
-                </div>
-
-                <!-- GPT-6 Astra: DESTAQUE #2 -->
-                <div class="card model-card featured fade-in">
-                    <div class="model-header">
-                        <div>
-                            <div class="model-provider">OpenAI</div>
-                            <div class="model-name">GPT-6 Astra</div>
-                        </div>
-                        <span class="model-tier tier-unlimited">Ilimitado</span>
-                    </div>
-                    <p class="model-description">
-                        O modelo de fronteira da OpenAI para trabalho agêntico longo, com janela de 1M e raciocínio contínuo. Fase de testes.
-                    </p>
-                    <div class="model-tags">
-                        <span class="model-tag">Reasoning</span>
-                        <span class="model-tag">Agentic</span>
-                        <span class="model-tag">Code</span>
-                    </div>
-                    <div class="model-specs">
-                        <div class="spec-item">
-                            <span class="spec-label">Contexto</span>
-                            <span class="spec-value">1M tokens</span>
-                        </div>
-                        <div class="spec-item">
-                            <span class="spec-label">Output Máx</span>
-                            <span class="spec-value">128K tokens</span>
-                        </div>
-                    </div>
-                    <div class="model-price">
-                        <div class="price-label">Preço de Lista</div>
-                        <div class="price-value">$2.50 / $12.00 por 1M</div>
-                    </div>
-                </div>
-
                 <!-- Claude Opus 5 -->
                 <div class="card model-card fade-in">
                     <div class="model-header">
@@ -3412,6 +3641,10 @@
                     <p class="model-description">
                         O cavalo de batalha da codificação agêntica: refatorações multi-arquivo, recursos ponta a ponta e sessões longas sem perder o fio.
                     </p>
+                    <div class="model-highlight">
+                        <svg class="model-highlight-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                        <span class="model-highlight-text">Código agêntico com contexto de 1M — refatorações multi-arquivo sem perder o fio.</span>
+                    </div>
                     <div class="model-tags">
                         <span class="model-tag">Reasoning</span>
                         <span class="model-tag">Agentic</span>
@@ -3446,6 +3679,10 @@
                     <p class="model-description">
                         O equilíbrio entre velocidade e capacidade: responde rápido, segue instruções precisamente e lida com a maioria do trabalho diário.
                     </p>
+                    <div class="model-highlight">
+                        <svg class="model-highlight-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                        <span class="model-highlight-text">Melhor equilíbrio entre capacidade e velocidade — o mais rápido sem abrir mão da qualidade.</span>
+                    </div>
                     <div class="model-tags">
                         <span class="model-tag">Reasoning</span>
                         <span class="model-tag">Agentic</span>
@@ -3480,6 +3717,10 @@
                     <p class="model-description">
                         O modelo de fronteira da Z.ai para código: forte em tarefas agênticas longas, com janela de 1M e resposta rápida.
                     </p>
+                    <div class="model-highlight">
+                        <svg class="model-highlight-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                        <span class="model-highlight-text">Fronteira acessível com janela de 1M — tarefas agênticas longas com resposta rápida.</span>
+                    </div>
                     <div class="model-tags">
                         <span class="model-tag">Reasoning</span>
                         <span class="model-tag">Agentic</span>
@@ -3705,53 +3946,18 @@
                         </div>
                     </div>
                 </div>
-                <div class="sp-mosaic">
-                    <!-- Card 1: tall -->
-                    <div class="wa-card tall">
-                        <div class="wa-header">
-                            <div class="wa-avatar">R</div>
-                            <span class="wa-name">Rafael M.</span>
-                            <span class="wa-time">14:32</span>
-                        </div>
-                        <div class="wa-bubble">Cara, eu refatorei um projeto inteiro em 3 horas com o Claude Fable sem nenhum rate limit 🤯</div>
-                        <div class="wa-bubble sent" style="margin-top: 8px;">Antes eu ficava travado no meio do fluxo toda hora</div>
-                        <div class="wa-bubble" style="margin-top: 8px;">Sério, não volto mais pro plano free de jeito nenhum <span class="wa-check">✓✓</span></div>
+                <div class="sp-mosaic sp-mosaic-prints">
+                    <!-- Print real 1: Richard Alves - teste Fable 5.1 -->
+                    <div class="wa-print-card">
+                        <img src="assets/prints-whatsapp/print1.png" alt="Print WhatsApp - Richard Alves testando Fable 5.1" loading="lazy" class="wa-print-img wa-blur-phones" />
                     </div>
-                    <!-- Card 2: normal -->
-                    <div class="wa-card">
-                        <div class="wa-header">
-                            <div class="wa-avatar">A</div>
-                            <span class="wa-name">Ana P.</span>
-                            <span class="wa-time">09:15</span>
-                        </div>
-                        <div class="wa-bubble">Gente, o GPT-6 Astra tá insano pra gerar testes unitários. Fiz 40 specs em uma manhã 💪 <span class="wa-check">✓✓</span></div>
+                    <!-- Print real 2: Aprova Aê - 2 dias rodando automático -->
+                    <div class="wa-print-card">
+                        <img src="assets/prints-whatsapp/print2.png" alt="Print WhatsApp - Aprova Aê funcionando 2 dias no automático" loading="lazy" class="wa-print-img wa-blur-phones" />
                     </div>
-                    <!-- Card 3: wide -->
-                    <div class="wa-card wide">
-                        <div class="wa-header">
-                            <div class="wa-avatar">L</div>
-                            <span class="wa-name">Lucas T.</span>
-                            <span class="wa-time">22:47</span>
-                        </div>
-                        <div class="wa-bubble">Peguei o plano anual e foi a melhor decisão do ano. Uso Claude, GPT e GLM o dia todo sem pensar em quota. O suporte no Discord então é outro nível 👏 <span class="wa-check">✓✓</span></div>
-                    </div>
-                    <!-- Card 4: normal -->
-                    <div class="wa-card">
-                        <div class="wa-header">
-                            <div class="wa-avatar">J</div>
-                            <span class="wa-name">Julia S.</span>
-                            <span class="wa-time">16:08</span>
-                        </div>
-                        <div class="wa-bubble">Migrei do Copilot e não me arrependo. Ter vários modelos num lugar só muda tudo 🚀 <span class="wa-check">✓✓</span></div>
-                    </div>
-                    <!-- Card 5: normal -->
-                    <div class="wa-card">
-                        <div class="wa-header">
-                            <div class="wa-avatar">D</div>
-                            <span class="wa-name">Diego F.</span>
-                            <span class="wa-time">11:23</span>
-                        </div>
-                        <div class="wa-bubble">O GLM 5.3 pra código em Python tá surpreendendo demais. E é ilimitado! <span class="wa-check">✓✓</span></div>
+                    <!-- Print real 3: João + Aprova Aê - 40 mil reais economizados -->
+                    <div class="wa-print-card">
+                        <img src="assets/prints-whatsapp/print3.png" alt="Print WhatsApp - 40 mil reais em tokens economizados" loading="lazy" class="wa-print-img wa-blur-phones" />
                     </div>
                 </div>
             </div>
@@ -3859,7 +4065,7 @@
                         </div>
                     </div>
 
-                    <a href="checkout.html?plan=mensal" class="btn btn-secondary pricing-cta">Assinar Mensal</a>
+                    <a href="checkout.html?plan=mensal" class="btn btn-secondary pricing-cta" data-requires-auth="true">Assinar Mensal</a>
                 </div>
 
                 <!-- Trimestral -->
@@ -3898,7 +4104,7 @@
                         </div>
                     </div>
 
-                    <a href="checkout.html?plan=trimestral" class="btn btn-primary pricing-cta">Assinar Trimestral</a>
+                    <a href="checkout.html?plan=trimestral" class="btn btn-primary pricing-cta" data-requires-auth="true">Assinar Trimestral</a>
                 </div>
 
                 <!-- Anual -->
@@ -3936,7 +4142,7 @@
                         </div>
                     </div>
 
-                    <a href="checkout.html?plan=anual" class="btn btn-secondary pricing-cta">Assinar Anual</a>
+                    <a href="checkout.html?plan=anual" class="btn btn-secondary pricing-cta" data-requires-auth="true">Assinar Anual</a>
                 </div>
             </div>
         </div>
@@ -4676,6 +4882,23 @@
             // Garante que a animação começa rodando: nunca chama
             // applyPauseState() antes do primeiro callback do observer.
         })();
+
+        // ========================================
+        // CHECKOUT AUTH GATE: Impede acesso ao checkout sem conta
+        // Cada compra precisa estar vinculada a uma conta única.
+        // Intercepts clicks on [data-requires-auth] links and redirects
+        // to login if no token is present, preserving the intended plan.
+        // ========================================
+        document.addEventListener('click', function(e) {
+            var link = e.target.closest('a[data-requires-auth="true"]');
+            if (!link) return;
+            var token = localStorage.getItem('8token_token') || localStorage.getItem('token');
+            if (!token) {
+                e.preventDefault();
+                var href = link.getAttribute('href') || 'checkout.html';
+                window.location.href = 'login.html?redirect=' + encodeURIComponent(href);
+            }
+        });
     </script>
 
     <!-- ========================================

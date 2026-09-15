@@ -741,7 +741,24 @@
             checkoutUrl = buildCheckoutUrl(currentPlan);
         }
 
+        function requireAuth() {
+            // O checkout SÓ pode ser acessado por usuários autenticados.
+            // Cada compra precisa estar vinculada a uma conta única no sistema.
+            var token = localStorage.getItem('8token_token') || localStorage.getItem('token');
+            if (!token) {
+                // Preserva o plano escolhido na URL de retorno pós-login
+                var params = new URLSearchParams(window.location.search);
+                var plan = params.get('plan') || 'trimestral';
+                window.location.replace('login.html?redirect=checkout.html%3Fplan%3D' + encodeURIComponent(plan));
+                return false;
+            }
+            return true;
+        }
+
         function init() {
+            // Bloqueia acesso ao checkout sem conta criada / login ativo
+            if (!requireAuth()) return;
+
             const params = new URLSearchParams(window.location.search);
             const plan = params.get('plan');
             if (plan && PLANS[plan]) {
