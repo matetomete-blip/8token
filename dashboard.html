@@ -814,17 +814,17 @@
             <div class="plan-card">
                 <div class="plan-info">
                     <div class="plan-name">
-                        Trimestral
-                        <span class="plan-badge">Mais Escolhido</span>
+                        <span id="planCardName">Trimestral</span>
+                        <span class="plan-badge" id="planCardBadge">Mais Escolhido</span>
                     </div>
                     <div class="plan-details">
                         Claude Opus 5, Sonnet 5, Fable 5.1 e GLM 5.3 · Uso ilimitado · Suporte VIP
                     </div>
                 </div>
                 <div class="plan-price">
-                    <div class="plan-price-value">R$ 399</div>
-                    <div class="plan-price-period">/trimestre</div>
-                    <div class="plan-renewal">Próxima cobrança: 12/12/2026</div>
+                    <div class="plan-price-value" id="planCardPrice">R$ 399</div>
+                    <div class="plan-price-period" id="planCardPeriod">/trimestre</div>
+                    <div class="plan-renewal" id="planCardRenewal">Próxima cobrança: 12/12/2026</div>
                 </div>
                 <button class="btn-upgrade">Gerenciar Plano</button>
             </div>
@@ -1046,6 +1046,28 @@
                     text.textContent = `Seu plano ${planNames[displayPlan] || displayPlan} expirou! Renove agora.`;
                     banner.style.display = 'block';
                 }
+            }
+
+            // Update plan card dynamically (admin sees as Anual)
+            const planCardName = document.getElementById('planCardName');
+            const planCardBadge = document.getElementById('planCardBadge');
+            const planCardPrice = document.getElementById('planCardPrice');
+            const planCardPeriod = document.getElementById('planCardPeriod');
+            const planCardRenewal = document.getElementById('planCardRenewal');
+            if (planCardName) planCardName.textContent = planNames[displayPlan] || displayPlan;
+            if (profile.plan === 'admin') {
+                if (planCardBadge) planCardBadge.style.display = 'none';
+                if (planCardPrice) planCardPrice.textContent = 'R$ 1.100';
+                if (planCardPeriod) planCardPeriod.textContent = '/ano';
+                if (planCardRenewal) planCardRenewal.textContent = 'Acesso permanente';
+            } else if (profile.plan === 'anual') {
+                if (planCardBadge) planCardBadge.style.display = 'none';
+                if (planCardPrice) planCardPrice.textContent = 'R$ 1.100';
+                if (planCardPeriod) planCardPeriod.textContent = '/ano';
+            } else if (profile.plan === 'mensal') {
+                if (planCardBadge) planCardBadge.style.display = 'none';
+                if (planCardPrice) planCardPrice.textContent = 'R$ 199,70';
+                if (planCardPeriod) planCardPeriod.textContent = '/mês';
             }
         }).catch(() => {});
 
