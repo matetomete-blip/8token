@@ -832,7 +832,9 @@
 
         <!-- IP Authorization Section -->
         <div class="dash-section">
-            <div class="dash-section-title">IP Autorizado</div>
+            <div class="dash-section-title" style="display:flex;align-items:center;gap:var(--space-sm);">IP Autorizado
+                <span id="ipSectionBadge" style="display:none;align-items:center;padding:2px 10px;font-size:11px;font-weight:600;border-radius:var(--radius-pill);text-transform:uppercase;letter-spacing:0.03em;"></span>
+            </div>
             <div class="plan-card" style="flex-direction:column;align-items:stretch;gap:var(--space-lg);">
                 <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-md);">
                     <div>
@@ -840,6 +842,7 @@
                         <div id="ipMainValue" style="font-family:var(--font-mono);font-size:18px;font-weight:700;color:var(--accent-blue);">Carregando...</div>
                         <div id="ipStatusBadge" style="display:inline-flex;align-items:center;padding:2px 10px;font-size:11px;font-weight:600;border-radius:var(--radius-pill);text-transform:uppercase;letter-spacing:0.03em;margin-top:4px;background:rgba(122,117,117,0.15);color:var(--text-muted);">Carregando...</div>
                         <div id="ipPendingChange" style="display:none;font-size:12px;color:var(--accent-amber);margin-top:4px;"></div>
+                        <div id="ipNetworkNow" style="font-size:12px;color:var(--text-muted);margin-top:6px;">IP atual da rede: carregando...</div>
                     </div>
                     <button class="btn-upgrade" id="ipChangeToggleBtn" onclick="toggleIpChangeForm()" style="background:transparent;border:1px solid var(--border);color:var(--text-secondary);font-size:13px;height:36px;padding:0 var(--space-md);">Solicitar Alteração</button>
                 </div>
@@ -1197,7 +1200,44 @@
                 if (!res.ok) return;
                 const data = await res.json();
                 const ipMainEl = document.getElementById('ipMainValue');
-                if (ipMainEl) ipMainEl.textContent = data.ip || 'Nenhum IP registrado';
+                const sectionBadge = document.getElementById('ipSectionBadge');
+                const ipToggleBtn = document.getElementById('ipChangeToggleBtn');
+                if (!data.ip) {
+                    // Estado vazio: nenhum IP cadastrado — CTA para cadastrar
+                    if (ipMainEl) { ipMainEl.textContent = 'Nenhum IP cadastrado'; ipMainEl.dataset.hasIp = '0'; }
+                    if (ipToggleBtn) ipToggleBtn.textContent = 'Cadastrar IP';
+                    if (sectionBadge) {
+                        sectionBadge.textContent = 'Sem IP';
+                        sectionBadge.style.display = 'inline-flex';
+                        sectionBadge.style.color = 'var(--accent-amber)';
+                        sectionBadge.style.background = 'rgba(245,158,11,0.12)';
+                    }
+                } else {
+                    if (ipMainEl) { ipMainEl.textContent = data.ip; ipMainEl.dataset.hasIp = '1'; }
+                    if (ipToggleBtn) ipToggleBtn.textContent = 'Solicitar Alteração';
+                }
+
+                // IP atual da rede do usuário (via /api/ip/status) + liberação
+                let netIp = null, netActive = false;
+                try {
+                    const netRes = await fetch(API_BASE + '/api/ip/status');
+                    if (netRes.ok) {
+                        const net = await netRes.json();
+                        netIp = net.ip || null;
+                        netActive = !!net.active;
+                    }
+                } catch (e) { /* ignora */ }
+                const netEl = document.getElementById('ipNetworkNow');
+                if (netEl) {
+                    const regIp = data.ip || null;
+                    if (netIp && regIp && netIp === regIp) {
+                        netEl.innerHTML = 'IP atual da rede: <span style="font-family:var(--font-mono);color:var(--text-secondary);">' + netIp + '</span> · esta rede <span style="color:var(--accent-green);">já está liberada</span>';
+                    } else if (netIp) {
+                        netEl.innerHTML = 'IP atual da rede: <span style="font-family:var(--font-mono);color:var(--text-secondary);">' + netIp + '</span>' + (netActive ? ' · <span style="color:var(--accent-green);">rede liberada</span>' : ' · <span style="color:var(--accent-amber);">rede ainda não liberada</span>');
+                    } else {
+                        netEl.textContent = 'IP atual da rede: não foi possível detectar';
+                    }
+                }
                 
                 const statusBadge = document.getElementById('ipStatusBadge');
                 if (statusBadge) {
@@ -1205,7 +1245,7 @@
                     let color = 'var(--text-muted)';
                     let bg = 'rgba(122,117,117,0.15)';
                     let label = status;
-                    if (status === 'active') { color = 'var(--accent-green)'; bg = 'rgba(16,185,129,0.12)'; label = 'Ativo'; }
+                    if (status === 'active') { color = 'var(--accent-green)'; bg = 'rgba(16,185,129,0.12)'; label = 'Ativo'; if (sectionBadge) { sectionBadge.textContent = 'IP Liberado'; sectionBadge.style.display = 'inline-flex'; sectionBadge.style.color = 'var(--accent-green)'; sectionBadge.style.background = 'rgba(16,185,129,0.12)'; } }
                     else if (status === 'expired') { color = 'var(--accent-red)'; bg = 'rgba(244,63,94,0.12)'; label = 'Expirado'; }
                     else if (status === 'suspended') { color = 'var(--accent-amber)'; bg = 'rgba(245,158,11,0.12)'; label = 'Suspenso'; }
                     statusBadge.style.color = color;
@@ -1238,6 +1278,38 @@
         }
         loadIpInfo();
 
+        // ── IP Adicional: compra via checkout-ip.html + gestão no painel ──
+        function buyAdditionalIp() {
+            window.location.href = 'checkout-ip.html';
+        }
+        async function setAdditionalIp() {
+            const ip = prompt('Digite o IP adicional que deseja autorizar:');
+            if (!ip) return;
+            if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(ip.trim())) { alert('Formato inválido. Use algo como 189.45.12.34'); return; }
+            try {
+                const token = localStorage.getItem('8token_token');
+                const res = await fetch(API_BASE + '/api/user/additional-ip', {
+                    method: 'PUT',
+                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ip: ip.trim() })
+                });
+                const data = await res.json();
+                if (res.ok) { loadIpInfo(); } else { alert(data.error || 'Erro ao definir IP adicional.'); }
+            } catch (e) { alert('Erro de conexão. Tente novamente.'); }
+        }
+        async function removeAdditionalIp() {
+            if (!confirm('Remover o IP adicional da sua conta?')) return;
+            try {
+                const token = localStorage.getItem('8token_token');
+                const res = await fetch(API_BASE + '/api/user/additional-ip', {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                if (res.ok) { loadIpInfo(); } else { alert(data.error || 'Erro ao remover IP adicional.'); }
+            } catch (e) { alert('Erro de conexão. Tente novamente.'); }
+        }
+
         // ── Troca de IP via formulário inline (sem prompt/alert externo) ──
         function toggleIpChangeForm() {
             const form = document.getElementById('ipChangeForm');
@@ -1246,7 +1318,7 @@
             if (!form) return;
             const willShow = form.style.display === 'none';
             form.style.display = willShow ? 'block' : 'none';
-            if (btn) btn.textContent = willShow ? 'Cancelar' : 'Solicitar Alteração';
+            if (btn) btn.textContent = willShow ? 'Cancelar' : (document.getElementById('ipMainValue')?.dataset.hasIp === '1' ? 'Solicitar Alteração' : 'Cadastrar IP');
             if (willShow) {
                 const input = document.getElementById('ipChangeInput');
                 if (input) { input.value = ''; setTimeout(() => input.focus(), 50); }

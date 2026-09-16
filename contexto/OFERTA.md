@@ -1,6 +1,6 @@
 # Conhecimento da Oferta — 8Token
 
-> Última atualização: 2026-09-13
+> Última atualização: 2026-09-15
 
 ## O que estamos vendendo (resumo em 1 linha)
 
@@ -25,6 +25,8 @@ Não existe diferenciação de features entre os planos — nenhum modelo é exc
 
 ### 2. 1 IP por conta
 **Cada conta usa exatamente 1 (um) endereço IP autorizado.** A chave API só funciona quando chamada a partir do IP registrado no dashboard.
+
+**Fluxo de troca com e-mail (2026-09-15):** a solicitação de troca de IP no dashboard avisa o admin por e-mail (Resend via API HTTP — funciona na Vercel sem SMTP; requer `RESEND_API_KEY` e opcionalmente `EMAIL_FROM`/`ADMIN_EMAIL` nas env vars da Vercel). Quando o admin aprova ou recusa, o usuário recebe o resultado por e-mail. Sem a chave configurada, o sistema continua funcionando (só não envia e-mail — fica o aviso no log).
 
 - Não é permitido compartilhar a conta/key com outras pessoas ou máquinas em IPs diferentes.
 - Trocou de rede (casa → trabalho → celular 4G)? Atualize o IP no dashboard antes de usar.

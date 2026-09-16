@@ -17,6 +17,32 @@ const supabaseUrl = process.env.SUPABASE_URL || 'https://wbkmaeqkypqrkawumdjw.su
 const supabaseKey = process.env.SUPABASE_KEY || process.env.service_role || '';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+// ── Envio de e-mail via API HTTP da Resend ──────────────────────────────
+// Funciona na Vercel sem SMTP (só precisa de RESEND_API_KEY nas env vars).
+// TODO: configurar RESEND_API_KEY e EMAIL_FROM nas env vars da Vercel.
+const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
+const EMAIL_FROM = process.env.EMAIL_FROM || '8Token <onboarding@resend.dev>';
+const ADMIN_EMAIL_NOTIFY = process.env.ADMIN_EMAIL || 'matetomete@gmail.com';
+
+async function sendEmail(to, subject, html) {
+  if (!RESEND_API_KEY) {
+    console.warn('[email] RESEND_API_KEY ausente — e-mail não enviado:', subject);
+    return false;
+  }
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + RESEND_API_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: EMAIL_FROM, to: Array.isArray(to) ? to : [to], subject, html })
+    });
+    if (!res.ok) console.error('[email] Resend erro', res.status, await res.text().catch(() => ''));
+    return res.ok;
+  } catch (e) {
+    console.error('[email] Falha ao enviar:', e.message);
+    return false;
+  }
+}
+
 // Middleware
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
@@ -504,6 +530,8 @@ app.post('/api/user/change-ip', authenticateToken, async (req, res) => {
   if (pending) return res.status(400).json({ error: 'Você já tem uma solicitação pendente.' });
   await supabase.from('ip_change_requests').insert({ user_id: req.user.id, old_ip: sub.ip, new_ip, status: 'pending' });
   await supabase.from('notifications').insert({ user_id: req.user.id, title: 'Alteração de IP Solicitada', message: `Solicitação para alterar IP de ${sub.ip} para ${new_ip} enviada.`, type: 'info' });
+  sendEmail(ADMIN_EMAIL_NOTIFY, '8Token — Nova solicitação de troca de IP',
+    `<p>O usuário <strong>${req.user.email}</strong> solicitou a troca de IP de <strong>${sub.ip}</strong> para <strong>${new_ip}</strong>.</p><p>Aprove ou recuse no painel admin.</p>`).catch(() => {});
   res.json({ success: true, message: 'Solicitação enviada. Aguarde aprovação.' });
 });
 
@@ -850,6 +878,9 @@ app.post('/api/admin/ip-changes/:id/approve', adminAuth, async (req, res) => {
   await supabase.from('ip_subscriptions').update({ ip: changeReq.new_ip }).eq('user_id', changeReq.user_id).eq('status', 'active');
   await supabase.from('ip_change_requests').update({ status: 'approved', resolved_at: new Date().toISOString() }).eq('id', req.params.id);
   await supabase.from('notifications').insert({ user_id: changeReq.user_id, title: 'IP Alterado!', message: `Seu IP foi alterado de ${changeReq.old_ip} para ${changeReq.new_ip}.`, type: 'success' });
+  const { data: approvedUser } = await supabase.from('users').select('email').eq('id', changeReq.user_id).single();
+  if (approvedUser?.email) sendEmail(approvedUser.email, '8Token — IP alterado com sucesso',
+    `<p>Olá! Sua solicitação foi aprovada.</p><p>Seu IP autorizado agora é <strong>${changeReq.new_ip}</strong> (antes: ${changeReq.old_ip}).</p>`).catch(() => {});
   res.json({ success: true });
 });
 
@@ -859,6 +890,9 @@ app.post('/api/admin/ip-changes/:id/reject', adminAuth, async (req, res) => {
   if (!changeReq) return res.status(404).json({ error: 'Não encontrada' });
   await supabase.from('ip_change_requests').update({ status: 'rejected', notes, resolved_at: new Date().toISOString() }).eq('id', req.params.id);
   await supabase.from('notifications').insert({ user_id: changeReq.user_id, title: 'Alteração de IP Recusada', message: `Sua solicitação foi recusada.${notes ? ' Motivo: ' + notes : ''}`, type: 'error' });
+  const { data: rejectedUser } = await supabase.from('users').select('email').eq('id', changeReq.user_id).single();
+  if (rejectedUser?.email) sendEmail(rejectedUser.email, '8Token — Solicitação de IP recusada',
+    `<p>Olá! Infelizmente sua solicitação de troca de IP para <strong>${changeReq.new_ip}</strong> foi recusada.${notes ? '</p><p>Motivo: ' + notes : ''}</p>`).catch(() => {});
   res.json({ success: true });
 });
 
