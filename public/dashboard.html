@@ -1097,6 +1097,13 @@
             } else if (kpiExpiry) {
                 kpiExpiry.textContent = profile.plan === 'admin' ? 'Acesso permanente' : 'Sem data de renovação';
             }
+            // CRITICAL: Set localStorage flag for hasActivePlan() check
+            const activePlans = ['mensal', 'trimestral', 'anual', 'admin'];
+            if (activePlans.includes(profile.plan)) {
+                localStorage.setItem('8token_has_plan', 'true');
+            } else {
+                localStorage.setItem('8token_has_plan', 'false');
+            }
             // Expiry banner check (skip for admin — they see as "Anual" with permanent access)
             if (profile.plan_expires_at && profile.plan !== 'admin') {
                 const daysLeft = Math.ceil((new Date(profile.plan_expires_at) - new Date()) / (1000*60*60*24));
