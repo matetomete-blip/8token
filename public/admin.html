@@ -963,6 +963,7 @@ Object.values(userMap).forEach(user => {
 user.ips.forEach((s, idx) => {
 const isFirst = idx === 0;
 const rowspan = user.ips.length;
+// FIX: Wrap UUIDs in quotes for onclick handlers
 html += `
 <tr data-id="${s.id}" style="${!isFirst ? 'border-top:none;' : ''}">
 ${isFirst ? `<td rowspan="${rowspan}" style="vertical-align:top;font-size:13px;"><strong>${user.name || '—'}</strong><br><span style="color:var(--text-muted);font-size:12px;">${user.email || '—'}</span></td>` : ''}
@@ -972,8 +973,8 @@ ${isFirst ? `<td rowspan="${rowspan}" style="vertical-align:top;font-size:13px;"
 <td class="mono" style="font-size:12px;">${formatDate(s.expires_at)}</td>
 <td style="font-size:13px;color:var(--text-muted);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${(s.notes||'').replace(/"/g,'&quot;')}">${s.notes || '—'}</td>
 <td class="actions">
-<button class="btn btn-secondary btn-sm" onclick="editSub(${s.id})">Editar</button>
-<button class="btn btn-danger btn-sm" onclick="deleteSub(${s.id},'${s.ip}')">Remover</button>
+<button class="btn btn-secondary btn-sm" onclick="editSub('${s.id}')">Editar</button>
+<button class="btn btn-danger btn-sm" onclick="deleteSub('${s.id}','${s.ip}')">Remover</button>
 </td>
 </tr>
 `;
@@ -997,6 +998,7 @@ const q = (document.getElementById('userSearchInput').value || '').toLowerCase()
 if (!q) { renderUsersTable(allSubs); return; }
 renderUsersTable(allSubs.filter(s =>
 (s.ip||'').toLowerCase().includes(q) || (s.user_email||'').toLowerCase().includes(q) ||
+(s.users?.name||'').toLowerCase().includes(q) ||
 (s.notes||'').toLowerCase().includes(q) || (s.plan||'').toLowerCase().includes(q) ||
 (s.status||'').toLowerCase().includes(q)
 ));
@@ -1072,8 +1074,8 @@ tbody.innerHTML = allActivations.map(a => `
 <td class="mono" style="font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;">${a.api_key ? a.api_key.slice(0,16)+'...' : '—'}</td>
 <td class="actions">
 ${a.status === 'pending' ? `
-<button class="btn btn-success btn-sm" onclick="approveActivation(${a.id})">Aprovar</button>
-<button class="btn btn-danger btn-sm" onclick="rejectActivation(${a.id})">Recusar</button>
+<button class="btn btn-success btn-sm" onclick="approveActivation('${a.id}')">Aprovar</button>
+<button class="btn btn-danger btn-sm" onclick="rejectActivation('${a.id}')">Recusar</button>
 ` : '<span style="color:var(--text-muted);font-size:12px;">Processado</span>'}
 </td>
 </tr>
