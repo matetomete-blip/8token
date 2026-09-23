@@ -833,13 +833,12 @@ if (!secret) {
 const params = new URLSearchParams(window.location.search);
 secret = params.get('key') || '';
 if (!secret) {
-// Show custom modal for password
-showModal('8Token Admin', 'Digite a senha de administrador:', { input: true, inputPlaceholder: 'Senha...', okText: 'Entrar' }).then(val => {
+// Show custom modal for password — use a synchronous fallback for apiFetch
+const val = window.prompt('Digite a senha de administrador:');
 if (val) {
 sessionStorage.setItem('8token_admin_secret', val);
-loadDashboard();
+return val;
 }
-});
 return null;
 }
 sessionStorage.setItem('8token_admin_secret', secret);
