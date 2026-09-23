@@ -1132,24 +1132,38 @@
 
         function renderUsersTable(subs) {
             const tbody = document.getElementById('usersTableBody');
-            if (!subs.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Nenhum registro encontrado.</td></tr>'; return; }
-            tbody.innerHTML = subs.map(s => `
-                <tr data-id="${s.id}">
-                    <td class="mono">${s.ip}</td>
-                    <td>${badgeForPlan(s.plan)}</td>
-                    <td>${badgeForStatus(s.status)}</td>
-                    <td style="font-size:13px;color:var(--text-secondary);">${s.user_email || '—'}</td>
-                    <td class="mono" style="font-size:12px;">${formatDate(s.expires_at)}</td>
-                    <td style="font-size:13px;color:var(--text-muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${(s.notes||'').replace(/"/g,'&quot;')}">${s.notes || '—'}</td>
-                    <td class="mono" style="font-size:12px;color:var(--text-muted);">${formatDate(s.updated_at)}</td>
-                    <td class="actions">
-                        <button class="btn btn-success btn-sm" onclick="validateIp('${s.ip}')">Validar</button>
-                        <button class="btn btn-secondary btn-sm" onclick="invalidateIp('${s.ip}')">Desvalidar</button>
-                        <button class="btn btn-secondary btn-sm" onclick="editSub(${s.id})">Editar</button>
-                        <button class="btn btn-danger btn-sm" onclick="deleteSub(${s.id},'${s.ip}')">Remover</button>
-                    </td>
-                </tr>
-            `).join('');
+            if (!subs.length) { tbody.innerHTML = '<tr><td colspan="9" class="empty-state">Nenhum registro encontrado.</td></tr>'; return; }
+
+            // Group by user (email) to show multiple IPs per user
+            const userMap = {};
+            subs.forEach(s => {
+                const key = s.user_email || s.user_id || 'unknown';
+                if (!userMap[key]) userMap[key] = { email: s.user_email, name: s.users?.name, ips: [] };
+                userMap[key].ips.push(s);
+            });
+
+            let html = '';
+            Object.values(userMap).forEach(user => {
+                user.ips.forEach((s, idx) => {
+                    const isFirst = idx === 0;
+                    const rowspan = user.ips.length;
+                    html += `
+                        <tr data-id="${s.id}" style="${!isFirst ? 'border-top:none;' : ''}">
+                            ${isFirst ? `<td rowspan="${rowspan}" style="vertical-align:top;font-size:13px;"><strong>${user.name || '—'}</strong><br><span style="color:var(--text-muted);font-size:12px;">${user.email || '—'}</span></td>` : ''}
+                            <td class="mono">${s.ip}${s.additional_ip ? '<br><span style="color:var(--accent-blue);font-size:11px;">+' + s.additional_ip + '</span>' : ''}</td>
+                            <td>${badgeForPlan(s.plan)}</td>
+                            <td>${badgeForStatus(s.status)}</td>
+                            <td class="mono" style="font-size:12px;">${formatDate(s.expires_at)}</td>
+                            <td style="font-size:13px;color:var(--text-muted);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${(s.notes||'').replace(/"/g,'&quot;')}">${s.notes || '—'}</td>
+                            <td class="actions">
+                                <button class="btn btn-secondary btn-sm" onclick="editSub(${s.id})">Editar</button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteSub(${s.id},'${s.ip}')">Remover</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            });
+            tbody.innerHTML = html;
         }
 
         async function validateIp(ip) {

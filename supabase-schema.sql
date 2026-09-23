@@ -158,9 +158,9 @@ CREATE TABLE IF NOT EXISTS site_settings (
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Default gateway URL
-INSERT INTO site_settings (key, value) VALUES ('gateway_url', 'https://ghostcli.dev/v1')
-ON CONFLICT (key) DO NOTHING;
+-- Default gateway URL (proxy leve na VPS)
+INSERT INTO site_settings (key, value) VALUES ('gateway_url', 'https://8token.tech/v1')
+ON CONFLICT (key) DO UPDATE SET value = 'https://8token.tech/v1';
 
 -- Enable RLS but allow service_role full access
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;

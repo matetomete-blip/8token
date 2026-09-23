@@ -480,9 +480,12 @@ app.post('/api/webhooks/kirvano', async (req, res) => {
 
     // Step 5: Create activation request
     const apiKey = generateApiKey();
+    // Get gateway URL from settings or use default
+    const { data: gwSetting } = await supabase.from('site_settings').select('value').eq('key', 'gateway_url').single();
+    const gatewayUrl = gwSetting?.value || 'https://8token.tech/v1';
     await supabase.from('ip_activation_requests').insert({
       user_id: user.id, ip: req.clientIp, plan, status: 'pending', api_key: apiKey,
-      gateway_url: `https://api.8token.com/v1`, kirvano_sale_id: payload.sale_id
+      gateway_url: gatewayUrl, kirvano_sale_id: payload.sale_id
     });
   }
 
