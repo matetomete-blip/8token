@@ -18,10 +18,13 @@ const JWT_SECRET = process.env.JWT_SECRET || '8token-jwt-secret-stable-fallback-
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const ADMIN_SECRET = process.env.ADMIN_SECRET || '8token-admin-change-me';
 
-// Supabase client
+// Supabase client — realtime desativado (exige WS nativo do Node 22+)
 const supabaseUrl = process.env.SUPABASE_URL || 'https://wbkmaeqkypqrkawumdjw.supabase.co';
 const supabaseKey = process.env.SUPABASE_KEY || process.env.service_role || '';
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClient(supabaseUrl, supabaseKey, {
+  realtime: { enabled: false },
+  global: { headers: { 'X-Client-Info': '8token-server/1.0' } }
+});
 
 // ── Envio de e-mail via API HTTP da Resend ──────────────────────────────
 // Funciona na Vercel sem SMTP (só precisa de RESEND_API_KEY nas env vars).
