@@ -123,6 +123,7 @@ const KIRVANO_PRODUCT_MAP = {};
 if (process.env.KIRVANO_PRODUCT_MENSAL_ID) KIRVANO_PRODUCT_MAP[process.env.KIRVANO_PRODUCT_MENSAL_ID] = 'mensal';
 if (process.env.KIRVANO_PRODUCT_TRIMESTRAL_ID) KIRVANO_PRODUCT_MAP[process.env.KIRVANO_PRODUCT_TRIMESTRAL_ID] = 'trimestral';
 if (process.env.KIRVANO_PRODUCT_ANUAL_ID) KIRVANO_PRODUCT_MAP[process.env.KIRVANO_PRODUCT_ANUAL_ID] = 'anual';
+if (process.env.KIRVANO_PRODUCT_IP_ADICIONAL_ID) KIRVANO_PRODUCT_MAP[process.env.KIRVANO_PRODUCT_IP_ADICIONAL_ID] = 'ip_adicional';
 
 function resolvePlanFromKirvano(products) {
   if (!products || !products.length) return null;
@@ -132,6 +133,7 @@ function resolvePlanFromKirvano(products) {
   }
   for (const p of products) {
     const name = (p.name || '').toLowerCase();
+    if (name.includes('ip adicional') || name.includes('additional ip') || name.includes('+1 ip') || name.includes('ip_adicional')) return 'ip_adicional';
     if (name.includes('mensal') || name.includes('monthly')) return 'mensal';
     if (name.includes('trimestral') || name.includes('quarterly')) return 'trimestral';
     if (name.includes('anual') || name.includes('annual') || name.includes('yearly')) return 'anual';
@@ -406,6 +408,52 @@ app.post('/api/webhooks/kirvano', async (req, res) => {
 
     const { data: user } = await supabase.from('users').select('id, plan').eq('email', customerEmail).single();
     if (!user) return res.json({ received: true, warning: 'User not found' });
+
+    // Handle IP Adicional separately (independent subscription, 30 days expiry)
+    if (plan === 'ip_adicional') {
+      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+      // Find existing active subscription to update has_additional_ip
+      const { data: existingSub } = await supabase
+        .from('ip_subscriptions')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (existingSub) {
+        await supabase
+          .from('ip_subscriptions')
+          .update({ has_additional_ip: true, additional_ip_expires_at: expiresAt })
+          .eq('id', existingSub.id);
+        console.log('[Kirvano Webhook] IP Adicional activated for user:', user.id);
+      } else {
+        // Create a placeholder subscription if none exists (shouldn't happen normally)
+        await supabase.from('ip_subscriptions').insert({
+          user_id: user.id,
+          ip: 'pending',
+          plan: 'free',
+          status: 'active',
+          has_additional_ip: true,
+          additional_ip_expires_at: expiresAt
+        });
+      }
+
+      // Record invoice
+      await supabase.from('invoices').insert({
+        user_id: user.id,
+        plan: 'ip_adicional',
+        amount: 74.90,
+        status: 'paid',
+        paid_at: new Date().toISOString(),
+        kirvano_sale_id: payload.sale_id,
+        paid_by_webhook: true
+      });
+
+      return res.json({ received: true, plan: 'ip_adicional' });
+    }
 
     const expiresAt = new Date(Date.now() + (PLAN_EXPIRY_MS[plan] || 30 * 24 * 60 * 60 * 1000)).toISOString();
     const previousPlan = user.plan;
