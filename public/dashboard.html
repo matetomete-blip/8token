@@ -4,1083 +4,469 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard 8Token</title>
-    <meta name="description" content="Área do usuário 8Token, gerencie sua assinatura, chaves API e uso.">
-
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
+        /* DESIGN SYSTEM V2 — Dashboard */
         :root {
-            --bg-primary: #1a1818;
-            --bg-card: #232121;
-            --bg-card-alt: #1e1c1c;
-            --border: #2d2a2a;
-            --border-hover: #3d3939;
-            --text-primary: #ffffff;
-            --text-secondary: #b0abab;
-            --text-muted: #7a7575;
-            --accent-green: #10B981;
-            --accent-red: #F43F5E;
-            --accent-amber: #F59E0B;
-            --accent-blue: #006ffe;
-            --accent-blue-hover: #005bd1;
-            --accent-orange: #f05409;
-            --accent-orange-hover: #d44a08;
-            --glow-blue: rgba(0, 111, 254, 0.15);
-            --glow-orange: rgba(240, 84, 9, 0.15);
-            --space-unit: 4px;
-            --space-xs: calc(var(--space-unit) * 2);
-            --space-sm: calc(var(--space-unit) * 3);
-            --space-md: calc(var(--space-unit) * 4);
-            --space-lg: calc(var(--space-unit) * 6);
-            --space-xl: calc(var(--space-unit) * 8);
-            --space-2xl: calc(var(--space-unit) * 12);
-            --space-3xl: calc(var(--space-unit) * 16);
-            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+            --bg-primary: #050505;
+            --bg-secondary: #0A0A0A;
+            --bg-card: rgba(17, 17, 17, 0.9);
+            --bg-card-solid: #111111;
+            --border: #222222;
+            --border-hover: #333333;
+            --text-primary: #FFFFFF;
+            --text-secondary: #A0A0A0;
+            --text-muted: #555555;
+            --accent-orange: #FF5500;
+            --accent-orange-glow: rgba(255, 85, 0, 0.25);
+            --accent-blue: #00D4FF;
+            --accent-green: #00FF94;
+            --accent-red: #FF3333;
+            --space-xs: 8px;
+            --space-sm: 16px;
+            --space-md: 24px;
+            --space-lg: 32px;
+            --space-xl: 48px;
+            --font-sans: 'Inter', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
             --radius-sm: 8px;
             --radius-md: 12px;
             --radius-lg: 16px;
-            --radius-pill: 999px;
-            --transition-fast: 150ms ease;
-            --transition-base: 250ms ease;
+            --glass: blur(10px);
+            --transition: all 0.3s ease-in-out;
         }
 
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
-        html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
-
         body {
             font-family: var(--font-sans);
             background-color: var(--bg-primary);
             color: var(--text-primary);
             line-height: 1.6;
             min-height: 100vh;
+            background-image: radial-gradient(circle at 50% 0%, #1a1a1a 0%, var(--bg-primary) 60%);
+            background-attachment: fixed;
         }
-
-        a { color: inherit; text-decoration: none; transition: color var(--transition-fast); }
-        a:hover { color: var(--accent-orange); }
+        a { text-decoration: none; color: inherit; transition: var(--transition); }
 
         /* Navbar */
         .navbar {
-            position: fixed;
-            top: 0; left: 0; right: 0;
-            z-index: 100;
-            background: rgba(26, 24, 24, 0.9);
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid var(--border);
+            position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+            background: rgba(5, 5, 5, 0.8); backdrop-filter: var(--glass);
+            border-bottom: 1px solid var(--border); height: 80px;
+            display: flex; align-items: center;
         }
-
-        .navbar-inner {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 var(--space-lg);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            height: 64px;
+        .nav-inner {
+            max-width: 1400px; margin: 0 auto; width: 100%; padding: 0 var(--space-md);
+            display: flex; justify-content: space-between; align-items: center;
         }
+        .logo { font-size: 24px; font-weight: 800; display: flex; align-items: center; gap: var(--space-xs); }
+        .logo svg { width: 32px; height: 32px; fill: var(--accent-orange); }
+        .nav-actions { display: flex; align-items: center; gap: var(--space-md); }
 
-        .navbar-logo {
-            display: flex;
-            align-items: center;
-            gap: var(--space-xs);
-            font-weight: 700;
-            font-size: 18px;
+        .user-pill {
+            display: flex; align-items: center; gap: var(--space-sm);
+            padding: 8px 16px; background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border); border-radius: 999px;
         }
-
-        .navbar-logo svg { width: 28px; height: 28px; }
-
-        .navbar-right {
-            display: flex;
-            align-items: center;
-            gap: var(--space-md);
+        .avatar {
+            width: 32px; height: 32px; border-radius: 50%;
+            background: var(--accent-orange); display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 14px; color: white;
         }
-
-        .navbar-user {
-            display: flex;
-            align-items: center;
-            gap: var(--space-sm);
-            font-size: 14px;
-            color: var(--text-secondary);
-        }
-
-        .navbar-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: var(--accent-orange);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 13px;
-            font-weight: 700;
-            color: white;
-        }
-
-        .btn-logout {
-            font-size: 13px;
-            color: var(--text-muted);
-            padding: 6px 12px;
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            background: transparent;
-            cursor: pointer;
-            transition: all var(--transition-fast);
-        }
-
-        .btn-logout:hover {
-            border-color: var(--accent-red);
-            color: var(--accent-red);
-        }
-
-        /* Notification Bell */
-        .notif-bell-wrap { position: relative; }
-        .notif-bell-btn { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); transition: all var(--transition-fast); position: relative; }
-        .notif-bell-btn:hover { border-color: var(--accent-orange); color: var(--accent-orange); }
-        .notif-bell-btn svg { width: 18px; height: 18px; }
-        .notif-badge { position: absolute; top: -4px; right: -4px; min-width: 16px; height: 16px; border-radius: 50%; background: var(--accent-orange); color: white; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; padding: 0 4px; box-shadow: 0 0 6px rgba(240,84,9,0.5); line-height: 1; }
-        .notif-badge.hidden { display: none; }
-        .notif-dropdown { position: absolute; top: calc(100% + 8px); right: 0; width: 340px; max-height: 420px; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: 0 8px 32px rgba(0,0,0,0.4); overflow: hidden; z-index: 200; display: none; }
-        .notif-dropdown.open { display: block; }
-        .notif-dropdown-header { display: flex; align-items: center; justify-content: space-between; padding: var(--space-md) var(--space-lg); border-bottom: 1px solid var(--border); }
-        .notif-dropdown-title { font-size: 14px; font-weight: 700; }
-        .notif-dropdown-link { font-size: 12px; color: var(--accent-orange); font-weight: 600; cursor: pointer; background: none; border: none; transition: opacity var(--transition-fast); }
-        .notif-dropdown-link:hover { opacity: 0.8; }
-        .notif-dropdown-list { max-height: 320px; overflow-y: auto; }
-        .notif-dropdown-list::-webkit-scrollbar { width: 4px; }
-        .notif-dropdown-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-        .notif-dropdown-item { padding: var(--space-md) var(--space-lg); border-bottom: 1px solid var(--border); cursor: pointer; transition: background var(--transition-fast); position: relative; }
-        .notif-dropdown-item:last-child { border-bottom: none; }
-        .notif-dropdown-item:hover { background: rgba(255,255,255,0.03); }
-        .notif-dropdown-item.unread { background: rgba(240,84,9,0.04); }
-        .notif-dropdown-item.unread::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent-orange); }
-        .notif-dropdown-item-title { font-size: 13px; font-weight: 600; margin-bottom: 2px; color: var(--text-primary); }
-        .notif-dropdown-item-msg { font-size: 12px; color: var(--text-secondary); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-        .notif-dropdown-item-time { font-size: 10px; color: var(--text-muted); margin-top: 4px; font-family: var(--font-mono); }
-        .notif-dropdown-empty { padding: var(--space-xl); text-align: center; color: var(--text-muted); font-size: 13px; }
-        .notif-dropdown-footer { padding: var(--space-sm) var(--space-lg); border-top: 1px solid var(--border); text-align: center; }
-        .notif-dropdown-footer a { font-size: 12px; color: var(--accent-orange); font-weight: 600; }
-
-        @media (max-width: 768px) {
-            .notif-dropdown { width: 280px; right: -60px; }
-        }
-
-        /* Dashboard Layout */
-        .dashboard {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 112px var(--space-lg) 64px;
-        }
-
-        .dashboard-header {
-            margin-bottom: var(--space-2xl);
-        }
-
-        .dashboard-header h1 {
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: var(--space-xs);
-        }
-
-        .dashboard-header p {
-            color: var(--text-secondary);
-            font-size: 15px;
-        }
-
-        /* KPI Row */
-        .kpi-row {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: var(--space-md);
-            margin-bottom: var(--space-2xl);
-        }
-
-        @media (max-width: 480px) {
-            .kpi-row { grid-template-columns: 1fr; }
-        }
-
-        .kpi-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-md);
-            padding: var(--space-lg);
-            transition: all var(--transition-base);
-        }
-
-        .kpi-card:hover {
-            border-color: var(--border-hover);
-            transform: translateY(-2px);
-        }
-
-        .kpi-label {
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-bottom: var(--space-sm);
-        }
-
-        .kpi-value {
-            font-size: 28px;
-            font-weight: 700;
-            font-family: var(--font-mono);
-            line-height: 1.2;
-        }
-
-        .kpi-sub {
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-top: var(--space-xs);
-        }
-
-        .kpi-value.green { color: var(--accent-green); }
-        .kpi-value.orange { color: var(--accent-orange); }
-        .kpi-value.blue { color: var(--accent-blue); }
-
-        /* Section */
-        .dash-section {
-            margin-bottom: var(--space-2xl);
-        }
-
-        .dash-section-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-bottom: var(--space-md);
-        }
-
-        /* Plan Card */
-        .plan-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-md);
-            padding: var(--space-xl);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: var(--space-lg);
-        }
-
-        .plan-info { flex: 1; min-width: 200px; }
-
-        .plan-name {
-            font-size: 20px;
-            font-weight: 700;
-            margin-bottom: var(--space-xs);
-        }
-
-        .plan-badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 2px 10px;
-            font-size: 11px;
-            font-weight: 600;
-            border-radius: var(--radius-pill);
-            background: rgba(240, 84, 9, 0.12);
-            color: var(--accent-orange);
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
-            margin-left: var(--space-sm);
-        }
-
-        .plan-details {
-            font-size: 14px;
-            color: var(--text-secondary);
-            margin-top: var(--space-xs);
-        }
-
-        .plan-price {
-            text-align: right;
-        }
-
-        .plan-price-value {
-            font-size: 24px;
-            font-weight: 700;
-            font-family: var(--font-mono);
-        }
-
-        .plan-price-period {
-            font-size: 13px;
-            color: var(--text-muted);
-        }
-
-        .plan-renewal {
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-top: var(--space-xs);
-        }
-
-        .btn-upgrade {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            height: 40px;
-            padding: 0 var(--space-lg);
-            background: var(--accent-orange);
-            border: none;
-            border-radius: var(--radius-sm);
-            color: white;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all var(--transition-fast);
-        }
-
-        .btn-upgrade:hover,
-        .btn-upgrade:focus,
-        .btn-upgrade:focus-visible {
-            background: #ffffff;
-            color: var(--accent-orange);
-            transform: translateY(-1px);
-            outline: none;
-        }
-        .btn-upgrade:active {
-            background: #ffffff;
-            color: var(--accent-orange);
-            outline: none;
-        }
-
-        /* API Keys */
-        .api-keys-list {
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-sm);
-        }
-
-        .api-key-item {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-md);
-            padding: var(--space-md) var(--space-lg);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: var(--space-md);
-            flex-wrap: wrap;
-        }
-
-        .api-key-info { flex: 1; min-width: 200px; }
-
-        .api-key-name {
-            font-size: 14px;
-            font-weight: 600;
-            margin-bottom: 2px;
-        }
-
-        .api-key-value {
-            font-family: var(--font-mono);
-            font-size: 13px;
-            color: var(--text-muted);
-        }
-
-        .api-key-meta {
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-top: 2px;
-        }
-
-        .api-key-actions {
-            display: flex;
-            gap: var(--space-sm);
-        }
-
         .btn-icon {
-            width: 36px;
-            height: 36px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: transparent;
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            color: var(--text-secondary);
-            cursor: pointer;
-            transition: all var(--transition-fast);
+            width: 40px; height: 40px; border-radius: var(--radius-sm);
+            border: 1px solid var(--border); background: transparent;
+            color: var(--text-secondary); cursor: pointer; transition: var(--transition);
+            display: flex; align-items: center; justify-content: center;
         }
+        .btn-icon:hover { border-color: var(--accent-orange); color: var(--accent-orange); }
 
-        .btn-icon:hover {
-            border-color: var(--border-hover);
-            color: var(--text-primary);
+        /* Layout */
+        .dashboard-container {
+            max-width: 1400px; margin: 0 auto; padding: 120px var(--space-md) var(--space-xl);
+            display: grid; grid-template-columns: 280px 1fr; gap: var(--space-xl);
         }
+        @media (max-width: 1024px) { .dashboard-container { grid-template-columns: 1fr; } }
 
-        .btn-icon.danger:hover {
-            border-color: var(--accent-red);
-            color: var(--accent-red);
+        /* Sidebar */
+        .sidebar { display: flex; flex-direction: column; gap: var(--space-xs); }
+        .nav-link {
+            padding: 12px 16px; border-radius: var(--radius-sm);
+            color: var(--text-secondary); font-weight: 500; font-size: 14px;
+            display: flex; align-items: center; gap: var(--space-sm);
+            transition: var(--transition); border: 1px solid transparent;
         }
-
-        .btn-icon svg { width: 16px; height: 16px; }
-
-        .btn-generate {
-            display: inline-flex;
-            align-items: center;
-            gap: var(--space-xs);
-            height: 40px;
-            padding: 0 var(--space-lg);
-            background: transparent;
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            color: var(--text-secondary);
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all var(--transition-fast);
-            margin-top: var(--space-md);
+        .nav-link:hover { background: rgba(255,255,255,0.03); color: var(--text-primary); }
+        .nav-link.active {
+            background: rgba(255, 85, 0, 0.1); color: var(--accent-orange);
+            border-color: rgba(255, 85, 0, 0.2);
         }
+        .nav-link svg { width: 20px; height: 20px; opacity: 0.7; }
+        .nav-link.active svg { opacity: 1; }
 
-        .btn-generate:hover {
-            border-color: var(--accent-orange);
-            color: var(--accent-orange);
+        /* Content Area */
+        .content-area { display: flex; flex-direction: column; gap: var(--space-lg); }
+
+        /* KPI Grid */
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--space-md); }
+        .kpi-card {
+            background: var(--bg-card); backdrop-filter: var(--glass);
+            border: 1px solid var(--border); border-radius: var(--radius-md);
+            padding: var(--space-lg); transition: var(--transition);
         }
+        .kpi-card:hover { border-color: var(--border-hover); transform: translateY(-2px); }
+        .kpi-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: var(--space-xs); }
+        .kpi-value { font-size: 32px; font-weight: 700; font-family: var(--font-mono); line-height: 1; }
+        .kpi-sub { font-size: 13px; color: var(--text-secondary); margin-top: var(--space-xs); }
 
-        .btn-generate svg { width: 16px; height: 16px; }
-
-        /* Tokens Chart Card */
-        .tokens-chart-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-md);
-            padding: var(--space-xl);
-            position: relative;
-            overflow: hidden;
+        /* Cards & Sections */
+        .card {
+            background: var(--bg-card); backdrop-filter: var(--glass);
+            border: 1px solid var(--border); border-radius: var(--radius-lg);
+            padding: var(--space-lg);
         }
+        .section-title { font-size: 18px; font-weight: 600; margin-bottom: var(--space-md); display: flex; align-items: center; gap: var(--space-sm); }
 
-        .tokens-chart-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, var(--accent-orange), transparent);
-            opacity: 0.4;
+        /* Plan Card Specifics */
+        .plan-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--space-md); flex-wrap: wrap; gap: var(--space-md); }
+        .plan-badge {
+            background: rgba(255, 85, 0, 0.15); color: var(--accent-orange);
+            padding: 4px 12px; border-radius: 999px;
+            font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
         }
+        .plan-price { font-family: var(--font-mono); font-size: 24px; font-weight: 700; color: var(--text-primary); }
+        .plan-period { font-size: 14px; color: var(--text-muted); font-weight: 400; }
 
-        .tokens-chart-header {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            margin-bottom: var(--space-xl);
-            flex-wrap: wrap;
-            gap: var(--space-md);
+        /* Buttons */
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            padding: 12px 24px; font-size: 14px; font-weight: 600;
+            border-radius: var(--radius-sm); cursor: pointer; transition: var(--transition);
+            border: none; gap: var(--space-xs);
         }
+        .btn-primary { background: var(--accent-orange); color: white; box-shadow: 0 0 15px var(--accent-orange-glow); }
+        .btn-primary:hover { background: #ff6b00; transform: translateY(-2px); }
+        .btn-secondary { background: transparent; border: 1px solid var(--border); color: var(--text-secondary); }
+        .btn-secondary:hover { border-color: var(--accent-orange); color: var(--accent-orange); }
 
-        .tokens-chart-title {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: var(--space-xs);
+        /* API Key Display */
+        .api-key-box {
+            background: var(--bg-secondary); border: 1px solid var(--border);
+            border-radius: var(--radius-sm); padding: var(--space-md);
+            font-family: var(--font-mono); font-size: 14px; color: var(--text-secondary);
+            display: flex; justify-content: space-between; align-items: center;
+            margin-top: var(--space-sm);
         }
+        .key-value { user-select: all; word-break: break-all; }
 
-        .tokens-chart-subtitle {
-            font-size: 13px;
-            color: var(--text-muted);
+        /* Usage Bars */
+        .usage-item { margin-bottom: var(--space-md); }
+        .usage-header { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13px; }
+        .usage-track { height: 8px; background: var(--bg-secondary); border-radius: 4px; overflow: hidden; }
+        .usage-fill { height: 100%; border-radius: 4px; transition: width 1s ease; }
+        .fill-fable { background: var(--accent-orange); box-shadow: 0 0 10px var(--accent-orange-glow); }
+        .fill-opus { background: var(--accent-blue); box-shadow: 0 0 10px rgba(0, 212, 255, 0.3); }
+        .fill-gpt { background: #a855f7; box-shadow: 0 0 10px rgba(168, 85, 247, 0.3); }
+
+        /* IP Section */
+        .ip-display {
+            font-family: var(--font-mono); font-size: 18px; color: var(--accent-blue);
+            margin: var(--space-xs) 0;
         }
-
-        .tokens-chart-total {
-            text-align: right;
+        .status-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 4px 10px; border-radius: 999px;
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
         }
-
-        .tokens-chart-total-value {
-            font-size: 28px;
-            font-weight: 700;
-            font-family: var(--font-mono);
-            color: var(--accent-orange);
-            line-height: 1.1;
-        }
-
-        .tokens-chart-total-label {
-            font-size: 11px;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-top: 2px;
-        }
-
-        .tokens-bar-list {
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-lg);
-        }
-
-        .tokens-bar-item {
-            display: grid;
-            grid-template-columns: 160px 1fr auto;
-            align-items: center;
-            gap: var(--space-md);
-        }
-
-        .tokens-bar-label {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-            min-width: 0;
-        }
-
-        .tokens-bar-name {
-            font-size: 14px;
-            font-weight: 600;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .tokens-bar-provider {
-            font-size: 11px;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .tokens-bar-track {
-            position: relative;
-            height: 32px;
-            background: var(--bg-card-alt);
-            border-radius: var(--radius-sm);
-            overflow: hidden;
-            border: 1px solid var(--border);
-        }
-
-        .tokens-bar-fill {
-            position: absolute;
-            top: 0;
-            left: 0;
-            height: 100%;
-            border-radius: var(--radius-sm);
-            width: 0;
-            transition: width 1.4s cubic-bezier(0.22, 1, 0.36, 1);
-            display: flex;
-            align-items: center;
-            padding-left: var(--space-sm);
-            overflow: hidden;
-        }
-
-        .tokens-bar-fill::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.08) 50%, transparent 100%);
-            animation: barShimmer 2.5s ease-in-out infinite;
-        }
-
-        @keyframes barShimmer {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(200%); }
-        }
-
-        .tokens-bar-fill.fable {
-            background: linear-gradient(90deg, var(--accent-orange), #ff8c42);
-            box-shadow: 0 0 20px rgba(240, 84, 9, 0.35);
-        }
-
-        .tokens-bar-fill.opus {
-            background: linear-gradient(90deg, var(--accent-blue), #4d9fff);
-            box-shadow: 0 0 20px rgba(0, 111, 254, 0.3);
-        }
-
-        .tokens-bar-fill.sonnet {
-            background: linear-gradient(90deg, var(--accent-green), #34d399);
-            box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
-        }
-
-        .tokens-bar-fill.glm {
-            background: linear-gradient(90deg, var(--accent-amber), #fbbf24);
-            box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
-        }
-
-        .tokens-bar-fill.gpt {
-            background: linear-gradient(90deg, #a855f7, #c084fc);
-            box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
-        }
-
-        .tokens-bar-value {
-            font-family: var(--font-mono);
-            font-size: 14px;
-            font-weight: 600;
-            white-space: nowrap;
-            min-width: 80px;
-            text-align: right;
-        }
-
-        .tokens-bar-value .unit {
-            color: var(--text-muted);
-            font-weight: 400;
-            font-size: 12px;
-            margin-left: 2px;
-        }
-
-        .tokens-chart-footer {
-            margin-top: var(--space-xl);
-            padding-top: var(--space-md);
-            border-top: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: var(--space-sm);
-        }
-
-        .tokens-chart-note {
-            font-size: 12px;
-            color: var(--text-muted);
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .tokens-chart-note svg {
-            width: 14px;
-            height: 14px;
-            color: var(--accent-green);
-        }
-
-        .tokens-chart-period {
-            font-size: 12px;
-            color: var(--text-muted);
-            font-family: var(--font-mono);
-        }
-
-        @media (max-width: 640px) {
-            .tokens-bar-item {
-                grid-template-columns: 1fr auto;
-                grid-template-areas:
-                    "label value"
-                    "track track";
-                gap: var(--space-xs) var(--space-md);
-            }
-            .tokens-bar-label { grid-area: label; }
-            .tokens-bar-value { grid-area: value; }
-            .tokens-bar-track { grid-area: track; }
-            .tokens-chart-total { text-align: left; }
-        }
-
-        /* Hamburger Menu Button */
-        .hamburger-btn { display: none; background: none; border: none; cursor: pointer; padding: var(--space-sm); color: var(--text-primary); transition: transform var(--transition-fast); }
-        .hamburger-btn:hover { transform: scale(1.1); }
-        .hamburger-btn svg { width: 24px; height: 24px; }
-
-        /* Sidebar Drawer */
-        .sidebar-drawer { position: fixed; top: 0; left: -320px; width: 320px; height: 100vh; background: linear-gradient(180deg, #252323 0%, #1e1c1c 100%); border-right: 1px solid var(--border); z-index: 1100; transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1); overflow-y: auto; box-shadow: 4px 0 24px rgba(0,0,0,0.4); }
-        .sidebar-drawer.open { left: 0; }
-        .sidebar-drawer::-webkit-scrollbar { width: 6px; }
-        .sidebar-drawer::-webkit-scrollbar-track { background: transparent; }
-        .sidebar-drawer::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-        .sidebar-drawer::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
-        .sidebar-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(2px); z-index: 1050; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
-        .sidebar-overlay.open { opacity: 1; pointer-events: auto; }
-        .sidebar-header { padding: var(--space-xl) var(--space-lg); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, rgba(240,84,9,0.05) 0%, transparent 100%); }
-        .sidebar-title { font-size: 18px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em; }
-        .sidebar-close { background: rgba(255,255,255,0.05); border: 1px solid var(--border); cursor: pointer; color: var(--text-secondary); padding: var(--space-xs); border-radius: var(--radius-sm); transition: all var(--transition-fast); display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; }
-        .sidebar-close:hover { color: var(--text-primary); background: rgba(255,255,255,0.1); border-color: var(--border-hover); transform: rotate(90deg); }
-        .sidebar-nav { padding: var(--space-md) 0; }
-        .sidebar-section-label { padding: var(--space-sm) var(--space-lg); font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-top: var(--space-sm); }
-        .sidebar-link { display: flex; align-items: center; gap: var(--space-md); padding: var(--space-md) var(--space-lg); color: var(--text-secondary); font-size: 14px; font-weight: 500; transition: all 0.2s ease; cursor: pointer; border: none; background: none; width: 100%; text-align: left; position: relative; border-left: 3px solid transparent; }
-        .sidebar-link:hover { background: rgba(255,255,255,0.03); color: var(--text-primary); padding-left: calc(var(--space-lg) + 4px); }
-        .sidebar-link.active { background: linear-gradient(90deg, rgba(240,84,9,0.12) 0%, transparent 100%); color: var(--accent-orange); border-left-color: var(--accent-orange); }
-        .sidebar-link.active svg { color: var(--accent-orange); }
-        .sidebar-link svg { width: 20px; height: 20px; flex-shrink: 0; opacity: 0.7; transition: opacity var(--transition-fast); }
-        .sidebar-link:hover svg { opacity: 1; }
-        .sidebar-link.active svg { opacity: 1; }
-        .sidebar-divider { height: 1px; background: linear-gradient(90deg, transparent 0%, var(--border) 20%, var(--border) 80%, transparent 100%); margin: var(--space-md) var(--space-lg); }
+        .status-active { background: rgba(0, 255, 148, 0.1); color: var(--accent-green); }
+        .status-pending { background: rgba(255, 85, 0, 0.1); color: var(--accent-orange); }
 
         /* Responsive */
         @media (max-width: 768px) {
-            .hamburger-btn { display: block; }
-            .navbar-right { display: none; }
-            .plan-card { flex-direction: column; align-items: flex-start; }
-            .plan-price { text-align: left; }
-            .kpi-row { grid-template-columns: repeat(2, 1fr); }
-            .dashboard { padding-left: var(--space-md); padding-right: var(--space-md); }
-        }
-
-        @media (max-width: 480px) {
-            .kpi-row { grid-template-columns: 1fr; }
+            .dashboard-container { padding-top: 100px; }
+            .nav-actions span { display: none; }
+            .plan-header { flex-direction: column; }
         }
     </style>
 </head>
 <body>
-    <!-- Sidebar Drawer -->
-    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
-    <div class="sidebar-drawer" id="sidebarDrawer">
-        <div class="sidebar-header">
-            <span class="sidebar-title">Menu</span>
-            <button class="sidebar-close" onclick="closeSidebar()">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
-        </div>
-        <div class="sidebar-nav">
-            <button class="sidebar-link active" onclick="window.location.href='dashboard.html'; closeSidebar();">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-                Dashboard
-            </button>
-            <button class="sidebar-link" onclick="window.location.href='account.html'; closeSidebar();">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                Minha Conta
-            </button>
-            <button class="sidebar-link" onclick="window.location.href='affiliate.html'; closeSidebar();">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                Afiliados
-            </button>
-            <button class="sidebar-link" id="sidebarAdminLink" style="display:none;" onclick="window.location.href='admin.html'; closeSidebar();">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                Painel Admin
-            </button>
-            <div style="border-top:1px solid var(--border);margin:var(--space-md) 0;"></div>
-            <button class="sidebar-link" onclick="handleLogout(); closeSidebar();" style="color:var(--accent-red);">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                Sair
-            </button>
-        </div>
-    </div>
-
     <!-- Navbar -->
     <nav class="navbar">
-        <div class="navbar-inner">
-            <button class="hamburger-btn" onclick="openSidebar()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-            </button>
-            <a href="index.html" class="navbar-logo">
-                <svg viewBox="0 0 48 48" fill="var(--accent-orange)" width="28" height="28">
-                    <path d="M24 4C14 4 8 12 8 22v14c0 2 1 4 3 4h2l3-4h4l3 4h2l3-4h4l3 4h2c2 0 3-2 3-4V22C40 12 34 4 24 4zm-8 22a3 3 0 110-6 3 3 0 010 6zm16 0a3 3 0 110-6 3 3 0 010 6z"/>
-                </svg>
+        <div class="nav-inner">
+            <a href="/" class="logo">
+                <svg viewBox="0 0 48 48"><path d="M24 4C14 4 8 12 8 22v14c0 2 1 4 3 4h2l3-4h4l3 4h2l3-4h4l3 4h2c2 0 3-2 3-4V22C40 12 34 4 24 4zm-8 22a3 3 0 110-6 3 3 0 010 6zm16 0a3 3 0 110-6 3 3 0 010 6z"/></svg>
                 8Token
             </a>
-            <div class="navbar-right">
-                <a href="admin.html" id="adminLink" style="display:none;font-size:13px;font-weight:600;color:#a855f7;padding:6px 12px;border:1px solid rgba(168,85,247,0.4);border-radius:var(--radius-sm);background:rgba(168,85,247,0.1);transition:all var(--transition-fast);" onmouseover="this.style.background='rgba(168,85,247,0.2)'" onmouseout="this.style.background='rgba(168,85,247,0.1)'">⚙ Painel Admin</a>
-                <!-- Notification Bell -->
-                <div class="notif-bell-wrap">
-                    <button class="notif-bell-btn" onclick="toggleNotifDropdown(event)" aria-label="Notificações">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-                        <span class="notif-badge hidden" id="notifBadge">0</span>
-                    </button>
-                    <div class="notif-dropdown" id="notifDropdown">
-                        <div class="notif-dropdown-header">
-                            <span class="notif-dropdown-title">Notificações</span>
-                            <button class="notif-dropdown-link" onclick="markAllReadDash()">Marcar todas lidas</button>
-                        </div>
-                        <div class="notif-dropdown-list" id="notifDropdownList">
-                            <div class="notif-dropdown-empty">Carregando...</div>
-                        </div>
-                        <div class="notif-dropdown-footer">
-                            <a href="notifications.html">Ver todas as notificações →</a>
-                        </div>
-                    </div>
+            <div class="nav-actions">
+                <button class="btn-icon" aria-label="Notificações" onclick="toggleNotifDropdown(event)">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                    <span id="notifBadge" class="notif-badge hidden" style="position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;border-radius:50%;background:var(--accent-orange);color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px;">0</span>
+                </button>
+                <div class="user-pill">
+                    <div class="avatar" id="userAvatar">U</div>
+                    <span id="userEmail" style="font-size: 14px; font-weight: 500;">usuario@email.com</span>
                 </div>
-                <a href="account.html" style="font-size:13px;color:var(--text-secondary);padding:6px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);transition:all var(--transition-fast);" onmouseover="this.style.borderColor='var(--accent-orange)';this.style.color='var(--accent-orange)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-secondary)'">Minha Conta</a>
-                <div class="navbar-user">
-                    <div class="navbar-avatar">U</div>
-                    <span>usuario@email.com</span>
-                </div>
-                <button class="btn-logout" onclick="handleLogout()">Sair</button>
+                <button class="btn-secondary" style="padding: 8px 16px; font-size: 13px;" onclick="handleLogout()">Sair</button>
             </div>
         </div>
     </nav>
 
-    <!-- Expiration Banner -->
-    <div id="expiryBanner" style="display:none;position:fixed;top:64px;left:0;right:0;z-index:99;background:linear-gradient(90deg,#f05409,#d44a08);color:white;padding:10px 24px;font-size:13px;font-weight:600;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.3);">
-        <span id="expiryBannerText"></span>
-        <a href="account.html" style="color:white;text-decoration:underline;margin-left:12px;font-weight:700;">Renovar agora →</a>
-        <button onclick="document.getElementById('expiryBanner').style.display='none'" style="background:none;border:none;color:rgba(255,255,255,0.7);cursor:pointer;margin-left:12px;font-size:16px;">✕</button>
+    <!-- Notification Dropdown -->
+    <div id="notifDropdown" class="notif-dropdown" style="position:fixed;top:80px;right:24px;width:340px;max-height:420px;background:var(--bg-card-solid);border:1px solid var(--border);border-radius:var(--radius-md);box-shadow:0 8px 32px rgba(0,0,0,0.4);overflow:hidden;z-index:200;display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border);">
+            <span style="font-size:14px;font-weight:700;">Notificações</span>
+            <button onclick="markAllReadDash()" style="font-size:12px;color:var(--accent-orange);font-weight:600;cursor:pointer;background:none;border:none;">Marcar todas como lidas</button>
+        </div>
+        <div id="notifDropdownList" style="max-height:320px;overflow-y:auto;"></div>
+        <div style="padding:var(--space-sm) var(--space-lg);border-top:1px solid var(--border);text-align:center;">
+            <a href="/notifications" style="font-size:12px;color:var(--accent-orange);font-weight:600;">Ver todas</a>
+        </div>
     </div>
 
-    <!-- Dashboard -->
-    <main class="dashboard" id="dashMain">
-        <div class="dashboard-header">
-            <h1>Dashboard</h1>
-            <p>Gerencie sua assinatura, chaves API e acompanhe seu uso.</p>
-        </div>
+    <div class="dashboard-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <a href="#" class="nav-link active">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                Dashboard
+            </a>
+            <a href="/account" class="nav-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Minha Conta
+            </a>
+            <a href="#" class="nav-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+                Chaves API
+            </a>
+            <a href="/affiliate" class="nav-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                Afiliados
+            </a>
+            <a href="/admin" class="nav-link" id="sidebarAdminLink" style="display:none;color:var(--accent-orange);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                Painel Admin
+            </a>
+            <div style="height: 1px; background: var(--border); margin: var(--space-sm) 0;"></div>
+            <a href="#" class="nav-link" style="color: var(--accent-red);" onclick="handleLogout()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Sair da Conta
+            </a>
+        </aside>
 
-        <!-- KPI Row -->
-        <div class="kpi-row">
-            <div class="kpi-card">
-                <div class="kpi-label">Plano Atual</div>
-                <div class="kpi-value orange" id="kpiPlan">Carregando...</div>
-                <div class="kpi-sub" id="kpiPlanExpiry">—</div>
-            </div>
-            <div class="kpi-card">
-                <div class="kpi-label">Chaves API</div>
-                <div class="kpi-value green">2</div>
-                <div class="kpi-sub">Ativas</div>
-            </div>
-        </div>
+        <!-- Main Content -->
+        <main class="content-area">
+            <!-- Header -->
+            <header>
+                <h1 style="font-size: 32px; font-weight: 700; margin-bottom: 8px;">Visão Geral</h1>
+                <p style="color: var(--text-secondary);">Gerencie sua assinatura, chaves e acompanhe o uso em tempo real.</p>
+            </header>
 
-        <!-- Plan Section -->
-        <div class="dash-section">
-            <div class="dash-section-title">Assinatura</div>
-            <div class="plan-card">
-                <div class="plan-info">
-                    <div class="plan-name">
-                        <span id="planCardName">Trimestral</span>
-                        <span class="plan-badge" id="planCardBadge">Mais Escolhido</span>
-                    </div>
-                    <div class="plan-details">
-                        Claude Opus 5, Sonnet 5, Fable 5.1 e GLM 5.3 · Uso ilimitado · Suporte VIP
-                    </div>
-                </div>
-                <div class="plan-price">
-                    <div class="plan-price-value" id="planCardPrice">R$ 399</div>
-                    <div class="plan-price-period" id="planCardPeriod">/trimestre</div>
-                    <div class="plan-renewal" id="planCardRenewal">Próxima cobrança: 12/12/2026</div>
-                </div>
-                <button class="btn-upgrade">Gerenciar Plano</button>
+            <!-- Expiry Banner -->
+            <div id="expiryBanner" style="display:none;background:linear-gradient(90deg,var(--accent-orange),#ff6b00);padding:12px 24px;border-radius:var(--radius-sm);margin-bottom:var(--space-md);">
+                <span id="expiryBannerText" style="font-size:14px;font-weight:600;color:white;"></span>
             </div>
-        </div>
 
-        <!-- IP Authorization Section -->
-        <div class="dash-section">
-            <div class="dash-section-title" style="display:flex;align-items:center;gap:var(--space-sm);">IP Autorizado
-                <span id="ipSectionBadge" style="display:none;align-items:center;padding:2px 10px;font-size:11px;font-weight:600;border-radius:var(--radius-pill);text-transform:uppercase;letter-spacing:0.03em;"></span>
+            <!-- KPIs -->
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-label">Plano Atual</div>
+                    <div class="kpi-value" id="kpiPlan" style="color: var(--accent-orange);">—</div>
+                    <div class="kpi-sub" id="kpiPlanExpiry">Carregando...</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Status da Conta</div>
+                    <div class="kpi-value" id="kpiStatus" style="color: var(--accent-green);">Ativa</div>
+                    <div class="kpi-sub" id="kpiIpStatus">IP Autorizado ✓</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Tokens Usados (Mês)</div>
+                    <div class="kpi-value" id="kpiMonthTokens">—</div>
+                    <div class="kpi-sub">∞ Ilimitado</div>
+                </div>
             </div>
-            <div class="plan-card" style="flex-direction:column;align-items:stretch;gap:var(--space-lg);">
-                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-md);">
-                    <div>
-                        <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">IP Principal</div>
-                        <div id="ipMainValue" style="font-family:var(--font-mono);font-size:18px;font-weight:700;color:var(--accent-blue);">Carregando...</div>
-                        <div id="ipStatusBadge" style="display:inline-flex;align-items:center;padding:2px 10px;font-size:11px;font-weight:600;border-radius:var(--radius-pill);text-transform:uppercase;letter-spacing:0.03em;margin-top:4px;background:rgba(122,117,117,0.15);color:var(--text-muted);">Carregando...</div>
-                        <div id="ipPendingChange" style="display:none;font-size:12px;color:var(--accent-amber);margin-top:4px;"></div>
-                        <div id="ipNetworkNow" style="font-size:12px;color:var(--text-muted);margin-top:6px;">IP atual da rede: carregando...</div>
-                    </div>
-                    <button class="btn-upgrade" id="ipChangeToggleBtn" onclick="toggleIpChangeForm()" style="background:transparent;border:1px solid var(--border);color:var(--text-secondary);font-size:13px;height:36px;padding:0 var(--space-md);">Solicitar Alteração</button>
-                </div>
-                <!-- Formulário inline de solicitação de troca de IP (sem prompt externo) -->
-                <div id="ipChangeForm" style="display:none;border-top:1px solid var(--border);padding-top:var(--space-lg);">
-                    <div style="font-size:13px;color:var(--text-secondary);margin-bottom:var(--space-sm);line-height:1.5;">
-                        Digite o novo IP que deseja autorizar. A alteração entra em fila para aprovação do admin.
-                    </div>
-                    <div style="display:flex;align-items:stretch;gap:var(--space-sm);flex-wrap:wrap;">
-                        <input type="text" id="ipChangeInput" placeholder="Ex.: 189.45.12.34" autocomplete="off" spellcheck="false"
-                            style="flex:1;min-width:200px;height:40px;padding:0 var(--space-md);font-family:var(--font-mono);font-size:14px;color:var(--text-primary);background:var(--bg-card-alt);border:1px solid var(--border);border-radius:var(--radius-sm);outline:none;transition:border-color var(--transition-fast);"
-                            onfocus="this.style.borderColor='var(--accent-orange)'" onblur="this.style.borderColor='var(--border)'">
-                        <button class="btn-upgrade" id="ipChangeSubmitBtn" onclick="submitIpChange()" style="height:40px;padding:0 var(--space-lg);font-size:13px;">Enviar Solicitação</button>
-                        <button class="btn-upgrade" onclick="toggleIpChangeForm()" style="height:40px;padding:0 var(--space-md);font-size:13px;background:transparent;border:1px solid var(--border);color:var(--text-secondary);">Cancelar</button>
-                    </div>
-                    <div id="ipChangeFeedback" style="display:none;font-size:13px;margin-top:var(--space-sm);line-height:1.5;"></div>
-                </div>
-                <div style="border-top:1px solid var(--border);padding-top:var(--space-lg);">
-                    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-md);">
+
+            <!-- Subscription & IP -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);">
+                <div class="card">
+                    <div class="section-title">Assinatura</div>
+                    <div class="plan-header">
                         <div>
-                            <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;">IP Adicional</div>
-                            <div id="ipAdditionalStatus" style="font-size:14px;color:var(--text-secondary);">Carregando...</div>
-                            <div id="ipAdditionalValue" style="display:none;font-family:var(--font-mono);font-size:15px;font-weight:600;color:var(--accent-green);margin-top:4px;"></div>
+                            <div style="font-size: 20px; font-weight: 700;" id="planCardName">Carregando...</div>
+                            <div style="color: var(--text-secondary); font-size: 14px; margin-top: 4px;">Acesso ilimitado a todos os modelos frontier</div>
                         </div>
-                        <div id="ipAdditionalActions" style="display:flex;gap:var(--space-sm);"></div>
+                        <div style="text-align: right;">
+                            <div class="plan-price"><span id="planCardPrice">—</span><span class="plan-period" id="planCardPeriod"></span></div>
+                            <div style="font-size:12px;color:var(--text-muted);margin-top:4px;" id="planCardRenewal"></div>
+                        </div>
                     </div>
-                    <div style="font-size:12px;color:var(--text-muted);margin-top:var(--space-sm);">
-                        +1 IP extra por <strong style="color:var(--accent-orange);">R$ 74,90/mês</strong> · útil se você alterna entre duas redes (casa + trabalho)
+                    <div style="display: flex; gap: var(--space-sm); margin-top: var(--space-md);">
+                        <button class="btn btn-secondary" style="flex: 1;" onclick="window.location.href='/account'">Gerenciar Plano</button>
+                        <button class="btn btn-secondary" style="flex: 1;" onclick="window.location.href='/account'">Histórico</button>
                     </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- API Keys Section (acesso restrito: só assinantes) -->
-        <div class="dash-section" id="apiKeysSection">
-            <div class="dash-section-title">Chave API</div>
+                <div class="card">
+                    <div class="section-title">IP Autorizado</div>
+                    <div style="margin-bottom: var(--space-md);">
+                        <div class="kpi-label">IP Principal</div>
+                        <div class="ip-display" id="ipMainValue">Carregando...</div>
+                        <span class="status-badge" id="ipStatusBadge" style="background:rgba(122,117,117,0.15);color:var(--text-muted);">Carregando...</span>
+                    </div>
+                    <div id="ipNetworkNow" style="font-size:12px;color:var(--text-muted);margin-top:8px;">IP atual da rede: carregando...</div>
+                    <div id="ipPendingChange" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(255,85,0,0.1);border:1px solid rgba(255,85,0,0.2);border-radius:var(--radius-sm);font-size:12px;color:var(--accent-orange);"></div>
 
-            <!-- Estado BLOQUEADO: usuário sem plano ativo -->
-            <div class="plan-card api-locked" id="apiLocked" style="flex-direction:column;align-items:flex-start;gap:var(--space-md);">
-                <div style="display:flex;align-items:center;gap:var(--space-sm);color:var(--accent-amber);">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="3" y="11" width="18" height="11" rx="2"/>
-                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                    </svg>
-                    <strong style="font-size:15px;color:var(--text-primary);">Acesso exclusivo para assinantes</strong>
+                    <!-- IP Change Form -->
+                    <div id="ipChangeForm" style="display:none;margin-top:var(--space-md);padding:var(--space-md);background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);">
+                        <div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">Solicitar Alteração de IP</div>
+                        <input type="text" id="ipChangeInput" placeholder="Novo IP (ex: 189.45.12.34)" style="width:100%;height:40px;padding:0 12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:var(--font-mono);font-size:14px;margin-bottom:8px;">
+                        <div style="display:flex;gap:8px;">
+                            <button id="ipChangeSubmitBtn" class="btn btn-primary" style="flex:1;padding:8px 16px;font-size:13px;" onclick="submitIpChange()">Enviar Solicitação</button>
+                            <button class="btn btn-secondary" style="padding:8px 16px;font-size:13px;" onclick="toggleIpChangeForm()">Cancelar</button>
+                        </div>
+                        <div id="ipChangeFeedback" style="display:none;margin-top:8px;font-size:12px;"></div>
+                    </div>
+
+                    <div style="padding-top: var(--space-md); border-top: 1px solid var(--border); margin-top: var(--space-md);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span style="font-size: 13px; color: var(--text-secondary);">IP Adicional (Casa/Trabalho)</span>
+                            <span style="font-size: 12px; color: var(--accent-orange); font-weight: 600;">R$ 74,90/mês</span>
+                        </div>
+                        <div id="ipAdditionalStatus" style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Carregando...</div>
+                        <div id="ipAdditionalValue" style="display:none;font-family:var(--font-mono);font-size:14px;color:var(--accent-blue);margin-bottom:8px;"></div>
+                        <div id="ipAdditionalActions"></div>
+                    </div>
+                    <button id="ipChangeToggleBtn" class="btn btn-secondary" style="width: 100%; font-size: 13px; margin-top: var(--space-sm);" onclick="toggleIpChangeForm()">Solicitar Alteração</button>
                 </div>
-                <p style="font-size:14px;color:var(--text-secondary);line-height:1.55;margin:0;">
-                    A chave API e a URL do gateway só ficam disponíveis depois que você assina um plano.
-                    É por aqui que o seu editor (Claude Code, Codex, curl) conversa com os modelos.
-                </p>
-                <a href="index.html#precos" class="btn-upgrade" style="height:40px;padding:0 var(--space-lg);font-size:14px;">Ver planos e assinar</a>
             </div>
 
-            <!-- Estado LIBERADO: usuário com plano ativo -->
+            <!-- API Keys Section -->
+            <div id="apiLocked" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:var(--space-xl);background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);text-align:center;">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5" style="margin-bottom:var(--space-md);"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <h3 style="font-size:18px;font-weight:600;margin-bottom:8px;">Acesso exclusivo para assinantes</h3>
+                <p style="color:var(--text-secondary);font-size:14px;max-width:400px;">Faça upgrade para um plano pago e desbloqueie acesso ilimitado a todos os modelos de IA com sua própria chave API.</p>
+                <button class="btn btn-primary" style="margin-top:var(--space-md);" onclick="window.location.href='/account'">Ver Planos</button>
+            </div>
+
             <div id="apiUnlocked" style="display:none;">
-                <!-- Gateway URL -->
-                <div class="plan-card" style="margin-bottom:var(--space-md);flex-direction:column;align-items:stretch;gap:var(--space-sm);">
-                    <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;">URL do Gateway (Base URL)</div>
-                    <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-md);flex-wrap:wrap;">
-                        <code id="gatewayUrl" style="font-family:var(--font-mono);font-size:15px;font-weight:600;color:var(--accent-blue);user-select:all;">Carregando...</code>
-                        <button class="btn-icon" id="copyGatewayBtn" title="Copiar URL" onclick="copyText(GATEWAY_URL, this)">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                            </svg>
-                        </button>
+                <div class="card">
+                    <div class="section-title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-orange)" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+                        Chaves API
                     </div>
-                    <div style="font-size:12px;color:var(--text-muted);line-height:1.5;">
-                        Use esta URL como <code style="font-family:var(--font-mono);">ANTHROPIC_BASE_URL</code> ou <code style="font-family:var(--font-mono);">OPENAI_BASE_URL</code> no seu cliente (Claude Code, Cursor, Continue, etc.)
-                    </div>
-                </div>
+                    <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: var(--space-md);">
+                        Use estas chaves para autenticar suas requisições. Cada chave é vinculada ao seu IP autorizado.
+                    </p>
 
-                <!-- Lista de Chaves API -->
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-md);">
-                    <div style="font-size:13px;color:var(--text-secondary);">Suas chaves API — cada uma vinculada ao seu IP autorizado</div>
-                    <button class="btn-generate" onclick="createNewApiKey()">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                        Gerar nova chave
+                    <!-- Gateway URL -->
+                    <div style="margin-bottom:var(--space-md);">
+                        <div class="kpi-label">Endpoint Base (Gateway URL)</div>
+                        <div class="api-key-box" style="margin-top: 4px;">
+                            <span class="key-value" id="gatewayUrl" style="color: var(--accent-blue);">Carregando...</span>
+                            <button class="btn-icon" style="width: 32px; height: 32px; border: none;" onclick="copyText(GATEWAY_URL, this)">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- API Keys List -->
+                    <div id="apiKeysList" style="margin-bottom:var(--space-md);">
+                        <div style="text-align:center;padding:var(--space-lg);color:var(--text-muted);font-size:14px;">Carregando chaves...</div>
+                    </div>
+
+                    <button class="btn btn-secondary" style="width:100%;" onclick="createNewApiKey()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        Gerar Nova Chave API
                     </button>
-                </div>
-                <div class="api-keys-list" id="apiKeysList">
-                    <div style="text-align:center;padding:var(--space-xl);color:var(--text-muted);font-size:14px;">Carregando chaves...</div>
-                </div>
 
-                <!-- Instruções de uso -->
-                <div class="plan-card" style="margin-top:var(--space-md);flex-direction:column;align-items:stretch;gap:var(--space-sm);">
-                    <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;">Como usar</div>
-                    <div style="font-size:13px;color:var(--text-secondary);line-height:1.7;font-family:var(--font-mono);background:var(--bg-primary);padding:var(--space-md);border-radius:var(--radius-sm);overflow-x:auto;">
-                        <div style="color:var(--text-muted);"># Claude Code</div>
-                        <div>export ANTHROPIC_BASE_URL="<span id="exampleGwUrl1" style="color:var(--accent-blue);">...</span>"</div>
-                        <div>export ANTHROPIC_API_KEY="8tk_sua_chave_aqui"</div>
-                        <div style="margin-top:var(--space-sm);color:var(--text-muted);"># curl</div>
-                        <div>curl <span id="exampleGwUrl2" style="color:var(--accent-blue);">...</span>/chat/completions \</div>
-                        <div>&nbsp;&nbsp;-H "Authorization: Bearer 8tk_sua_chave" \</div>
-                        <div>&nbsp;&nbsp;-d '{"model":"auto","messages":[{"role":"user","content":"hi"}]}'</div>
+                    <!-- Usage Instructions -->
+                    <div style="margin-top:var(--space-lg);padding-top:var(--space-md);border-top:1px solid var(--border);">
+                        <div class="kpi-label" style="margin-bottom:8px;">Como usar</div>
+                        <div style="font-size:13px;color:var(--text-secondary);line-height:1.7;font-family:var(--font-mono);background:var(--bg-secondary);padding:var(--space-md);border-radius:var(--radius-sm);overflow-x:auto;">
+                            <div style="color:var(--text-muted);"># Claude Code / Cursor / Continue</div>
+                            <div>export ANTHROPIC_BASE_URL="<span id="exampleGwUrl1" style="color:var(--accent-blue);">...</span>"</div>
+                            <div>export ANTHROPIC_API_KEY="8tk_sua_chave_aqui"</div>
+                            <div style="margin-top:var(--space-sm);color:var(--text-muted);"># curl</div>
+                            <div>curl <span id="exampleGwUrl2" style="color:var(--accent-blue);">...</span>/chat/completions \</div>
+                            <div>&nbsp;&nbsp;-H "Authorization: Bearer 8tk_sua_chave" \</div>
+                            <div>&nbsp;&nbsp;-d '{"model":"auto","messages":[{"role":"user","content":"hi"}]}'</div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Métricas de Uso -->
-        <div class="dash-section" id="usageSection" style="display:none;">
-            <div class="dash-section-title">Uso e Métricas</div>
+            <!-- Usage Breakdown -->
+            <div class="card" id="usageSection" style="display:none;">
+                <div class="section-title">Uso por Modelo (Últimos 30 dias)</div>
 
-            <!-- KPIs de uso -->
-            <div class="kpi-row" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-bottom:var(--space-lg);">
-                <div class="kpi-card">
-                    <div class="kpi-label">Total Mensagens</div>
-                    <div class="kpi-value blue" id="kpiTotalMessages">—</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Total Tokens</div>
-                    <div class="kpi-value orange" id="kpiTotalTokens">—</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Hoje (msgs)</div>
-                    <div class="kpi-value green" id="kpiTodayMessages">—</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Hoje (tokens)</div>
-                    <div class="kpi-value green" id="kpiTodayTokens">—</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Latência Média</div>
-                    <div class="kpi-value" id="kpiAvgLatency">—</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-label">Tokens (30d)</div>
-                    <div class="kpi-value orange" id="kpiMonthTokens">—</div>
-                </div>
-            </div>
-
-            <!-- Gráfico por modelo -->
-            <div class="tokens-chart-card">
-                <div class="tokens-chart-header">
-                    <div>
-                        <div class="tokens-chart-title">Consumo por Modelo</div>
-                        <div class="tokens-chart-subtitle">Tokens totais (entrada + saída) por modelo utilizado</div>
+                <!-- KPIs de uso -->
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:var(--space-md);margin-bottom:var(--space-lg);">
+                    <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:var(--space-md);">
+                        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;font-weight:600;margin-bottom:4px;">Total Mensagens</div>
+                        <div style="font-size:24px;font-weight:700;font-family:var(--font-mono);color:var(--accent-blue);" id="kpiTotalMessages">—</div>
                     </div>
-                    <div class="tokens-chart-total">
-                        <div class="tokens-chart-total-value" id="tokensChartTotal">0</div>
-                        <div class="tokens-chart-total-label">tokens totais</div>
+                    <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:var(--space-md);">
+                        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;font-weight:600;margin-bottom:4px;">Total Tokens</div>
+                        <div style="font-size:24px;font-weight:700;font-family:var(--font-mono);color:var(--accent-orange);" id="kpiTotalTokens">—</div>
+                    </div>
+                    <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:var(--space-md);">
+                        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;font-weight:600;margin-bottom:4px;">Hoje (msgs)</div>
+                        <div style="font-size:24px;font-weight:700;font-family:var(--font-mono);color:var(--accent-green);" id="kpiTodayMessages">—</div>
+                    </div>
+                    <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:var(--space-md);">
+                        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;font-weight:600;margin-bottom:4px;">Latência Média</div>
+                        <div style="font-size:24px;font-weight:700;font-family:var(--font-mono);" id="kpiAvgLatency">—</div>
                     </div>
                 </div>
-                <div class="tokens-bar-list" id="tokensBarList">
+
+                <div id="tokensBarList">
                     <div style="text-align:center;padding:var(--space-lg);color:var(--text-muted);font-size:13px;">Carregando...</div>
                 </div>
-                <div class="tokens-chart-footer">
-                    <div class="tokens-chart-note">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-                        Uso ilimitado — sem cobrança por token
-                    </div>
-                    <div class="tokens-chart-period">Dados atualizados em tempo real</div>
-                </div>
             </div>
-        </div>
-
-        <!-- Plano Ativo -->
-        <div class="dash-section">
-            <div class="dash-section-title">Seu Plano</div>
-            <div class="plan-card">
-                <div class="plan-info">
-                    <div class="plan-name" id="planName">Carregando...</div>
-                    <div class="plan-details" id="planDetails">Aguarde...</div>
-                </div>
-                <button class="btn-upgrade" id="upgradeBtn" onclick="window.location.href='account.html'">Gerenciar Plano</button>
-            </div>
-        </div>
-    </main>
+        </main>
+    </div>
 
     <script>
-        const API_BASE = ''; // Usa URL relativa — funciona em localhost e em produção (Vercel)
+        const API_BASE = '';
 
-        // Logout — definido no topo para estar disponível em todos os fetches
+        // Auth check
+        const token = localStorage.getItem('8token_token');
+        if (!token) { window.location.href = '/login'; }
+
         function handleLogout() {
             localStorage.removeItem('8token_token');
-            localStorage.removeItem('8token_logged_in');
-            localStorage.removeItem('8token_email');
             localStorage.removeItem('8token_user');
-            window.location.href = 'login.html';
+            localStorage.removeItem('8token_has_plan');
+            window.location.href = '/login';
         }
 
-        // Verifica autenticação
-        if (!localStorage.getItem('8token_token')) {
-            window.location.href = 'login.html';
-        }
-
-        // Preenche email e inicial do avatar
-        const savedEmail = localStorage.getItem('8token_email') || 'usuario@email.com';
-        const emailSpan = document.querySelector('.navbar-user span');
-        const avatarEl = document.querySelector('.navbar-avatar');
-        if (emailSpan) emailSpan.textContent = savedEmail;
-        if (avatarEl) avatarEl.textContent = savedEmail.charAt(0).toUpperCase();
-
-        // Carrega dados reais do usuário
+        // Load user data
         async function loadUserData() {
             try {
-                const token = localStorage.getItem('8token_token');
                 const res = await fetch(API_BASE + '/api/user/profile', {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
-                if (res.status === 401 || res.status === 403) {
-                    handleLogout();
-                    return;
-                }
+                if (res.status === 401 || res.status === 403) { handleLogout(); return; }
                 if (res.ok) {
                     const user = await res.json();
+                    const emailSpan = document.getElementById('userEmail');
+                    const avatarEl = document.getElementById('userAvatar');
                     if (emailSpan) emailSpan.textContent = user.email;
                     if (avatarEl) avatarEl.textContent = (user.email || 'U').charAt(0).toUpperCase();
+
+                    // Check admin access
+                    if (user.plan === 'admin') {
+                        const sidebarAdminLink = document.getElementById('sidebarAdminLink');
+                        if (sidebarAdminLink) sidebarAdminLink.style.display = 'flex';
+                    }
                 }
             } catch (e) { console.error('Load user error:', e); }
         }
         loadUserData();
 
-        // Check admin access from logged-in user data (not IP-based)
-        // Also check expiry warning
-        const storedUser = JSON.parse(localStorage.getItem('8token_user') || '{}');
-        const adminLink = document.getElementById('adminLink');
-        const sidebarAdminLink = document.getElementById('sidebarAdminLink');
-        if (adminLink && storedUser.plan === 'admin') {
-            adminLink.style.display = 'inline-flex';
-        }
-        if (sidebarAdminLink && storedUser.plan === 'admin') {
-            sidebarAdminLink.style.display = 'flex';
-        }
-
-        // ---- SIDEBAR DRAWER ----
-        function openSidebar() {
-            document.getElementById('sidebarDrawer').classList.add('open');
-            document.getElementById('sidebarOverlay').classList.add('open');
-        }
-
-        function closeSidebar() {
-            document.getElementById('sidebarDrawer').classList.remove('open');
-            document.getElementById('sidebarOverlay').classList.remove('open');
-        }
-        // Load user profile for KPI plan display
-        fetch(API_BASE + '/api/user/profile', { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('8token_token') } })
+        // Load profile for KPI plan display
+        fetch(API_BASE + '/api/user/profile', { headers: { 'Authorization': 'Bearer ' + token } })
         .then(r => {
             if (r.status === 401 || r.status === 403) { handleLogout(); throw new Error('auth'); }
             if (!r.ok) throw new Error('API error ' + r.status);
@@ -1088,7 +474,6 @@
         }).then(profile => {
             const kpiPlan = document.getElementById('kpiPlan');
             const kpiExpiry = document.getElementById('kpiPlanExpiry');
-            // Admin vê como "Anual" no dashboard de usuário
             const displayPlan = profile.plan === 'admin' ? 'anual' : profile.plan;
             const planNames = { mensal: 'Mensal', trimestral: 'Trimestral', anual: 'Anual', admin: 'Admin', free: 'Grátis' };
             if (kpiPlan) kpiPlan.textContent = planNames[displayPlan] || displayPlan || '—';
@@ -1097,6 +482,7 @@
             } else if (kpiExpiry) {
                 kpiExpiry.textContent = profile.plan === 'admin' ? 'Acesso permanente' : 'Sem data de renovação';
             }
+
             // CRITICAL: Set localStorage flag for hasActivePlan() check
             const activePlans = ['mensal', 'trimestral', 'anual', 'admin'];
             if (activePlans.includes(profile.plan)) {
@@ -1104,7 +490,8 @@
             } else {
                 localStorage.setItem('8token_has_plan', 'false');
             }
-            // Expiry banner check (skip for admin — they see as "Anual" with permanent access)
+
+            // Expiry banner check
             if (profile.plan_expires_at && profile.plan !== 'admin') {
                 const daysLeft = Math.ceil((new Date(profile.plan_expires_at) - new Date()) / (1000*60*60*24));
                 const banner = document.getElementById('expiryBanner');
@@ -1118,72 +505,35 @@
                 }
             }
 
-            // Update plan card dynamically (admin sees as Anual)
+            // Update plan card dynamically
             const planCardName = document.getElementById('planCardName');
-            const planCardBadge = document.getElementById('planCardBadge');
             const planCardPrice = document.getElementById('planCardPrice');
             const planCardPeriod = document.getElementById('planCardPeriod');
             const planCardRenewal = document.getElementById('planCardRenewal');
             if (planCardName) planCardName.textContent = planNames[displayPlan] || displayPlan;
             if (profile.plan === 'admin') {
-                if (planCardBadge) planCardBadge.style.display = 'none';
                 if (planCardPrice) planCardPrice.textContent = 'R$ 1.100';
                 if (planCardPeriod) planCardPeriod.textContent = '/ano';
                 if (planCardRenewal) planCardRenewal.textContent = 'Acesso permanente';
             } else if (profile.plan === 'anual') {
-                if (planCardBadge) planCardBadge.style.display = 'none';
                 if (planCardPrice) planCardPrice.textContent = 'R$ 1.100';
                 if (planCardPeriod) planCardPeriod.textContent = '/ano';
+            } else if (profile.plan === 'trimestral') {
+                if (planCardPrice) planCardPrice.textContent = 'R$ 399';
+                if (planCardPeriod) planCardPeriod.textContent = '/trim';
             } else if (profile.plan === 'mensal') {
-                if (planCardBadge) planCardBadge.style.display = 'none';
                 if (planCardPrice) planCardPrice.textContent = 'R$ 199,70';
                 if (planCardPeriod) planCardPeriod.textContent = '/mês';
             }
         }).catch(() => {});
 
-        // IP status — use authenticated endpoint
-        fetch(API_BASE + '/api/user/ip-info', { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('8token_token') } })
-        .then(r => {
-            if (r.status === 401 || r.status === 403) { handleLogout(); throw new Error('auth'); }
-            if (!r.ok) throw new Error('API error ' + r.status);
-            return r.json();
-        }).then(data => {
-            // This is handled by loadIpInfo() below — just ensure no stale fetch('/api/ip/status') remains
-        }).catch(() => {});
-
-        // Removed: old fetch('/api/ip/status') that failed behind Vercel proxy
-        if (false) { fetch('/api/ip/status').then(r => r.json()).then(data => {
-            // Expiry banner
-            const banner = document.getElementById('expiryBanner');
-            const text = document.getElementById('expiryBannerText');
-            const planNames = { mensal: 'Mensal', trimestral: 'Trimestral', anual: 'Anual' };
-            const suggestedNames = { trimestral: 'Trimestral', anual: 'Anual' };
-            if (data.needsWarning && data.daysRemaining !== null && banner) {
-                const days = data.daysRemaining;
-                const dayLabel = days === 1 ? '1 dia' : days + ' dias';
-                text.textContent = `Seu plano ${planNames[data.plan] || data.plan} expira em ${dayLabel}. Upgrade para ${suggestedNames[data.suggestedPlan] || 'Trimestral'} e economize!`;
-                banner.style.display = 'block';
-                const dashMain = document.getElementById('dashMain');
-                if (dashMain) dashMain.style.paddingTop = '152px';
-            } else if (data.expired && banner) {
-                text.textContent = `Seu plano ${planNames[data.plan] || data.plan} expirou! Renove agora com o plano ${suggestedNames[data.suggestedPlan] || 'Trimestral'}.`;
-                banner.style.display = 'block';
-                banner.style.background = 'linear-gradient(90deg,#F43F5E,#e11d48)';
-                const dashMain = document.getElementById('dashMain');
-                if (dashMain) dashMain.style.paddingTop = '152px';
-            }
-        }).catch(() => {}); }
-
         // ── Chave API (acesso restrito: só assinantes) ──────────────────────
-        // Gateway URL é buscada dinamicamente via /api/user/gateway-url.
-        // Chaves API são gerenciadas pelo usuário via /api/keys (CRUD real).
         let GATEWAY_URL = '';
         let userApiKeys = [];
-        let newlyCreatedKey = null; // Chave completa mostrada UMA vez após criação
+        let newlyCreatedKey = null;
 
         async function fetchGatewayUrl() {
             try {
-                const token = localStorage.getItem('8token_token');
                 const res = await fetch(API_BASE + '/api/user/gateway-url', {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
@@ -1205,7 +555,6 @@
         // ── CRUD de Chaves API ──
         async function loadUserApiKeys() {
             try {
-                const token = localStorage.getItem('8token_token');
                 const res = await fetch(API_BASE + '/api/keys', {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
@@ -1220,7 +569,6 @@
             const name = prompt('Nome para esta chave (ex: "Cursor", "Claude Code"):');
             if (!name) return;
             try {
-                const token = localStorage.getItem('8token_token');
                 const res = await fetch(API_BASE + '/api/keys', {
                     method: 'POST',
                     headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
@@ -1228,8 +576,8 @@
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    newlyCreatedKey = data.key; // Chave completa disponível UMA vez
-                    alert('Chave criada! Copie agora — ela não será mostrada novamente:\n\n' + data.key);
+                    newlyCreatedKey = data.key;
+                    alert('Chave criada! Copie agora — ela não será mostrada novamente:\n' + data.key);
                     await loadUserApiKeys();
                 } else {
                     alert(data.error || 'Erro ao criar chave.');
@@ -1240,7 +588,6 @@
         async function revokeApiKey(id) {
             if (!confirm('Revogar esta chave? Ela parará de funcionar imediatamente.')) return;
             try {
-                const token = localStorage.getItem('8token_token');
                 const res = await fetch(API_BASE + '/api/keys/' + id, {
                     method: 'DELETE',
                     headers: { 'Authorization': 'Bearer ' + token }
@@ -1262,14 +609,14 @@
                 return;
             }
             container.innerHTML = userApiKeys.map(k => `
-                <div class="api-key-item" style="${k.revoked ? 'opacity:0.5;' : ''}">
-                    <div class="api-key-info">
-                        <div class="api-key-name">${escHtmlDash(k.name || 'Sem nome')} ${k.revoked ? '<span style="color:var(--accent-red);font-size:11px;font-weight:700;">REVOGADA</span>' : '<span style="color:var(--accent-green);font-size:11px;font-weight:700;">ATIVA</span>'}</div>
-                        <div class="api-key-value">${k.key_prefix || '8tk_'}••••••••${k.key_suffix || '••••'}</div>
-                        <div class="api-key-meta">${k.last_used_at ? 'Último uso: ' + new Date(k.last_used_at).toLocaleString('pt-BR') : 'Nunca usada'} · Criada em ${new Date(k.created_at).toLocaleDateString('pt-BR')}</div>
+                <div class="api-key-box" style="${k.revoked ? 'opacity:0.5;' : ''}">
+                    <div>
+                        <div style="font-size:14px;font-weight:600;margin-bottom:4px;">${escHtmlDash(k.name || 'Sem nome')} ${k.revoked ? '<span style="color:var(--accent-red);font-size:11px;font-weight:700;">REVOGADA</span>' : '<span style="color:var(--accent-green);font-size:11px;font-weight:700;">ATIVA</span>'}</div>
+                        <div style="font-family:var(--font-mono);font-size:13px;color:var(--text-muted);">${k.key_prefix || '8tk_'}••••••••${k.key_suffix || '••••'}</div>
+                        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">${k.last_used_at ? 'Último uso: ' + new Date(k.last_used_at).toLocaleString('pt-BR') : 'Nunca usada'} · Criada em ${new Date(k.created_at).toLocaleDateString('pt-BR')}</div>
                     </div>
-                    <div class="api-key-actions">
-                        ${!k.revoked ? `<button class="btn-icon danger" onclick="revokeApiKey('${k.id}')" title="Revogar chave"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></button>` : ''}
+                    <div style="display:flex;gap:8px;">
+                        ${!k.revoked ? `<button class="btn-icon" style="width:32px;height:32px;border:1px solid var(--accent-red);color:var(--accent-red);" onclick="revokeApiKey('${k.id}')" title="Revogar chave"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></button>` : ''}
                     </div>
                 </div>
             `).join('');
@@ -1286,7 +633,6 @@
                     unlocked.style.display = 'block';
                     const gwEl = document.getElementById('gatewayUrl');
                     if (gwEl) gwEl.textContent = GATEWAY_URL;
-                    // Carrega chaves API do usuário
                     await loadUserApiKeys();
                 } else {
                     locked.style.display = 'flex';
@@ -1311,7 +657,6 @@
         // ── Métricas de Uso ──
         async function loadUsageStats() {
             try {
-                const token = localStorage.getItem('8token_token');
                 const res = await fetch(API_BASE + '/api/user/usage-stats', {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
@@ -1319,7 +664,6 @@
                 const stats = await res.json();
                 renderUsageKPIs(stats);
                 renderUsageByModel(stats.usage_by_model || []);
-                renderUsageDaily(stats.usage_last_7d || []);
             } catch (e) { console.error('Load usage stats error:', e); }
         }
 
@@ -1334,7 +678,6 @@
             if (el('kpiTotalMessages')) el('kpiTotalMessages').textContent = formatNumber(stats.total_messages || 0);
             if (el('kpiTotalTokens')) el('kpiTotalTokens').textContent = formatNumber(stats.total_tokens || 0);
             if (el('kpiTodayMessages')) el('kpiTodayMessages').textContent = formatNumber(stats.today_messages || 0);
-            if (el('kpiTodayTokens')) el('kpiTodayTokens').textContent = formatNumber(stats.today_tokens || 0);
             if (el('kpiAvgLatency')) el('kpiAvgLatency').textContent = (stats.avg_latency_ms || 0) + 'ms';
             if (el('kpiMonthTokens')) el('kpiMonthTokens').textContent = formatNumber(stats.usage_last_30d_tokens || 0);
         }
@@ -1358,47 +701,44 @@
                 for (const [key, cls] of Object.entries(modelColors)) {
                     if (m.includes(key)) return cls;
                 }
-                return 'fable'; // default
+                return 'fable';
             }
             container.innerHTML = models.map(m => {
                 const total = m.tokens_in + m.tokens_out;
                 const pct = Math.max((total / maxTokens) * 100, 2);
                 const colorClass = getColorClass(m.model);
                 return `
-                    <div class="tokens-bar-item">
-                        <div class="tokens-bar-label">
-                            <span class="tokens-bar-name">${escHtmlDash(m.model)}</span>
-                            <span class="tokens-bar-provider">${m.messages} msgs</span>
+                    <div class="usage-item">
+                        <div class="usage-header">
+                            <span style="font-weight: 600;">${escHtmlDash(m.model)}</span>
+                            <span style="color: var(--text-muted);">${m.messages} msgs · ${formatNumber(total)} tokens</span>
                         </div>
-                        <div class="tokens-bar-track">
-                            <div class="tokens-bar-fill ${colorClass}" style="width:${pct}%"></div>
+                        <div class="usage-track">
+                            <div class="usage-fill fill-${colorClass}" style="width:${pct}%"></div>
                         </div>
-                        <div class="tokens-bar-value">${formatNumber(total)}<span class="unit">tokens</span></div>
                     </div>
                 `;
             }).join('');
-            // Update total
-            const totalEl = document.getElementById('tokensChartTotal');
-            if (totalEl) {
-                const grandTotal = models.reduce((s, m) => s + m.tokens_in + m.tokens_out, 0);
-                totalEl.textContent = formatNumber(grandTotal);
-            }
-        }
-
-        function renderUsageDaily(daily) {
-            // Could render a simple daily chart — for now just log
-            // Future: render bars or sparkline for last 7 days
         }
 
         (async () => {
             await renderApiAccess();
-            if (hasActivePlan()) loadUsageStats();
+            if (hasActivePlan()) {
+                loadUsageStats();
+                const usageSection = document.getElementById('usageSection');
+                if (usageSection) usageSection.style.display = 'block';
+                setTimeout(() => {
+                    const gw1 = document.getElementById('exampleGwUrl1');
+                    const gw2 = document.getElementById('exampleGwUrl2');
+                    if (gw1 && GATEWAY_URL) gw1.textContent = GATEWAY_URL;
+                    if (gw2 && GATEWAY_URL) gw2.textContent = GATEWAY_URL;
+                }, 1000);
+            }
         })();
 
         // ── IP Authorization ──
         async function loadIpInfo() {
             try {
-                const token = localStorage.getItem('8token_token');
                 const res = await fetch(API_BASE + '/api/user/ip-info', {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
@@ -1406,24 +746,23 @@
                 if (!res.ok) return;
                 const data = await res.json();
                 const ipMainEl = document.getElementById('ipMainValue');
-                const sectionBadge = document.getElementById('ipSectionBadge');
+                const statusBadge = document.getElementById('ipStatusBadge');
                 const ipToggleBtn = document.getElementById('ipChangeToggleBtn');
+
                 if (!data.ip) {
-                    // Estado vazio: nenhum IP cadastrado — CTA para cadastrar
                     if (ipMainEl) { ipMainEl.textContent = 'Nenhum IP cadastrado'; ipMainEl.dataset.hasIp = '0'; }
                     if (ipToggleBtn) ipToggleBtn.textContent = 'Cadastrar IP';
-                    if (sectionBadge) {
-                        sectionBadge.textContent = 'Sem IP';
-                        sectionBadge.style.display = 'inline-flex';
-                        sectionBadge.style.color = 'var(--accent-amber)';
-                        sectionBadge.style.background = 'rgba(245,158,11,0.12)';
+                    if (statusBadge) {
+                        statusBadge.textContent = 'Sem IP';
+                        statusBadge.style.color = 'var(--accent-orange)';
+                        statusBadge.style.background = 'rgba(255,85,0,0.1)';
                     }
                 } else {
                     if (ipMainEl) { ipMainEl.textContent = data.ip; ipMainEl.dataset.hasIp = '1'; }
                     if (ipToggleBtn) ipToggleBtn.textContent = 'Solicitar Alteração';
                 }
 
-                // IP atual da rede do usuário (via /api/ip/status) + liberação
+                // IP atual da rede do usuário
                 let netIp = null, netActive = false;
                 try {
                     const netRes = await fetch(API_BASE + '/api/ip/status');
@@ -1439,21 +778,20 @@
                     if (netIp && regIp && netIp === regIp) {
                         netEl.innerHTML = 'IP atual da rede: <span style="font-family:var(--font-mono);color:var(--text-secondary);">' + netIp + '</span> · esta rede <span style="color:var(--accent-green);">já está liberada</span>';
                     } else if (netIp) {
-                        netEl.innerHTML = 'IP atual da rede: <span style="font-family:var(--font-mono);color:var(--text-secondary);">' + netIp + '</span>' + (netActive ? ' · <span style="color:var(--accent-green);">rede liberada</span>' : ' · <span style="color:var(--accent-amber);">rede ainda não liberada</span>');
+                        netEl.innerHTML = 'IP atual da rede: <span style="font-family:var(--font-mono);color:var(--text-secondary);">' + netIp + '</span>' + (netActive ? ' · <span style="color:var(--accent-green);">rede liberada</span>' : ' · <span style="color:var(--accent-orange);">rede ainda não liberada</span>');
                     } else {
                         netEl.textContent = 'IP atual da rede: não foi possível detectar';
                     }
                 }
-                
-                const statusBadge = document.getElementById('ipStatusBadge');
-                if (statusBadge) {
-                    let status = data.status || 'unknown';
+
+                if (statusBadge && data.status) {
+                    let status = data.status;
                     let color = 'var(--text-muted)';
                     let bg = 'rgba(122,117,117,0.15)';
                     let label = status;
-                    if (status === 'active') { color = 'var(--accent-green)'; bg = 'rgba(16,185,129,0.12)'; label = 'Ativo'; if (sectionBadge) { sectionBadge.textContent = 'IP Liberado'; sectionBadge.style.display = 'inline-flex'; sectionBadge.style.color = 'var(--accent-green)'; sectionBadge.style.background = 'rgba(16,185,129,0.12)'; } }
-                    else if (status === 'expired') { color = 'var(--accent-red)'; bg = 'rgba(244,63,94,0.12)'; label = 'Expirado'; }
-                    else if (status === 'suspended') { color = 'var(--accent-amber)'; bg = 'rgba(245,158,11,0.12)'; label = 'Suspenso'; }
+                    if (status === 'active') { color = 'var(--accent-green)'; bg = 'rgba(0,255,148,0.1)'; label = '● Liberado'; }
+                    else if (status === 'expired') { color = 'var(--accent-red)'; bg = 'rgba(255,51,51,0.1)'; label = '● Expirado'; }
+                    else if (status === 'suspended') { color = 'var(--accent-orange)'; bg = 'rgba(255,85,0,0.1)'; label = '● Suspenso'; }
                     statusBadge.style.color = color;
                     statusBadge.style.background = bg;
                     statusBadge.textContent = label;
@@ -1464,6 +802,7 @@
                     pendingEl.style.display = 'block';
                     pendingEl.textContent = '⏳ Alteração pendente para ' + data.pending_ip_change.new_ip + ' (solicitado em ' + new Date(data.pending_ip_change.requested_at).toLocaleDateString('pt-BR') + ')';
                 }
+
                 const statusEl = document.getElementById('ipAdditionalStatus');
                 const valueEl = document.getElementById('ipAdditionalValue');
                 const actionsEl = document.getElementById('ipAdditionalActions');
@@ -1471,13 +810,13 @@
                     if (statusEl) statusEl.textContent = data.additional_ip ? 'Ativo' : 'Comprado — defina o IP';
                     if (valueEl && data.additional_ip) { valueEl.style.display = 'block'; valueEl.textContent = data.additional_ip; }
                     if (actionsEl) {
-                        actionsEl.innerHTML = '<button class="btn-upgrade" onclick="setAdditionalIp()" style="background:transparent;border:1px solid var(--border);color:var(--text-secondary);font-size:12px;height:32px;padding:0 12px;">Definir IP</button>' +
-                            '<button class="btn-upgrade" onclick="removeAdditionalIp()" style="background:transparent;border:1px solid var(--accent-red);color:var(--accent-red);font-size:12px;height:32px;padding:0 12px;">Remover</button>';
+                        actionsEl.innerHTML = '<button class="btn btn-secondary" style="font-size:12px;padding:6px 12px;margin-right:8px;" onclick="setAdditionalIp()">Definir IP</button>' +
+                            '<button class="btn btn-secondary" style="font-size:12px;padding:6px 12px;border-color:var(--accent-red);color:var(--accent-red);" onclick="removeAdditionalIp()">Remover</button>';
                     }
                 } else {
                     if (statusEl) statusEl.textContent = 'Não contratado';
                     if (actionsEl) {
-                        actionsEl.innerHTML = '<button class="btn-upgrade" onclick="buyAdditionalIp()" style="font-size:13px;height:36px;padding:0 16px;">Comprar IP Adicional — R$ 74,90/mês</button>';
+                        actionsEl.innerHTML = '<button class="btn btn-primary" style="font-size:13px;padding:8px 16px;" onclick="buyAdditionalIp()">Comprar IP Adicional — R$ 74,90/mês</button>';
                     }
                 }
             } catch (e) { console.error('Load IP info error:', e); }
@@ -1486,14 +825,13 @@
 
         // ── IP Adicional: compra via checkout-ip.html + gestão no painel ──
         function buyAdditionalIp() {
-            window.location.href = 'checkout-ip.html';
+            window.location.href = '/checkout-ip';
         }
         async function setAdditionalIp() {
             const ip = prompt('Digite o IP adicional que deseja autorizar:');
             if (!ip) return;
             if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(ip.trim())) { alert('Formato inválido. Use algo como 189.45.12.34'); return; }
             try {
-                const token = localStorage.getItem('8token_token');
                 const res = await fetch(API_BASE + '/api/user/additional-ip', {
                     method: 'PUT',
                     headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
@@ -1506,7 +844,6 @@
         async function removeAdditionalIp() {
             if (!confirm('Remover o IP adicional da sua conta?')) return;
             try {
-                const token = localStorage.getItem('8token_token');
                 const res = await fetch(API_BASE + '/api/user/additional-ip', {
                     method: 'DELETE',
                     headers: { 'Authorization': 'Bearer ' + token }
@@ -1516,7 +853,7 @@
             } catch (e) { alert('Erro de conexão. Tente novamente.'); }
         }
 
-        // ── Troca de IP via formulário inline (sem prompt/alert externo) ──
+        // ── Troca de IP via formulário inline ──
         function toggleIpChangeForm() {
             const form = document.getElementById('ipChangeForm');
             const btn = document.getElementById('ipChangeToggleBtn');
@@ -1546,7 +883,6 @@
             if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(newIp)) { showIpFeedback('Formato inválido. Use algo como 189.45.12.34', false); return; }
             if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Enviando...'; }
             try {
-                const token = localStorage.getItem('8token_token');
                 const res = await fetch(API_BASE + '/api/user/change-ip', {
                     method: 'POST',
                     headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
@@ -1591,19 +927,18 @@
         function toggleNotifDropdown(e) {
             if (e) e.stopPropagation();
             const dd = document.getElementById('notifDropdown');
-            dd.classList.toggle('open');
-            if (dd.classList.contains('open')) loadDashNotifications();
+            dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+            if (dd.style.display === 'block') loadDashNotifications();
         }
 
         document.addEventListener('click', function(e) {
             const dd = document.getElementById('notifDropdown');
-            const wrap = document.querySelector('.notif-bell-wrap');
-            if (dd && wrap && !wrap.contains(e.target)) dd.classList.remove('open');
+            const wrap = document.querySelector('.btn-icon[aria-label="Notificações"]');
+            if (dd && wrap && !wrap.contains(e.target) && !dd.contains(e.target)) dd.style.display = 'none';
         });
 
         async function loadDashNotifications() {
             try {
-                const token = localStorage.getItem('8token_token');
                 const res = await fetch(API_BASE + '/api/notifications', {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
@@ -1619,14 +954,14 @@
             if (!list) return;
             const recent = dashNotifications.slice(0, 5);
             if (!recent.length) {
-                list.innerHTML = '<div class="notif-dropdown-empty">Nenhuma notificação ainda</div>';
+                list.innerHTML = '<div style="padding:var(--space-xl);text-align:center;color:var(--text-muted);font-size:13px;">Nenhuma notificação ainda</div>';
                 return;
             }
             list.innerHTML = recent.map(n => `
-                <div class="notif-dropdown-item ${n.read ? '' : 'unread'}" onclick="markReadDash(${n.id})">
-                    <div class="notif-dropdown-item-title">${escHtmlDash(n.title)}</div>
-                    <div class="notif-dropdown-item-msg">${escHtmlDash(n.message)}</div>
-                    <div class="notif-dropdown-item-time">${timeAgoDash(n.created_at)}</div>
+                <div style="padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.2s;${n.read ? '' : 'background:rgba(255,85,0,0.04);'}" onclick="markReadDash(${n.id})">
+                    <div style="font-size:13px;font-weight:600;margin-bottom:2px;color:var(--text-primary);">${escHtmlDash(n.title)}</div>
+                    <div style="font-size:12px;color:var(--text-secondary);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${escHtmlDash(n.message)}</div>
+                    <div style="font-size:10px;color:var(--text-muted);margin-top:4px;font-family:var(--font-mono);">${timeAgoDash(n.created_at)}</div>
                 </div>
             `).join('');
         }
@@ -1645,7 +980,6 @@
 
         async function markReadDash(id) {
             try {
-                const token = localStorage.getItem('8token_token');
                 await fetch(API_BASE + '/api/notifications/' + id + '/read', {
                     method: 'PUT',
                     headers: { 'Authorization': 'Bearer ' + token }
@@ -1659,7 +993,6 @@
 
         async function markAllReadDash() {
             try {
-                const token = localStorage.getItem('8token_token');
                 await fetch(API_BASE + '/api/notifications/read-all', {
                     method: 'PUT',
                     headers: { 'Authorization': 'Bearer ' + token }
@@ -1671,28 +1004,10 @@
         }
 
         // Load notifications on page init
-        if (localStorage.getItem('8token_token')) {
+        if (token) {
             loadDashNotifications();
             setInterval(loadDashNotifications, 60000);
         }
-
-        // Initialize Usage Stats and API Keys if plan is active
-        (async () => {
-            await renderApiAccess();
-            if (hasActivePlan()) {
-                loadUsageStats();
-                const usageSection = document.getElementById('usageSection');
-                if (usageSection) usageSection.style.display = 'block';
-                // Update example URLs with actual gateway URL after a short delay to ensure GATEWAY_URL is fetched
-                setTimeout(() => {
-                    const gw1 = document.getElementById('exampleGwUrl1');
-                    const gw2 = document.getElementById('exampleGwUrl2');
-                    if (gw1 && GATEWAY_URL) gw1.textContent = GATEWAY_URL;
-                    if (gw2 && GATEWAY_URL) gw2.textContent = GATEWAY_URL;
-                }, 1000);
-            }
-        })();
-
-        </script>
+    </script>
 </body>
 </html>
