@@ -6,108 +6,125 @@
     <title>Admin 8Token</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
+        /* ========================================
+           DESIGN SYSTEM V2 — Admin Production
+           Menu lateral permanente igual ao dashboard
+           ======================================== */
         :root {
-            --bg-primary: #1a1818;
-            --bg-card: #232121;
-            --bg-card-alt: #1e1c1c;
-            --border: #2d2a2a;
-            --border-hover: #3d3939;
-            --text-primary: #ffffff;
-            --text-secondary: #b0abab;
-            --text-muted: #7a7575;
-            --accent-green: #10B981;
-            --accent-red: #F43F5E;
+            --bg-primary: #050505;
+            --bg-secondary: #0A0A0A;
+            --bg-card: rgba(17, 17, 17, 0.9);
+            --bg-card-solid: #111111;
+            --border: #222222;
+            --border-hover: #333333;
+            --text-primary: #FFFFFF;
+            --text-secondary: #A0A0A0;
+            --text-muted: #555555;
+            --accent-orange: #FF5500;
+            --accent-orange-glow: rgba(255, 85, 0, 0.25);
+            --accent-blue: #00D4FF;
+            --accent-green: #00FF94;
+            --accent-red: #FF3333;
             --accent-amber: #F59E0B;
-            --accent-blue: #006ffe;
-            --accent-orange: #f05409;
-            --accent-orange-hover: #d44a08;
             --accent-purple: #a855f7;
             --accent-teal: #2dd4bf;
-            --glow-orange: rgba(240, 84, 9, 0.15);
-            --space-unit: 4px;
-            --space-xs: calc(var(--space-unit) * 2);
-            --space-sm: calc(var(--space-unit) * 3);
-            --space-md: calc(var(--space-unit) * 4);
-            --space-lg: calc(var(--space-unit) * 6);
-            --space-xl: calc(var(--space-unit) * 8);
-            --space-2xl: calc(var(--space-unit) * 12);
-            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+            --space-xs: 8px;
+            --space-sm: 16px;
+            --space-md: 24px;
+            --space-lg: 32px;
+            --space-xl: 48px;
+            --space-2xl: 64px;
+            --font-sans: 'Inter', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
             --radius-sm: 8px;
             --radius-md: 12px;
             --radius-lg: 16px;
             --radius-pill: 999px;
-            --transition-fast: 150ms ease;
-            --transition-base: 250ms ease;
+            --glass: blur(10px);
+            --transition: all 0.3s ease-in-out;
         }
+
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
         html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
-        body { font-family: var(--font-sans); background: var(--bg-primary); color: var(--text-primary); line-height: 1.6; min-height: 100vh; overflow-x: hidden; }
-        a { color: inherit; text-decoration: none; transition: color var(--transition-fast); }
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            background-image: radial-gradient(circle at 50% 0%, #1a1a1a 0%, var(--bg-primary) 60%);
+            background-attachment: fixed;
+        }
+        a { text-decoration: none; color: inherit; transition: var(--transition); }
         a:hover { color: var(--accent-orange); }
 
         /* Navbar */
-        .navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: rgba(26,24,24,0.97); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
-        .navbar-inner { max-width: 1400px; margin: 0 auto; padding: 0 var(--space-lg); display: flex; align-items: center; justify-content: space-between; height: 64px; gap: var(--space-md); }
-        .navbar-logo { display: flex; align-items: center; gap: var(--space-xs); font-weight: 700; font-size: 18px; white-space: nowrap; }
-        .navbar-logo svg { width: 28px; height: 28px; flex-shrink: 0; }
-        .navbar-badge { font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: var(--radius-pill); background: rgba(240,84,9,0.15); color: var(--accent-orange); text-transform: uppercase; letter-spacing: 0.05em; margin-left: var(--space-xs); }
-        .navbar-nav { display: flex; align-items: center; gap: var(--space-sm); flex-shrink: 0; }
+        .navbar {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+            background: rgba(5, 5, 5, 0.8); backdrop-filter: var(--glass);
+            border-bottom: 1px solid var(--border); height: 80px;
+            display: flex; align-items: center;
+        }
+        .navbar-inner {
+            max-width: 1600px; margin: 0 auto; width: 100%; padding: 0 var(--space-md);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .navbar-logo {
+            font-size: 24px; font-weight: 800; display: flex; align-items: center; gap: var(--space-xs);
+        }
+        .navbar-logo svg { width: 32px; height: 32px; fill: var(--accent-orange); }
+        .admin-badge {
+            background: rgba(168, 85, 247, 0.15); color: var(--accent-purple);
+            padding: 2px 10px; border-radius: 999px; font-size: 10px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.05em; margin-left: 8px;
+        }
+        .navbar-right { display: flex; align-items: center; gap: var(--space-sm); }
 
-        /* Hamburger Menu Button */
-        .hamburger-btn { display: none; background: none; border: none; cursor: pointer; padding: var(--space-sm); color: var(--text-primary); }
-        .hamburger-btn svg { width: 24px; height: 24px; }
+        /* Admin Layout: Sidebar + Content */
+        .admin-layout {
+            max-width: 1600px; margin: 0 auto; padding: 120px var(--space-md) var(--space-xl);
+            display: grid; grid-template-columns: 280px 1fr; gap: var(--space-xl);
+        }
+        @media (max-width: 1024px) { .admin-layout { grid-template-columns: 1fr; } }
 
-        /* Sidebar Drawer */
-        .sidebar-drawer { position: fixed; top: 0; left: -320px; width: 320px; height: 100vh; background: linear-gradient(180deg, #1e1c1c 0%, #1a1818 100%); border-right: 1px solid var(--border); z-index: 1100; transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1); overflow-y: auto; box-shadow: 4px 0 24px rgba(0,0,0,0.3); }
-        .sidebar-drawer.open { left: 0; }
-        .sidebar-drawer::-webkit-scrollbar { width: 6px; }
-        .sidebar-drawer::-webkit-scrollbar-track { background: transparent; }
-        .sidebar-drawer::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-        .sidebar-drawer::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
-        .sidebar-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(2px); z-index: 1050; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
-        .sidebar-overlay.open { opacity: 1; pointer-events: auto; }
-        .sidebar-header { padding: var(--space-xl) var(--space-lg); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, rgba(240,84,9,0.05) 0%, transparent 100%); }
-        .sidebar-title { font-size: 18px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em; }
-        .sidebar-close { background: rgba(255,255,255,0.05); border: 1px solid var(--border); cursor: pointer; color: var(--text-secondary); padding: var(--space-xs); border-radius: var(--radius-sm); transition: all var(--transition-fast); display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; }
-        .sidebar-close:hover { color: var(--text-primary); background: rgba(255,255,255,0.1); border-color: var(--border-hover); transform: rotate(90deg); }
-        .sidebar-nav { padding: var(--space-md) 0; }
-        .sidebar-section-label { padding: var(--space-sm) var(--space-lg); font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-top: var(--space-sm); }
-        .sidebar-link { display: flex; align-items: center; gap: var(--space-md); padding: var(--space-md) var(--space-lg); color: var(--text-secondary); font-size: 14px; font-weight: 500; transition: all 0.2s ease; cursor: pointer; border: none; background: none; width: 100%; text-align: left; position: relative; border-left: 3px solid transparent; }
-        .sidebar-link:hover { background: rgba(255,255,255,0.03); color: var(--text-primary); padding-left: calc(var(--space-lg) + 4px); }
-        .sidebar-link.active { background: linear-gradient(90deg, rgba(240,84,9,0.12) 0%, transparent 100%); color: var(--accent-orange); border-left-color: var(--accent-orange); }
-        .sidebar-link.active svg { color: var(--accent-orange); }
-        .sidebar-link svg { width: 20px; height: 20px; flex-shrink: 0; opacity: 0.7; transition: opacity var(--transition-fast); }
-        .sidebar-link:hover svg { opacity: 1; }
+        /* Sidebar */
+        .sidebar { display: flex; flex-direction: column; gap: var(--space-xs); position: sticky; top: 100px; height: fit-content; }
+        .sidebar-link {
+            padding: 12px 16px; border-radius: var(--radius-sm);
+            color: var(--text-secondary); font-weight: 500; font-size: 14px;
+            display: flex; align-items: center; gap: var(--space-sm);
+            transition: var(--transition); border: 1px solid transparent; cursor: pointer;
+            background: none; width: 100%; text-align: left;
+        }
+        .sidebar-link:hover { background: rgba(255,255,255,0.03); color: var(--text-primary); }
+        .sidebar-link.active {
+            background: rgba(255, 85, 0, 0.1); color: var(--accent-orange);
+            border-color: rgba(255, 85, 0, 0.2);
+        }
+        .sidebar-link svg { width: 20px; height: 20px; opacity: 0.7; }
         .sidebar-link.active svg { opacity: 1; }
-        .sidebar-divider { height: 1px; background: linear-gradient(90deg, transparent 0%, var(--border) 20%, var(--border) 80%, transparent 100%); margin: var(--space-md) var(--space-lg); }
-
-        @media (max-width: 768px) {
-            .hamburger-btn { display: block; }
-            .navbar-nav { display: none; }
-            .tabs-inner { padding: 0 var(--space-md); }
-            .page { padding: 144px var(--space-md) 64px; }
+        .sidebar-divider { height: 1px; background: var(--border); margin: var(--space-sm) 0; }
+        .sidebar-count {
+            margin-left: auto; background: rgba(255, 85, 0, 0.15); color: var(--accent-orange);
+            font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: var(--radius-pill);
+            min-width: 18px; text-align: center;
         }
 
-        /* Tabs */
-        .tabs-bar { background: var(--bg-card); border-bottom: 1px solid var(--border); position: sticky; top: 64px; z-index: 900; }
-        .tabs-inner { max-width: 1400px; margin: 0 auto; padding: 0 var(--space-lg); display: flex; gap: 0; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-        .tabs-inner::-webkit-scrollbar { display: none; }
-        .tab-btn { padding: var(--space-md) var(--space-lg); font-size: 14px; font-weight: 500; color: var(--text-muted); background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap; transition: all var(--transition-fast); font-family: var(--font-sans); }
-        .tab-btn:hover { color: var(--text-secondary); }
-        .tab-btn.active { color: var(--accent-orange); border-bottom-color: var(--accent-orange); }
-        .tab-btn .tab-count { font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: var(--radius-pill); background: rgba(240,84,9,0.15); color: var(--accent-orange); margin-left: var(--space-xs); }
-
-        /* Page */
-        .page { max-width: 1400px; margin: 0 auto; padding: 144px var(--space-lg) 64px; }
+        /* Content Area */
+        .content-area { display: flex; flex-direction: column; gap: var(--space-lg); min-width: 0; }
         .tab-panel { display: none; }
         .tab-panel.active { display: block; }
 
-        /* Cards & Stats */
-        .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--space-md); margin-bottom: var(--space-xl); }
-        .stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-lg); }
+        /* Stats Grid */
+        .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--space-md); margin-bottom: var(--space-lg); }
+        .stat-card {
+            background: var(--bg-card); backdrop-filter: var(--glass);
+            border: 1px solid var(--border); border-radius: var(--radius-md);
+            padding: var(--space-lg); transition: var(--transition);
+        }
+        .stat-card:hover { border-color: var(--border-hover); transform: translateY(-2px); }
         .stat-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: var(--space-xs); }
         .stat-value { font-size: 28px; font-weight: 700; font-family: var(--font-mono); line-height: 1.2; }
         .stat-value.green { color: var(--accent-green); }
@@ -116,654 +133,444 @@
         .stat-value.purple { color: var(--accent-purple); }
         .stat-value.red { color: var(--accent-red); }
 
-        .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-xl); margin-bottom: var(--space-lg); }
-        .card-title { font-size: 16px; font-weight: 600; margin-bottom: var(--space-md); }
+        /* Cards */
+        .card {
+            background: var(--bg-card); backdrop-filter: var(--glass);
+            border: 1px solid var(--border); border-radius: var(--radius-lg);
+            padding: var(--space-lg); margin-bottom: var(--space-lg); transition: var(--transition);
+        }
+        .card:hover { border-color: var(--border-hover); }
+        .card-title { font-size: 16px; font-weight: 600; margin-bottom: var(--space-md); display: flex; align-items: center; gap: var(--space-sm); }
 
         /* Forms */
         .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--space-md); margin-bottom: var(--space-md); }
         .form-group { display: flex; flex-direction: column; gap: var(--space-xs); }
-        .form-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em; }
-        .form-input, .form-select { width: 100%; height: 40px; padding: 0 var(--space-md); background: var(--bg-primary); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary); font-size: 14px; font-family: var(--font-sans); outline: none; transition: border-color var(--transition-fast); }
-        .form-input:focus, .form-select:focus { border-color: var(--accent-orange); box-shadow: 0 0 0 3px var(--glow-orange); }
+        .form-label { font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em; }
+        .form-input, .form-select, textarea.form-input {
+            width: 100%; padding: 10px var(--space-md); background: var(--bg-secondary);
+            border: 1px solid var(--border); border-radius: var(--radius-sm);
+            color: var(--text-primary); font-size: 14px; font-family: var(--font-sans);
+            outline: none; transition: border-color var(--transition);
+        }
+        .form-input:focus, .form-select:focus, textarea.form-input:focus { border-color: var(--accent-orange); box-shadow: 0 0 0 3px var(--accent-orange-glow); }
         .form-input::placeholder { color: var(--text-muted); }
-        .form-select { cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237a7575' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+        .form-select { cursor: pointer; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23555555' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+        textarea.form-input { resize: vertical; min-height: 80px; }
 
         /* Buttons */
-        .btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-xs); height: 40px; padding: 0 var(--space-lg); font-size: 14px; font-weight: 600; border-radius: var(--radius-sm); border: none; cursor: pointer; transition: all var(--transition-fast); white-space: nowrap; font-family: var(--font-sans); }
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: var(--space-xs);
+            height: 40px; padding: 0 var(--space-lg); font-size: 14px; font-weight: 600;
+            border-radius: var(--radius-sm); border: none; cursor: pointer;
+            transition: var(--transition); white-space: nowrap; font-family: var(--font-sans);
+        }
         .btn-primary { background: var(--accent-orange); color: white; }
-        .btn-primary:hover { background: var(--accent-orange-hover); transform: translateY(-1px); }
+        .btn-primary:hover { background: #ff6b00; transform: translateY(-1px); box-shadow: 0 0 15px var(--accent-orange-glow); }
         .btn-secondary { background: transparent; border: 1px solid var(--border); color: var(--text-secondary); }
         .btn-secondary:hover { border-color: var(--accent-orange); color: var(--accent-orange); }
-        .btn-success { background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: var(--accent-green); }
-        .btn-success:hover { background: rgba(16,185,129,0.25); }
-        .btn-danger { background: rgba(244,63,94,0.1); border: 1px solid rgba(244,63,94,0.3); color: var(--accent-red); }
-        .btn-danger:hover { background: rgba(244,63,94,0.2); }
+        .btn-success { background: rgba(0,255,148,0.1); border: 1px solid rgba(0,255,148,0.3); color: var(--accent-green); }
+        .btn-success:hover { background: rgba(0,255,148,0.2); }
+        .btn-danger { background: rgba(255,51,51,0.1); border: 1px solid rgba(255,51,51,0.3); color: var(--accent-red); }
+        .btn-danger:hover { background: rgba(255,51,51,0.2); }
         .btn-sm { height: 32px; padding: 0 var(--space-md); font-size: 12px; }
 
         /* Alert */
         .alert { padding: var(--space-sm) var(--space-md); border-radius: var(--radius-sm); font-size: 13px; margin-bottom: var(--space-md); display: none; }
-        .alert.success { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); color: var(--accent-green); display: block; }
-        .alert.error { background: rgba(244,63,94,0.1); border: 1px solid rgba(244,63,94,0.3); color: var(--accent-red); display: block; }
+        .alert.success { background: rgba(0,255,148,0.1); border: 1px solid rgba(0,255,148,0.3); color: var(--accent-green); display: block; }
+        .alert.error { background: rgba(255,51,51,0.1); border: 1px solid rgba(255,51,51,0.3); color: var(--accent-red); display: block; }
 
         /* Table */
         .table-wrap { overflow-x: auto; border-radius: var(--radius-md); border: 1px solid var(--border); }
         table { width: 100%; border-collapse: collapse; min-width: 700px; }
-        thead { background: #0f172a; }
+        thead { background: rgba(255,255,255,0.02); }
         th { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); padding: var(--space-sm) var(--space-md); text-align: left; white-space: nowrap; }
         td { padding: var(--space-sm) var(--space-md); font-size: 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
         tr:last-child td { border-bottom: none; }
-        tr:nth-child(even) td { background: var(--bg-card-alt); }
-        tr:hover td { background: var(--border); }
+        tr:hover td { background: rgba(255,255,255,0.02); }
         td.mono { font-family: var(--font-mono); font-size: 13px; color: var(--text-secondary); }
         td.actions { white-space: nowrap; }
         td.actions .btn { margin-right: var(--space-xs); }
 
         /* Badges */
         .badge { display: inline-flex; align-items: center; padding: 2px 10px; font-size: 11px; font-weight: 600; border-radius: var(--radius-pill); text-transform: uppercase; letter-spacing: 0.03em; }
-        .badge-active { background: rgba(16,185,129,0.12); color: var(--accent-green); }
-        .badge-pending { background: rgba(245,158,11,0.12); color: var(--accent-amber); }
-        .badge-expired { background: rgba(244,63,94,0.12); color: var(--accent-red); }
-        .badge-suspended { background: rgba(245,158,11,0.12); color: var(--accent-amber); }
-        .badge-approved { background: rgba(16,185,129,0.12); color: var(--accent-green); }
-        .badge-rejected { background: rgba(244,63,94,0.12); color: var(--accent-red); }
-        .badge-free { background: rgba(122,117,117,0.15); color: var(--text-muted); }
-        .badge-pro { background: rgba(0,111,254,0.12); color: var(--accent-blue); }
-        .badge-max { background: rgba(240,84,9,0.12); color: var(--accent-orange); }
-        .badge-admin { background: rgba(168,85,247,0.15); color: var(--accent-purple); }
+        .badge-active { background: rgba(0,255,148,0.1); color: var(--accent-green); }
+        .badge-pending { background: rgba(255,85,0,0.1); color: var(--accent-orange); }
+        .badge-expired { background: rgba(255,51,51,0.1); color: var(--accent-red); }
+        .badge-suspended { background: rgba(245,158,11,0.1); color: var(--accent-amber); }
+        .badge-approved { background: rgba(0,255,148,0.1); color: var(--accent-green); }
+        .badge-rejected { background: rgba(255,51,51,0.1); color: var(--accent-red); }
+        .badge-free { background: rgba(85,85,85,0.15); color: var(--text-muted); }
+        .badge-pro { background: rgba(0,212,255,0.1); color: var(--accent-blue); }
+        .badge-max { background: rgba(255,85,0,0.1); color: var(--accent-orange); }
+        .badge-admin { background: rgba(168,85,247,0.1); color: var(--accent-purple); }
+        .badge-warning { background: rgba(245,158,11,0.1); color: var(--accent-amber); }
+        .badge-danger { background: rgba(255,51,51,0.1); color: var(--accent-red); }
 
         .search-bar { display: flex; gap: var(--space-md); margin-bottom: var(--space-lg); flex-wrap: wrap; }
         .search-bar .form-input { flex: 1; min-width: 200px; }
         .empty-state { text-align: center; padding: var(--space-2xl); color: var(--text-muted); font-size: 14px; }
 
-        /* Plan breakdown mini chart */
+        /* Plan bars */
         .plan-bars { display: flex; flex-direction: column; gap: var(--space-sm); }
         .plan-bar-row { display: flex; align-items: center; gap: var(--space-md); }
         .plan-bar-label { font-size: 12px; color: var(--text-secondary); min-width: 80px; text-transform: capitalize; }
-        .plan-bar-track { flex: 1; height: 8px; background: var(--bg-primary); border-radius: 4px; overflow: hidden; }
+        .plan-bar-track { flex: 1; height: 8px; background: var(--bg-secondary); border-radius: 4px; overflow: hidden; }
         .plan-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
         .plan-bar-count { font-size: 12px; font-family: var(--font-mono); color: var(--text-muted); min-width: 30px; text-align: right; }
 
-        /* Responsive: tablet */
-        @media (max-width: 768px) {
-            .navbar-inner { padding: 0 var(--space-md); height: 56px; gap: var(--space-sm); }
-            .navbar-logo { font-size: 16px; }
-            .navbar-badge { font-size: 10px; padding: 2px 8px; }
-            .tabs-bar { top: 56px; }
-            .tabs-inner { padding: 0 var(--space-md); }
-            .tab-btn { padding: var(--space-sm) var(--space-md); font-size: 13px; }
-            .page { padding: 112px var(--space-md) 48px; }
-            .form-row { grid-template-columns: 1fr 1fr; }
-            .stats-row { grid-template-columns: repeat(2, 1fr); gap: var(--space-sm); }
-            .month-grid { grid-template-columns: 1fr 1fr !important; }
-            .dash-grid { grid-template-columns: 1fr !important; }
-            .stat-card { padding: var(--space-md); }
-            .stat-value { font-size: 22px; }
-            .card { padding: var(--space-md); }
-            table { min-width: 600px; }
-            th, td { padding: var(--space-xs) var(--space-sm); font-size: 12px; }
-            .btn-sm { height: 28px; padding: 0 var(--space-sm); font-size: 11px; }
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .sidebar { position: static; flex-direction: row; flex-wrap: wrap; gap: var(--space-xs); }
+            .sidebar-link { flex: 1; min-width: 140px; justify-content: center; }
+            .sidebar-divider { display: none; }
         }
-
-        /* Responsive: mobile */
-        @media (max-width: 480px) {
-            .navbar-inner { height: auto; padding: var(--space-sm); flex-wrap: wrap; }
-            .navbar-logo svg { width: 22px; height: 22px; }
-            .navbar-logo { font-size: 15px; gap: 4px; }
-            .navbar-badge { font-size: 9px; padding: 1px 6px; margin-left: 4px; }
-            .navbar-nav { width: 100%; justify-content: flex-end; }
-            .tabs-bar { top: 88px; }
-            .tabs-inner { padding: 0 var(--space-sm); }
-            .tab-btn { padding: var(--space-sm) var(--space-sm); font-size: 12px; }
-            .page { padding: 136px var(--space-sm) 32px; }
+        @media (max-width: 768px) {
+            .admin-layout { padding-top: 100px; }
+            .stats-row { grid-template-columns: repeat(2, 1fr); }
             .form-row { grid-template-columns: 1fr; }
-            .stats-row { grid-template-columns: 1fr 1fr; gap: var(--space-xs); }
-            .stat-card { padding: var(--space-sm); }
-            .stat-label { font-size: 10px; }
-            .stat-value { font-size: 20px; }
-            .card { padding: var(--space-sm); margin-bottom: var(--space-md); }
-            .form-input, .form-select { height: 38px; font-size: 13px; }
-            .btn { height: 38px; font-size: 13px; padding: 0 var(--space-md); }
-            .btn-sm { height: 30px; }
-            table { min-width: 520px; }
-            th { font-size: 10px; }
-            td { font-size: 12px; }
-            .search-bar { flex-direction: column; }
-            .search-bar .form-input { min-width: unset; width: 100%; }
+            .navbar-right span { display: none; }
         }
     </style>
 </head>
 <body>
-    <!-- Sidebar Drawer -->
-    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
-    <div class="sidebar-drawer" id="sidebarDrawer">
-        <div class="sidebar-header">
-            <span class="sidebar-title">Menu</span>
-            <button class="sidebar-close" onclick="closeSidebar()">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
-        </div>
-        <div class="sidebar-nav">
-            <button class="sidebar-link active" onclick="switchTab('dashboard'); closeSidebar();">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-                Dashboard
-            </button>
-            <button class="sidebar-link" onclick="switchTab('users'); closeSidebar();">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                Usuários / IPs
-            </button>
-            <button class="sidebar-link" onclick="switchTab('activations'); closeSidebar();">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                Ativação de IPs
-            </button>
-            <button class="sidebar-link" onclick="switchTab('affiliates'); closeSidebar();">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                Afiliados
-            </button>
-            <button class="sidebar-link" onclick="switchTab('plans'); closeSidebar();">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-                Planos
-            </button>
-            <button class="sidebar-link" onclick="switchTab('expired'); closeSidebar();">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                Expirados
-            </button>
-            <button class="sidebar-link" onclick="switchTab('coupons'); closeSidebar();">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-                Cupons
-            </button>
-            <button class="sidebar-link" onclick="switchTab('ipchanges'); closeSidebar();">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-                Solicitações de IP
-            </button>
-            <button class="sidebar-link" onclick="switchTab('webhook'); closeSidebar();">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                Webhook Kirvano
-            </button>
-            <button class="sidebar-link" onclick="switchTab('settings'); closeSidebar();">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                Configurações
-            </button>
-            <div class="sidebar-divider"></div>
-            <button class="sidebar-link" onclick="createTestAccounts(); closeSidebar();" style="color:var(--accent-purple);">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                Gerar Contas Teste
-            </button>
-            <a href="dashboard.html" class="sidebar-link">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                Dashboard Usuário
-            </a>
-            <a href="index.html" class="sidebar-link">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-                Site Público
-            </a>
-        </div>
-    </div>
-
+    <!-- Navbar -->
     <nav class="navbar">
         <div class="navbar-inner">
-            <button class="hamburger-btn" onclick="openSidebar()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-            </button>
             <a href="index.html" class="navbar-logo">
-                <svg viewBox="0 0 48 48" fill="var(--accent-orange)" width="28" height="28">
-                    <path d="M24 4C14 4 8 12 8 22v14c0 2 1 4 3 4h2l3-4h4l3 4h2l3-4h4l3 4h2c2 0 3-2 3-4V22C40 12 34 4 24 4zm-8 22a3 3 0 110-6 3 3 0 010 6zm16 0a3 3 0 110-6 3 3 0 010 6z"/>
-                </svg>
+                <svg viewBox="0 0 48 48"><path d="M24 4C14 4 8 12 8 22v14c0 2 1 4 3 4h2l3-4h4l3 4h2l3-4h4l3 4h2c2 0 3-2 3-4V22C40 12 34 4 24 4zm-8 22a3 3 0 110-6 3 3 0 010 6zm16 0a3 3 0 110-6 3 3 0 010 6z"/></svg>
                 8Token
-                <span class="navbar-badge">Admin</span>
+                <span class="admin-badge">Admin</span>
             </a>
-            <div class="navbar-nav">
-                <button class="btn btn-secondary btn-sm" onclick="createTestAccounts()" style="border-color:var(--accent-purple);color:var(--accent-purple);">⚡ Gerar Contas Teste</button>
+            <div class="navbar-right">
+                <button class="btn btn-secondary btn-sm" onclick="createTestAccounts()" style="border-color:var(--accent-purple);color:var(--accent-purple);">⚡ Contas Teste</button>
                 <a href="dashboard.html" class="btn btn-secondary btn-sm">Dashboard</a>
                 <a href="index.html" class="btn btn-secondary btn-sm">Site</a>
             </div>
         </div>
     </nav>
 
-    <!-- Tabs -->
-    <div class="tabs-bar">
-        <div class="tabs-inner">
-            <button class="tab-btn active" onclick="switchTab('dashboard')">Dashboard</button>
-            <button class="tab-btn" onclick="switchTab('users')">Usuários / IPs</button>
-            <button class="tab-btn" onclick="switchTab('activations')">Ativação de IPs <span class="tab-count" id="pendingCount" style="display:none;">0</span></button>
-            <button class="tab-btn" onclick="switchTab('affiliates')">Afiliados</button>
-            <button class="tab-btn" onclick="switchTab('plans')">Planos</button>
-            <button class="tab-btn" onclick="switchTab('expired')">Expirados <span class="tab-count" id="expiredCount" style="display:none;">0</span></button>
-            <button class="tab-btn" onclick="switchTab('coupons')">Cupons</button>
-            <button class="tab-btn" onclick="switchTab('ipchanges')">Solicitações de IP <span class="tab-count" id="ipChangeCount" style="display:none;">0</span></button>
-            <button class="tab-btn" onclick="switchTab('notifications')">🔔 Notificações</button>
-        </div>
-    </div>
+    <!-- Admin Layout -->
+    <main class="admin-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <button class="sidebar-link active" onclick="switchTab('dashboard', this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                Dashboard
+            </button>
+            <button class="sidebar-link" onclick="switchTab('users', this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Usuários / IPs
+            </button>
+            <button class="sidebar-link" onclick="switchTab('activations', this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                Ativação de IPs
+                <span class="sidebar-count" id="pendingCount" style="display:none;">0</span>
+            </button>
+            <button class="sidebar-link" onclick="switchTab('affiliates', this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                Afiliados
+            </button>
+            <button class="sidebar-link" onclick="switchTab('plans', this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                Planos
+            </button>
+            <button class="sidebar-link" onclick="switchTab('expired', this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                Expirados
+                <span class="sidebar-count" id="expiredCount" style="display:none;">0</span>
+            </button>
+            <button class="sidebar-link" onclick="switchTab('coupons', this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                Cupons
+            </button>
+            <button class="sidebar-link" onclick="switchTab('ipchanges', this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                Solicitações IP
+                <span class="sidebar-count" id="ipChangeCount" style="display:none;">0</span>
+            </button>
+            <button class="sidebar-link" onclick="switchTab('notifications', this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                Notificações
+            </button>
+            <button class="sidebar-link" onclick="switchTab('webhook', this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                Webhook Kirvano
+            </button>
+            <button class="sidebar-link" onclick="switchTab('settings', this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                Configurações
+            </button>
+        </aside>
 
-    <main class="page">
-        <!-- ==================== TAB: DASHBOARD ==================== -->
-        <div class="tab-panel active" id="tab-dashboard">
-            <div class="stats-row">
-                <div class="stat-card">
-                    <div class="stat-label">Total de IPs</div>
-                    <div class="stat-value" id="dashTotalIps">—</div>
+        <!-- Content Area -->
+        <div class="content-area">
+            <!-- TAB: DASHBOARD -->
+            <div class="tab-panel active" id="tab-dashboard">
+                <div class="stats-row">
+                    <div class="stat-card"><div class="stat-label">Total de IPs</div><div class="stat-value" id="dashTotalIps">—</div></div>
+                    <div class="stat-card"><div class="stat-label">IPs Ativos</div><div class="stat-value green" id="dashActiveIps">—</div></div>
+                    <div class="stat-card"><div class="stat-label">Planos Pagos</div><div class="stat-value blue" id="dashPaidPlans">—</div></div>
+                    <div class="stat-card"><div class="stat-label">Ativações Pendentes</div><div class="stat-value orange" id="dashPending">—</div></div>
+                    <div class="stat-card"><div class="stat-label">Receita Total</div><div class="stat-value green" id="dashRevenue">—</div></div>
+                    <div class="stat-card"><div class="stat-label">Custo por IP</div><div class="stat-value red" id="dashCostPerIp">—</div></div>
+                    <div class="stat-card"><div class="stat-label">Lucro por IP</div><div class="stat-value purple" id="dashProfitPerIp">—</div></div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-label">IPs Ativos</div>
-                    <div class="stat-value green" id="dashActiveIps">—</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Planos Pagos</div>
-                    <div class="stat-value blue" id="dashPaidPlans">—</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Ativações Pendentes</div>
-                    <div class="stat-value orange" id="dashPending">—</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Receita Total</div>
-                    <div class="stat-value green" id="dashRevenue">—</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Custo por IP</div>
-                    <div class="stat-value red" id="dashCostPerIp">—</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Lucro por IP</div>
-                    <div class="stat-value purple" id="dashProfitPerIp">—</div>
-                </div>
-            </div>
 
-            <!-- Resumo do Mês -->
-            <div class="card" style="margin-bottom:var(--space-lg);">
-                <div class="card-title" style="display:flex;align-items:center;gap:var(--space-sm);">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-orange)" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                    Resumo do Mês — <span id="monthLabel" style="color:var(--accent-orange);"></span>
-                </div>
-                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-md);margin-top:var(--space-md);" class="month-grid">
-                    <div style="background:var(--bg-card-alt);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-md) var(--space-lg);">
-                        <div style="font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">Vendido este mês</div>
-                        <div style="font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--accent-green);" id="monthSold">—</div>
-                        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;" id="monthSoldCount">0 vendas</div>
-                    </div>
-                    <div style="background:var(--bg-card-alt);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-md) var(--space-lg);">
-                        <div style="font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">IPs ativos agora</div>
-                        <div style="font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--accent-blue);" id="monthActiveNow">—</div>
-                        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;" id="monthActiveBreakdown">—</div>
-                    </div>
-                    <div style="background:var(--bg-card-alt);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-md) var(--space-lg);">
-                        <div style="font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">IPs que continuam próx. mês</div>
-                        <div style="font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--accent-teal);" id="monthContinueIps">—</div>
-                        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;" id="monthContinueNote">expiram após o próx. mês</div>
-                    </div>
-                    <div style="background:var(--bg-card-alt);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-md) var(--space-lg);">
-                        <div style="font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">Receita esperada próx. mês</div>
-                        <div style="font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--accent-orange);" id="monthProjected">—</div>
-                        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;" id="monthProjectedNote">baseado nos planos ativos</div>
-                    </div>
-                </div>
-                <!-- Breakdown por plano do mês -->
-                <div style="margin-top:var(--space-md);padding-top:var(--space-md);border-top:1px solid var(--border);">
-                    <div style="font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:var(--space-sm);">Composição dos IPs ativos</div>
-                    <div id="monthIpBreakdown" style="display:flex;flex-wrap:wrap;gap:var(--space-sm);"></div>
-                </div>
-            </div>
-
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-lg);" class="dash-grid">
                 <div class="card">
-                    <div class="card-title">Distribuição por Plano</div>
-                    <div class="plan-bars" id="planBars">
-                        <div class="empty-state">Carregando...</div>
+                    <div class="card-title">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-orange)" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        Resumo do Mês — <span id="monthLabel" style="color:var(--accent-orange);"></span>
                     </div>
-                </div>
-                <div class="card">
-                    <div class="card-title">Vendas Recentes</div>
-                    <div class="table-wrap">
-                        <table>
-                            <thead><tr><th>Data</th><th>Usuário</th><th>Plano</th><th>Valor</th><th>Status</th></tr></thead>
-                            <tbody id="recentInvoices"><tr><td colspan="5" class="empty-state">Carregando...</td></tr></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ==================== TAB: USERS / IPS ==================== -->
-        <div class="tab-panel" id="tab-users">
-            <div class="card">
-                <div class="card-title" id="userFormTitle">Adicionar IP</div>
-                <div id="userFormAlert" class="alert"></div>
-                <input type="hidden" id="editId" value="">
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Endereço IP *</label>
-                        <input type="text" id="fieldIp" class="form-input" placeholder="Ex: 203.0.113.42">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Plano *</label>
-                        <select id="fieldPlan" class="form-select">
-                            <option value="free">Free</option>
-                            <option value="mensal">Mensal</option>
-                            <option value="trimestral">Trimestral</option>
-                            <option value="anual">Anual</option>
-                            <option value="admin">Admin</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Status</label>
-                        <select id="fieldStatus" class="form-select">
-                            <option value="active">IP Ativo</option>
-                            <option value="pending">Não Programado</option>
-                            <option value="suspended">Desativado</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Expira em</label>
-                        <input type="datetime-local" id="fieldExpires" class="form-input">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group" style="grid-column: 1 / -1;">
-                        <label class="form-label">Notas</label>
-                        <input type="text" id="fieldNotes" class="form-input" placeholder="Observações internas (opcional)">
-                    </div>
-                </div>
-                <div style="display:flex;gap:var(--space-md);margin-top:var(--space-md);">
-                    <button class="btn btn-primary" onclick="saveSubscription()">Salvar</button>
-                    <button class="btn btn-secondary" onclick="resetUserForm()">Limpar</button>
-                </div>
-            </div>
-
-            <div class="search-bar">
-                <input type="text" id="userSearchInput" class="form-input" placeholder="Buscar por IP, email ou notas..." oninput="filterUsersTable()">
-            </div>
-            <div class="table-wrap">
-                <table>
-                    <thead><tr><th>IP</th><th>Plano</th><th>Status</th><th>Usuário</th><th>Expira</th><th>Notas</th><th>Atualizado</th><th>Ações</th></tr></thead>
-                    <tbody id="usersTableBody"><tr><td colspan="8" class="empty-state">Carregando...</td></tr></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- ==================== TAB: ACTIVATIONS ==================== -->
-        <div class="tab-panel" id="tab-activations">
-            <p style="color:var(--text-secondary);font-size:14px;margin-bottom:var(--space-lg);">Pedidos de ativação de IP gerados quando um usuário completa a compra. Aprovar libera a chave API e URL do gateway para o usuário.</p>
-            <div class="table-wrap">
-                <table>
-                    <thead><tr><th>ID</th><th>IP</th><th>Usuário</th><th>Plano</th><th>Status</th><th>Criado</th><th>API Key</th><th>Ações</th></tr></thead>
-                    <tbody id="activationsTableBody"><tr><td colspan="8" class="empty-state">Carregando...</td></tr></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- ==================== TAB: COUPONS ==================== -->
-        <div class="tab-panel" id="tab-coupons">
-            <div class="card">
-                <div class="card-title">Criar Cupom de Desconto</div>
-                <div id="couponFormAlert" class="alert"></div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">Código *</label>
-                        <input type="text" id="couponCode" class="form-input" placeholder="Ex: PROMO20" style="text-transform:uppercase;">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Desconto (%) *</label>
-                        <input type="number" id="couponDiscount" class="form-input" placeholder="Ex: 20" min="1" max="100" value="10">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Máx. de Usos</label>
-                        <input type="number" id="couponMaxUses" class="form-input" placeholder="Ilimitado se vazio" min="1">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Expira em</label>
-                        <input type="datetime-local" id="couponExpires" class="form-input">
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group" style="grid-column: 1 / -1;">
-                        <label class="form-label">Notas</label>
-                        <input type="text" id="couponNotes" class="form-input" placeholder="Observações internas (opcional)">
-                    </div>
-                </div>
-                <button class="btn btn-primary" onclick="createCoupon()" style="margin-top:var(--space-sm);">Criar Cupom</button>
-            </div>
-            <div class="table-wrap">
-                <table>
-                    <thead><tr><th>Código</th><th>Desconto</th><th>Usos</th><th>Máx.</th><th>Expira</th><th>Status</th><th>Ações</th></tr></thead>
-                    <tbody id="couponsTableBody"><tr><td colspan="7" class="empty-state">Carregando...</td></tr></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- ==================== TAB: IP CHANGES ==================== -->
-        <div class="tab-panel" id="tab-ipchanges">
-            <p style="color:var(--text-secondary);font-size:14px;margin-bottom:var(--space-lg);">Solicitações de alteração de IP enviadas pelos usuários. Aprove para atualizar o IP autorizado ou rejeite com motivo.</p>
-            <div class="table-wrap">
-                <table>
-                    <thead><tr><th>ID</th><th>Usuário</th><th>IP Atual</th><th>IP Solicitado</th><th>Data</th><th>Status</th><th>Ações</th></tr></thead>
-                    <tbody id="ipChangesTableBody"><tr><td colspan="7" class="empty-state">Carregando...</td></tr></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- ==================== TAB: NOTIFICATIONS ==================== -->
-        <div class="tab-panel" id="tab-notifications">
-            <p style="color:var(--text-secondary);font-size:14px;margin-bottom:var(--space-lg);">Envie notificações para todos os usuários ou filtre por plano específico. As notificações aparecem no sininho do dashboard e na página de notificações dos usuários.</p>
-
-            <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-xl);margin-bottom:var(--space-xl);">
-                <h3 style="font-size:16px;font-weight:700;margin-bottom:var(--space-lg);color:var(--text-primary);">📢 Enviar Nova Notificação</h3>
-
-                <div style="display:grid;gap:var(--space-md);">
-                    <div>
-                        <label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-xs);">Título *</label>
-                        <input type="text" id="notifTitle" placeholder="Ex: Manutenção programada" style="width:100%;padding:10px 14px;background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font-sans);" />
-                    </div>
-
-                    <div>
-                        <label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-xs);">Mensagem *</label>
-                        <textarea id="notifMessage" rows="4" placeholder="Escreva a mensagem da notificação..." style="width:100%;padding:10px 14px;background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font-sans);resize:vertical;"></textarea>
-                    </div>
-
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-md);">
-                        <div>
-                            <label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-xs);">Tipo</label>
-                            <select id="notifType" style="width:100%;padding:10px 14px;background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font-sans);">
-                                <option value="info">ℹ️ Info</option>
-                                <option value="success">✅ Sucesso</option>
-                                <option value="warning">⚠️ Aviso</option>
-                                <option value="error">❌ Erro</option>
-                            </select>
+                    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-md);margin-top:var(--space-md);" class="month-grid">
+                        <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-md) var(--space-lg);">
+                            <div style="font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">Vendido este mês</div>
+                            <div style="font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--accent-green);" id="monthSold">—</div>
+                            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;" id="monthSoldCount">0 vendas</div>
                         </div>
-
-                        <div>
-                            <label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-xs);">Plano Alvo</label>
-                            <select id="notifTargetPlan" style="width:100%;padding:10px 14px;background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;font-family:var(--font-sans);">
-                                <option value="all">🌍 Todos os usuários</option>
-                                <option value="free">Free</option>
-                                <option value="mensal">Mensal</option>
-                                <option value="trimestral">Trimestral</option>
-                                <option value="anual">Anual</option>
-                                <option value="admin">Admin</option>
-                            </select>
+                        <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-md) var(--space-lg);">
+                            <div style="font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">IPs ativos agora</div>
+                            <div style="font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--accent-blue);" id="monthActiveNow">—</div>
+                            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;" id="monthActiveBreakdown">—</div>
+                        </div>
+                        <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-md) var(--space-lg);">
+                            <div style="font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">IPs que continuam próx. mês</div>
+                            <div style="font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--accent-teal);" id="monthContinueIps">—</div>
+                            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;" id="monthContinueNote">expiram após o próx. mês</div>
+                        </div>
+                        <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-md) var(--space-lg);">
+                            <div style="font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">Receita esperada próx. mês</div>
+                            <div style="font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--accent-orange);" id="monthProjected">—</div>
+                            <div style="font-size:11px;color:var(--text-muted);margin-top:4px;" id="monthProjectedNote">baseado nos planos ativos</div>
                         </div>
                     </div>
+                    <div style="margin-top:var(--space-md);padding-top:var(--space-md);border-top:1px solid var(--border);">
+                        <div style="font-family:var(--font-mono);font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-muted);margin-bottom:var(--space-sm);">Composição dos IPs ativos</div>
+                        <div id="monthIpBreakdown" style="display:flex;flex-wrap:wrap;gap:var(--space-sm);"></div>
+                    </div>
+                </div>
 
-                    <button onclick="sendBroadcastNotification()" id="sendNotifBtn" style="padding:12px 24px;background:var(--accent-orange);color:white;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;transition:all var(--transition-fast);margin-top:var(--space-sm);" onmouseover="this.style.background='var(--accent-orange-hover)'" onmouseout="this.style.background='var(--accent-orange)'">
-                        🚀 Enviar Notificação
-                    </button>
-
-                    <div id="notifSendStatus" style="display:none;padding:var(--space-md);border-radius:var(--radius-sm);font-size:13px;font-weight:600;"></div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-lg);" class="dash-grid">
+                    <div class="card">
+                        <div class="card-title">Distribuição por Plano</div>
+                        <div class="plan-bars" id="planBars"><div class="empty-state">Carregando...</div></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">Vendas Recentes</div>
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Data</th><th>Usuário</th><th>Plano</th><th>Valor</th><th>Status</th></tr></thead>
+                                <tbody id="recentInvoices"><tr><td colspan="5" class="empty-state">Carregando...</td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-xl);">
-                <h3 style="font-size:16px;font-weight:700;margin-bottom:var(--space-lg);color:var(--text-primary);">📊 Estatísticas Rápidas</h3>
-                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:var(--space-md);">
-                    <div style="padding:var(--space-md);background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-sm);">
-                        <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">Total de Usuários</div>
-                        <div style="font-size:24px;font-weight:700;color:var(--accent-orange);" id="totalUsersCount">-</div>
+            <!-- TAB: USERS / IPS -->
+            <div class="tab-panel" id="tab-users">
+                <div class="card">
+                    <div class="card-title" id="userFormTitle">Adicionar IP</div>
+                    <div id="userFormAlert" class="alert"></div>
+                    <input type="hidden" id="editId" value="">
+                    <div class="form-row">
+                        <div class="form-group"><label class="form-label">Endereço IP *</label><input type="text" id="fieldIp" class="form-input" placeholder="Ex: 203.0.113.42"></div>
+                        <div class="form-group"><label class="form-label">Plano *</label><select id="fieldPlan" class="form-select"><option value="free">Free</option><option value="mensal">Mensal</option><option value="trimestral">Trimestral</option><option value="anual">Anual</option><option value="admin">Admin</option></select></div>
+                        <div class="form-group"><label class="form-label">Status</label><select id="fieldStatus" class="form-select"><option value="active">IP Ativo</option><option value="pending">Não Programado</option><option value="suspended">Desativado</option></select></div>
+                        <div class="form-group"><label class="form-label">Expira em</label><input type="datetime-local" id="fieldExpires" class="form-input"></div>
                     </div>
-                    <div style="padding:var(--space-md);background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-sm);">
-                        <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">Notificações Enviadas</div>
-                        <div style="font-size:24px;font-weight:700;color:var(--accent-green);" id="totalNotifsCount">-</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ==================== TAB: EXPIRED ==================== -->
-        <div class="tab-panel" id="tab-expired">
-            <p style="color:var(--text-secondary);font-size:14px;margin-bottom:var(--space-lg);">IPs cujo plano expirou e não foi renovado. Você pode reativar, remover ou entrar em contato com o usuário.</p>
-            <div class="table-wrap">
-                <table>
-                    <thead><tr><th>IP</th><th>Plano</th><th>Usuário</th><th>Expirou em</th><th>Dias vencido</th><th>Ações</th></tr></thead>
-                    <tbody id="expiredTableBody"><tr><td colspan="6" class="empty-state">Carregando...</td></tr></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- ==================== TAB: PLANS ==================== -->
-        <div class="tab-panel" id="tab-plans">
-            <p style="color:var(--text-secondary);font-size:14px;margin-bottom:var(--space-lg);">Visualize os IPs vinculados a cada plano e remova diretamente. A lista atualiza automaticamente após qualquer alteração.</p>
-            <div id="plansContainer">
-                <div class="empty-state">Carregando...</div>
-            </div>
-        </div>
-
-        <!-- ==================== TAB: AFFILIATES ==================== -->
-        <div class="tab-panel" id="tab-affiliates">
-            <div class="card">
-                <div class="card-title">Cadastrar Afiliado</div>
-                <div id="affFormAlert" class="alert"></div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">ID do Usuário *</label>
-                        <input type="number" id="affUserId" class="form-input" placeholder="Ex: 1">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Comissão (%) *</label>
-                        <input type="number" id="affCommission" class="form-input" placeholder="Ex: 10" min="1" max="100" value="10">
+                    <div class="form-row"><div class="form-group" style="grid-column: 1 / -1;"><label class="form-label">Notas</label><input type="text" id="fieldNotes" class="form-input" placeholder="Observações internas (opcional)"></div></div>
+                    <div style="display:flex;gap:var(--space-md);margin-top:var(--space-md);">
+                        <button class="btn btn-primary" onclick="saveSubscription()">Salvar</button>
+                        <button class="btn btn-secondary" onclick="resetUserForm()">Limpar</button>
                     </div>
                 </div>
-                <button class="btn btn-primary" onclick="addAffiliate()" style="margin-top:var(--space-sm);">Cadastrar Afiliado</button>
-            </div>
-
-            <div class="table-wrap">
-                <table>
-                    <thead><tr><th>ID</th><th>Usuário</th><th>Código</th><th>Comissão</th><th>Indicações</th><th>Pagantes</th><th>Volume</th><th>Ações</th></tr></thead>
-                    <tbody id="affiliatesTableBody"><tr><td colspan="8" class="empty-state">Carregando...</td></tr></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- ==================== TAB: WEBHOOK KIRVANO ==================== -->
-        <div class="tab-panel" id="tab-webhook">
-            <div class="card">
-                <div class="card-title">Configuração do Webhook Kirvano</div>
-                <p style="color:var(--text-secondary);font-size:13px;margin-bottom:var(--space-lg);line-height:1.6;">
-                    Configure aqui a URL do webhook e o token secreto que a Kirvano usará para notificar o 8Token sobre vendas aprovadas, recusadas ou chargebacks.
-                    Copie a URL abaixo e cole no painel da Kirvano em <strong>Configurações → Webhooks</strong>.
-                </p>
-                <div id="webhookFormAlert" class="alert"></div>
-
-                <div style="background:var(--bg-card-alt);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-lg);margin-bottom:var(--space-lg);">
-                    <div style="font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:var(--space-sm);">URL do Webhook (cole na Kirvano)</div>
-                    <div style="display:flex;gap:var(--space-sm);align-items:center;">
-                        <input type="text" id="webhookUrlDisplay" class="form-input" readonly style="flex:1;font-family:var(--font-mono);font-size:13px;background:var(--bg-primary);color:var(--accent-orange);cursor:text;" value="">
-                        <button class="btn btn-secondary btn-sm" onclick="copyWebhookUrl()" style="white-space:nowrap;">Copiar</button>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group" style="grid-column: 1 / -1;">
-                        <label class="form-label">Token Secreto do Webhook *</label>
-                        <input type="password" id="webhookToken" class="form-input" placeholder="Token que a Kirvano enviará no header X-Webhook-Secret" style="font-family:var(--font-mono);">
-                        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Este token deve ser o mesmo configurado no painel da Kirvano. Ele valida que a requisição veio realmente da Kirvano.</div>
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">ID do Produto — Mensal</label>
-                        <input type="text" id="kirvanoProductMensal" class="form-input" placeholder="ID do produto mensal na Kirvano" style="font-family:var(--font-mono);font-size:13px;">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">ID do Produto — Trimestral</label>
-                        <input type="text" id="kirvanoProductTrimestral" class="form-input" placeholder="ID do produto trimestral na Kirvano" style="font-family:var(--font-mono);font-size:13px;">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">ID do Produto — Anual</label>
-                        <input type="text" id="kirvanoProductAnual" class="form-input" placeholder="ID do produto anual na Kirvano" style="font-family:var(--font-mono);font-size:13px;">
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">URL Checkout — Mensal</label>
-                        <input type="url" id="kirvanoCheckoutMensal" class="form-input" placeholder="https://pay.kirvano.com/checkout/..." style="font-size:13px;">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">URL Checkout — Trimestral</label>
-                        <input type="url" id="kirvanoCheckoutTrimestral" class="form-input" placeholder="https://pay.kirvano.com/checkout/..." style="font-size:13px;">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">URL Checkout — Anual</label>
-                        <input type="url" id="kirvanoCheckoutAnual" class="form-input" placeholder="https://pay.kirvano.com/checkout/..." style="font-size:13px;">
-                    </div>
-                </div>
-
-                <div style="display:flex;gap:var(--space-md);margin-top:var(--space-md);flex-wrap:wrap;">
-                    <button class="btn btn-primary" onclick="saveWebhookConfig()">Salvar Configuração</button>
-                    <button class="btn btn-secondary" onclick="testWebhook()" style="border-color:var(--accent-teal);color:var(--accent-teal);">Testar Webhook</button>
-                </div>
-            </div>
-
-            <div class="card" style="margin-top:var(--space-lg);">
-                <div class="card-title">Logs do Webhook</div>
-                <p style="color:var(--text-secondary);font-size:13px;margin-bottom:var(--space-md);">Últimas requisições recebidas da Kirvano. Use para depurar problemas de integração.</p>
+                <div class="search-bar"><input type="text" id="userSearchInput" class="form-input" placeholder="Buscar por IP, email ou notas..." oninput="filterUsersTable()"></div>
                 <div class="table-wrap">
                     <table>
-                        <thead><tr><th>Data/Hora</th><th>Evento</th><th>Status</th><th>Email</th><th>IP</th><th>Plano</th><th>Detalhes</th></tr></thead>
-                        <tbody id="webhookLogsBody"><tr><td colspan="7" class="empty-state">Carregando...</td></tr></tbody>
+                        <thead><tr><th>IP</th><th>Plano</th><th>Status</th><th>Usuário</th><th>Expira</th><th>Notas</th><th>Atualizado</th><th>Ações</th></tr></thead>
+                        <tbody id="usersTableBody"><tr><td colspan="8" class="empty-state">Carregando...</td></tr></tbody>
                     </table>
                 </div>
             </div>
 
-            <div class="card" style="margin-top:var(--space-lg);">
-                <div class="card-title">Como configurar na Kirvano</div>
-                <div style="font-size:13px;color:var(--text-secondary);line-height:1.8;">
-                    <ol style="padding-left:var(--space-lg);">
-                        <li>Acesse o painel da Kirvano em <a href="https://kirvano.com" target="_blank" style="color:var(--accent-orange);">kirvano.com</a></li>
-                        <li>Vá em <strong>Configurações → Webhooks</strong> (ou Integrações → Webhooks)</li>
-                        <li>Cole a <strong>URL do Webhook</strong> exibida acima no campo "URL de notificação"</li>
-                        <li>Cole o <strong>Token Secreto</strong> no campo de autenticação/secret</li>
-                        <li>Selecione os eventos: <code style="background:var(--bg-primary);padding:2px 6px;border-radius:4px;font-size:12px;">SALE_APPROVED</code>, <code style="background:var(--bg-primary);padding:2px 6px;border-radius:4px;font-size:12px;">SALE_REFUSED</code>, <code style="background:var(--bg-primary);padding:2px 6px;border-radius:4px;font-size:12px;">SALE_CHARGEBACK</code></li>
-                        <li>Salve e use o botão "Testar Webhook" acima para confirmar que está funcionando</li>
-                    </ol>
+            <!-- TAB: ACTIVATIONS -->
+            <div class="tab-panel" id="tab-activations">
+                <p style="color:var(--text-secondary);font-size:14px;margin-bottom:var(--space-lg);">Pedidos de ativação de IP gerados quando um usuário completa a compra. Aprovar libera a chave API e URL do gateway para o usuário.</p>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>ID</th><th>IP</th><th>Usuário</th><th>Plano</th><th>Status</th><th>Criado</th><th>API Key</th><th>Ações</th></tr></thead>
+                        <tbody id="activationsTableBody"><tr><td colspan="8" class="empty-state">Carregando...</td></tr></tbody>
+                    </table>
                 </div>
             </div>
-        </div>
 
-        <!-- Settings Tab -->
-        <div class="tab-panel" id="tab-settings">
-            <div class="card">
-                <div class="card-title">Configurações Globais</div>
-                <p style="color:var(--text-secondary);font-size:13px;margin-bottom:var(--space-lg);line-height:1.6;">
-                    Configure valores globais do sistema. A URL do gateway abaixo é a mesma para todos os usuários com plano ativo e aparece no dashboard do cliente.
-                </p>
-                <div id="settingsAlert" class="alert"></div>
+            <!-- TAB: COUPONS -->
+            <div class="tab-panel" id="tab-coupons">
+                <div class="card">
+                    <div class="card-title">Criar Cupom de Desconto</div>
+                    <div id="couponFormAlert" class="alert"></div>
+                    <div class="form-row">
+                        <div class="form-group"><label class="form-label">Código *</label><input type="text" id="couponCode" class="form-input" placeholder="Ex: PROMO20" style="text-transform:uppercase;"></div>
+                        <div class="form-group"><label class="form-label">Desconto (%) *</label><input type="number" id="couponDiscount" class="form-input" placeholder="Ex: 20" min="1" max="100" value="10"></div>
+                        <div class="form-group"><label class="form-label">Máx. de Usos</label><input type="number" id="couponMaxUses" class="form-input" placeholder="Ilimitado se vazio" min="1"></div>
+                        <div class="form-group"><label class="form-label">Expira em</label><input type="datetime-local" id="couponExpires" class="form-input"></div>
+                    </div>
+                    <div class="form-row"><div class="form-group" style="grid-column: 1 / -1;"><label class="form-label">Notas</label><input type="text" id="couponNotes" class="form-input" placeholder="Observações internas (opcional)"></div></div>
+                    <button class="btn btn-primary" onclick="createCoupon()" style="margin-top:var(--space-sm);">Criar Cupom</button>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>Código</th><th>Desconto</th><th>Usos</th><th>Máx.</th><th>Expira</th><th>Status</th><th>Ações</th></tr></thead>
+                        <tbody id="couponsTableBody"><tr><td colspan="7" class="empty-state">Carregando...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
 
-                <div class="form-row">
-                    <div class="form-group" style="grid-column: 1 / -1;">
-                        <label class="form-label">URL do Gateway (Base URL)</label>
-                        <input type="url" id="settingGatewayUrl" class="form-input" placeholder="https://ghostcli.dev/v1" style="font-family:var(--font-mono);font-size:13px;">
-                        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Esta URL é exibida no dashboard de todos os assinantes. Use o formato completo incluindo <code style="background:var(--bg-primary);padding:2px 6px;border-radius:4px;font-size:12px;">/v1</code> se necessário.</div>
+            <!-- TAB: IP CHANGES -->
+            <div class="tab-panel" id="tab-ipchanges">
+                <p style="color:var(--text-secondary);font-size:14px;margin-bottom:var(--space-lg);">Solicitações de alteração de IP enviadas pelos usuários. Aprove para atualizar o IP autorizado ou rejeite com motivo.</p>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>ID</th><th>Usuário</th><th>IP Atual</th><th>IP Solicitado</th><th>Data</th><th>Status</th><th>Ações</th></tr></thead>
+                        <tbody id="ipChangesTableBody"><tr><td colspan="7" class="empty-state">Carregando...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB: NOTIFICATIONS -->
+            <div class="tab-panel" id="tab-notifications">
+                <p style="color:var(--text-secondary);font-size:14px;margin-bottom:var(--space-lg);">Envie notificações para todos os usuários ou filtre por plano específico. As notificações aparecem no sininho do dashboard e na página de notificações dos usuários.</p>
+                <div class="card">
+                    <h3 style="font-size:16px;font-weight:700;margin-bottom:var(--space-lg);color:var(--text-primary);">📢 Enviar Nova Notificação</h3>
+                    <div style="display:grid;gap:var(--space-md);">
+                        <div><label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-xs);">Título *</label><input type="text" id="notifTitle" placeholder="Ex: Manutenção programada" class="form-input" /></div>
+                        <div><label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-xs);">Mensagem *</label><textarea id="notifMessage" rows="4" placeholder="Escreva a mensagem da notificação..." class="form-input"></textarea></div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-md);">
+                            <div><label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-xs);">Tipo</label><select id="notifType" class="form-select"><option value="info">ℹ️ Info</option><option value="success">✅ Sucesso</option><option value="warning">⚠️ Aviso</option><option value="error">❌ Erro</option></select></div>
+                            <div><label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-xs);">Plano Alvo</label><select id="notifTargetPlan" class="form-select"><option value="all">🌍 Todos os usuários</option><option value="free">Free</option><option value="mensal">Mensal</option><option value="trimestral">Trimestral</option><option value="anual">Anual</option><option value="admin">Admin</option></select></div>
+                        </div>
+                        <button onclick="sendBroadcastNotification()" id="sendNotifBtn" class="btn btn-primary" style="margin-top:var(--space-sm);">🚀 Enviar Notificação</button>
+                        <div id="notifSendStatus" style="display:none;padding:var(--space-md);border-radius:var(--radius-sm);font-size:13px;font-weight:600;"></div>
                     </div>
                 </div>
+                <div class="card">
+                    <h3 style="font-size:16px;font-weight:700;margin-bottom:var(--space-lg);color:var(--text-primary);">📊 Estatísticas Rápidas</h3>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:var(--space-md);">
+                        <div style="padding:var(--space-md);background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">Total de Usuários</div><div style="font-size:24px;font-weight:700;color:var(--accent-orange);" id="totalUsersCount">-</div></div>
+                        <div style="padding:var(--space-md);background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">Notificações Enviadas</div><div style="font-size:24px;font-weight:700;color:var(--accent-green);" id="totalNotifsCount">-</div></div>
+                    </div>
+                </div>
+            </div>
 
-                <div style="display:flex;gap:var(--space-md);margin-top:var(--space-md);">
-                    <button class="btn btn-primary" onclick="saveSettings()">Salvar Configurações</button>
+            <!-- TAB: EXPIRED -->
+            <div class="tab-panel" id="tab-expired">
+                <p style="color:var(--text-secondary);font-size:14px;margin-bottom:var(--space-lg);">IPs cujo plano expirou e não foi renovado. Você pode reativar, remover ou entrar em contato com o usuário.</p>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>IP</th><th>Plano</th><th>Usuário</th><th>Expirou em</th><th>Dias vencido</th><th>Ações</th></tr></thead>
+                        <tbody id="expiredTableBody"><tr><td colspan="6" class="empty-state">Carregando...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB: PLANS -->
+            <div class="tab-panel" id="tab-plans">
+                <p style="color:var(--text-secondary);font-size:14px;margin-bottom:var(--space-lg);">Visualize os IPs vinculados a cada plano e remova diretamente. A lista atualiza automaticamente após qualquer alteração.</p>
+                <div id="plansContainer"><div class="empty-state">Carregando...</div></div>
+            </div>
+
+            <!-- TAB: AFFILIATES -->
+            <div class="tab-panel" id="tab-affiliates">
+                <div class="card">
+                    <div class="card-title">Cadastrar Afiliado</div>
+                    <div id="affFormAlert" class="alert"></div>
+                    <div class="form-row">
+                        <div class="form-group"><label class="form-label">ID do Usuário *</label><input type="number" id="affUserId" class="form-input" placeholder="Ex: 1"></div>
+                        <div class="form-group"><label class="form-label">Comissão (%) *</label><input type="number" id="affCommission" class="form-input" placeholder="Ex: 10" min="1" max="100" value="10"></div>
+                    </div>
+                    <button class="btn btn-primary" onclick="addAffiliate()" style="margin-top:var(--space-sm);">Cadastrar Afiliado</button>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>ID</th><th>Usuário</th><th>Código</th><th>Comissão</th><th>Indicações</th><th>Pagantes</th><th>Volume</th><th>Ações</th></tr></thead>
+                        <tbody id="affiliatesTableBody"><tr><td colspan="8" class="empty-state">Carregando...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB: WEBHOOK KIRVANO -->
+            <div class="tab-panel" id="tab-webhook">
+                <div class="card">
+                    <div class="card-title">Configuração do Webhook Kirvano</div>
+                    <p style="color:var(--text-secondary);font-size:13px;margin-bottom:var(--space-lg);line-height:1.6;">Configure aqui a URL do webhook e o token secreto que a Kirvano usará para notificar o 8Token sobre vendas aprovadas, recusadas ou chargebacks. Copie a URL abaixo e cole no painel da Kirvano em <strong>Configurações → Webhooks</strong>.</p>
+                    <div id="webhookFormAlert" class="alert"></div>
+                    <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-lg);margin-bottom:var(--space-lg);">
+                        <div style="font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:var(--space-sm);">URL do Webhook (cole na Kirvano)</div>
+                        <div style="display:flex;gap:var(--space-sm);align-items:center;">
+                            <input type="text" id="webhookUrlDisplay" class="form-input" readonly style="flex:1;font-family:var(--font-mono);font-size:13px;background:var(--bg-primary);color:var(--accent-orange);cursor:text;" value="">
+                            <button class="btn btn-secondary btn-sm" onclick="copyWebhookUrl()" style="white-space:nowrap;">Copiar</button>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group" style="grid-column: 1 / -1;"><label class="form-label">Token Secreto do Webhook *</label><input type="password" id="webhookToken" class="form-input" placeholder="Token que a Kirvano enviará no header X-Webhook-Secret" style="font-family:var(--font-mono);"><div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Este token deve ser o mesmo configurado no painel da Kirvano. Ele valida que a requisição veio realmente da Kirvano.</div></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label class="form-label">ID do Produto — Mensal</label><input type="text" id="kirvanoProductMensal" class="form-input" placeholder="ID do produto mensal na Kirvano" style="font-family:var(--font-mono);font-size:13px;"></div>
+                        <div class="form-group"><label class="form-label">ID do Produto — Trimestral</label><input type="text" id="kirvanoProductTrimestral" class="form-input" placeholder="ID do produto trimestral na Kirvano" style="font-family:var(--font-mono);font-size:13px;"></div>
+                        <div class="form-group"><label class="form-label">ID do Produto — Anual</label><input type="text" id="kirvanoProductAnual" class="form-input" placeholder="ID do produto anual na Kirvano" style="font-family:var(--font-mono);font-size:13px;"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label class="form-label">URL Checkout — Mensal</label><input type="url" id="kirvanoCheckoutMensal" class="form-input" placeholder="https://pay.kirvano.com/checkout/..." style="font-size:13px;"></div>
+                        <div class="form-group"><label class="form-label">URL Checkout — Trimestral</label><input type="url" id="kirvanoCheckoutTrimestral" class="form-input" placeholder="https://pay.kirvano.com/checkout/..." style="font-size:13px;"></div>
+                        <div class="form-group"><label class="form-label">URL Checkout — Anual</label><input type="url" id="kirvanoCheckoutAnual" class="form-input" placeholder="https://pay.kirvano.com/checkout/..." style="font-size:13px;"></div>
+                    </div>
+                    <div style="display:flex;gap:var(--space-md);margin-top:var(--space-md);flex-wrap:wrap;">
+                        <button class="btn btn-primary" onclick="saveWebhookConfig()">Salvar Configuração</button>
+                        <button class="btn btn-secondary" onclick="testWebhook()" style="border-color:var(--accent-teal);color:var(--accent-teal);">Testar Webhook</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Logs do Webhook</div>
+                    <p style="color:var(--text-secondary);font-size:13px;margin-bottom:var(--space-md);">Últimas requisições recebidas da Kirvano. Use para depurar problemas de integração.</p>
+                    <div class="table-wrap">
+                        <table>
+                            <thead><tr><th>Data/Hora</th><th>Evento</th><th>Status</th><th>Email</th><th>IP</th><th>Plano</th><th>Detalhes</th></tr></thead>
+                            <tbody id="webhookLogsBody"><tr><td colspan="7" class="empty-state">Carregando...</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Como configurar na Kirvano</div>
+                    <div style="font-size:13px;color:var(--text-secondary);line-height:1.8;">
+                        <ol style="padding-left:var(--space-lg);">
+                            <li>Acesse o painel da Kirvano em <a href="https://kirvano.com" target="_blank" style="color:var(--accent-orange);">kirvano.com</a></li>
+                            <li>Vá em <strong>Configurações → Webhooks</strong> (ou Integrações → Webhooks)</li>
+                            <li>Cole a <strong>URL do Webhook</strong> exibida acima no campo "URL de notificação"</li>
+                            <li>Cole o <strong>Token Secreto</strong> no campo de autenticação/secret</li>
+                            <li>Selecione os eventos: <code style="background:var(--bg-primary);padding:2px 6px;border-radius:4px;font-size:12px;">SALE_APPROVED</code>, <code style="background:var(--bg-primary);padding:2px 6px;border-radius:4px;font-size:12px;">SALE_REFUSED</code>, <code style="background:var(--bg-primary);padding:2px 6px;border-radius:4px;font-size:12px;">SALE_CHARGEBACK</code></li>
+                            <li>Salve e use o botão "Testar Webhook" acima para confirmar que está funcionando</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: SETTINGS -->
+            <div class="tab-panel" id="tab-settings">
+                <div class="card">
+                    <div class="card-title">Configurações Globais</div>
+                    <p style="color:var(--text-secondary);font-size:13px;margin-bottom:var(--space-lg);line-height:1.6;">Configure valores globais do sistema. A URL do gateway abaixo é a mesma para todos os usuários com plano ativo e aparece no dashboard do cliente.</p>
+                    <div id="settingsAlert" class="alert"></div>
+                    <div class="form-row">
+                        <div class="form-group" style="grid-column: 1 / -1;"><label class="form-label">URL do Gateway (Base URL)</label><input type="url" id="settingGatewayUrl" class="form-input" placeholder="https://ghostcli.dev/v1" style="font-family:var(--font-mono);font-size:13px;"><div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Esta URL é exibida no dashboard de todos os assinantes. Use o formato completo incluindo <code style="background:var(--bg-primary);padding:2px 6px;border-radius:4px;font-size:12px;">/v1</code> se necessário.</div></div>
+                    </div>
+                    <div style="display:flex;gap:var(--space-md);margin-top:var(--space-md);"><button class="btn btn-primary" onclick="saveSettings()">Salvar Configurações</button></div>
                 </div>
             </div>
         </div>
     </main>
 
     <script>
-        const API_BASE = ''; // Usa URL relativa — funciona em localhost e em produção (Vercel)
+        const API_BASE = '';
         let allSubs = [];
         let allActivations = [];
         let allAffiliates = [];
@@ -771,10 +578,7 @@
         function getAdminSecret() {
             let secret = sessionStorage.getItem('8token_admin_secret');
             if (!secret) {
-                try {
-                    secret = prompt('Digite a senha de administrador:');
-                } catch (e) {
-                    // prompt() not supported in headless/preview — use URL param or default
+                try { secret = prompt('Digite a senha de administrador:'); } catch (e) {
                     const params = new URLSearchParams(window.location.search);
                     secret = params.get('key') || '8token-admin-change-me';
                 }
@@ -800,14 +604,17 @@
             setTimeout(() => { el.className = 'alert'; }, 5000);
         }
 
-        // ---- TABS ----
+        // ---- TABS (Sidebar navigation) ----
         function switchTab(name, btnEl) {
             document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.sidebar-link').forEach(b => b.classList.remove('active'));
             document.getElementById('tab-' + name).classList.add('active');
-            // Use passed element or fall back to event.currentTarget
-            const activeBtn = btnEl || (typeof event !== 'undefined' ? event.currentTarget : null);
-            if (activeBtn) activeBtn.classList.add('active');
+            if (btnEl) btnEl.classList.add('active');
+            else {
+                // Fallback: find button by tab name
+                const btns = document.querySelectorAll('.sidebar-link');
+                btns.forEach(b => { if (b.getAttribute('onclick')?.includes("'" + name + "'")) b.classList.add('active'); });
+            }
             if (name === 'dashboard') loadDashboard();
             if (name === 'users') loadSubscriptions();
             if (name === 'activations') loadActivations();
@@ -824,7 +631,6 @@
         async function loadWebhookConfig() {
             try {
                 const config = await apiFetch('/api/admin/webhook-config');
-                // Populate URL display
                 const urlInput = document.getElementById('webhookUrlDisplay');
                 if (urlInput) urlInput.value = window.location.origin + '/api/webhooks/kirvano';
                 if (config.configured) {
@@ -848,13 +654,10 @@
                 document.getElementById('dashPending').textContent = stats.pendingActivations;
                 document.getElementById('dashRevenue').textContent = 'R$ ' + (stats.totalRevenue || 0).toFixed(2);
 
-                // Custo por IP e Lucro por IP (custo fixo mensal = R$ 650)
-                // Inclui TODOS os IPs ativos (pagos, admin, amigos/free) no denominador
                 const FIXED_COST = 650;
                 const planBreakdownForCost = stats.planBreakdown || [];
                 const activeIps = planBreakdownForCost.reduce((sum, p) => sum + (p.count || 0), 0);
                 const revenue = stats.totalRevenue || 0;
-                // Card "IPs Ativos" usa a mesma contagem (inclui admin/amigos com receita zero)
                 document.getElementById('dashActiveIps').textContent = activeIps;
                 const costPerIp = activeIps > 0 ? FIXED_COST / activeIps : 0;
                 const profitPerIp = activeIps > 0 ? (revenue - FIXED_COST) / activeIps : 0;
@@ -863,28 +666,20 @@
                 profitEl.textContent = (profitPerIp >= 0 ? 'R$ ' : '-R$ ') + Math.abs(profitPerIp).toFixed(2);
                 profitEl.className = 'stat-value ' + (profitPerIp >= 0 ? 'green' : 'red');
 
-                // Pending count badge
                 const badge = document.getElementById('pendingCount');
-                if (stats.pendingActivations > 0) {
-                    badge.textContent = stats.pendingActivations;
-                    badge.style.display = 'inline';
-                } else {
-                    badge.style.display = 'none';
-                }
+                if (stats.pendingActivations > 0) { badge.textContent = stats.pendingActivations; badge.style.display = 'inline'; } else { badge.style.display = 'none'; }
 
-                // Plan bars
-                const planColors = { free: '#7a7575', mensal: '#006ffe', trimestral: '#006ffe', anual: '#f05409', admin: '#a855f7' };
+                const planColors = { free: '#555555', mensal: '#00D4FF', trimestral: '#00D4FF', anual: '#FF5500', admin: '#a855f7' };
                 const maxCount = Math.max(...(stats.planBreakdown || []).map(p => p.count), 1);
                 const barsHtml = (stats.planBreakdown || []).map(p => `
                     <div class="plan-bar-row">
                         <span class="plan-bar-label">${p.plan}</span>
-                        <div class="plan-bar-track"><div class="plan-bar-fill" style="width:${(p.count/maxCount*100)}%;background:${planColors[p.plan]||'#7a7575'}"></div></div>
+                        <div class="plan-bar-track"><div class="plan-bar-fill" style="width:${(p.count/maxCount*100)}%;background:${planColors[p.plan]||'#555555'}"></div></div>
                         <span class="plan-bar-count">${p.count}</span>
                     </div>
                 `).join('');
                 document.getElementById('planBars').innerHTML = barsHtml || '<div class="empty-state">Sem dados</div>';
 
-                // Recent invoices
                 const invHtml = (stats.recentInvoices || []).map(i => `
                     <tr>
                         <td class="mono" style="font-size:12px;">${formatDate(i.created_at)}</td>
@@ -896,12 +691,10 @@
                 `).join('');
                 document.getElementById('recentInvoices').innerHTML = invHtml || '<tr><td colspan="5" class="empty-state">Nenhuma venda ainda</td></tr>';
 
-                // ── Resumo do Mês ──
                 const now = new Date();
                 const monthNames = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
                 document.getElementById('monthLabel').textContent = monthNames[now.getMonth()] + ' ' + now.getFullYear();
 
-                // Vendas deste mês (filtrar invoices do mês atual)
                 const currentMonth = now.getMonth();
                 const currentYear = now.getFullYear();
                 const monthInvoices = (stats.recentInvoices || []).filter(i => {
@@ -911,73 +704,43 @@
                 const monthSoldTotal = monthInvoices.reduce((sum, i) => sum + (i.amount || 0), 0);
                 document.getElementById('monthSold').textContent = 'R$ ' + monthSoldTotal.toFixed(2);
                 document.getElementById('monthSoldCount').textContent = monthInvoices.length + ' venda' + (monthInvoices.length !== 1 ? 's' : '');
-
-                // IPs ativos agora
                 document.getElementById('monthActiveNow').textContent = activeIps;
 
-                // Breakdown por plano dos IPs ativos
                 const planBreakdown = stats.planBreakdown || [];
                 const activePlans = planBreakdown.filter(p => p.plan !== 'free');
                 const breakdownParts = activePlans.map(p => {
-                    const colors = { mensal: '#006ffe', trimestral: '#006ffe', anual: '#f05409', admin: '#a855f7' };
-                    return '<span style="display:inline-flex;align-items:center;gap:6px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-pill);padding:4px 12px;font-size:12px;font-family:var(--font-mono);">' +
-                        '<span style="width:8px;height:8px;border-radius:50%;background:' + (colors[p.plan]||'#7a7575') + ';"></span>' +
+                    const colors = { mensal: '#00D4FF', trimestral: '#00D4FF', anual: '#FF5500', admin: '#a855f7' };
+                    return '<span style="display:inline-flex;align-items:center;gap:6px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-pill);padding:4px 12px;font-size:12px;font-family:var(--font-mono);">' +
+                        '<span style="width:8px;height:8px;border-radius:50%;background:' + (colors[p.plan]||'#555555') + ';"></span>' +
                         p.plan + ': <strong>' + p.count + '</strong></span>';
                 });
                 document.getElementById('monthIpBreakdown').innerHTML = breakdownParts.join('') || '<span style="color:var(--text-muted);font-size:12px;">Nenhum plano pago ativo</span>';
                 document.getElementById('monthActiveBreakdown').textContent = activePlans.reduce((s, p) => s + p.count, 0) + ' planos pagos';
 
-                // Próximo mês: calcular data do próximo mês
                 const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
                 const nextMonthEnd = new Date(now.getFullYear(), now.getMonth() + 2, 0, 23, 59, 59);
-
-                // Usar activeSubscriptions (com expires_at) para cálculo preciso
                 const subs = stats.activeSubscriptions || [];
-                let mensalRenewing = 0;
-                let trimestralRenewing = 0;
-                let anualRenewing = 0;
-                let continueCertain = 0; // trimestral/anual que NÃO expiram próx. mês (continuam ativos)
+                let mensalRenewing = 0, trimestralRenewing = 0, anualRenewing = 0, continueCertain = 0;
 
                 subs.forEach(s => {
-                    if (s.plan === 'admin' || s.plan === 'free') return; // receita zero
+                    if (s.plan === 'admin' || s.plan === 'free') return;
                     const expDate = s.expires_at ? new Date(s.expires_at) : null;
                     if (!expDate) {
-                        // Sem data de expiração — contar como ativo
                         if (s.plan === 'mensal') mensalRenewing++;
                         else if (s.plan === 'trimestral') { trimestralRenewing++; continueCertain++; }
                         else if (s.plan === 'anual') { anualRenewing++; continueCertain++; }
                         return;
                     }
-                    // O plano expira no próximo mês? (chance de renovação)
                     const expiresNextMonth = expDate >= nextMonth && expDate <= nextMonthEnd;
-                    if (s.plan === 'mensal') {
-                        // Mensal: sempre conta como receita esperada (renova todo mês)
-                        mensalRenewing++;
-                    } else if (s.plan === 'trimestral') {
-                        if (expiresNextMonth) {
-                            trimestralRenewing++; // vai renovar = receita esperada
-                        } else {
-                            continueCertain++; // continua ativo mas não renova próx. mês
-                        }
-                    } else if (s.plan === 'anual') {
-                        if (expiresNextMonth) {
-                            anualRenewing++; // vai renovar = receita esperada
-                        } else {
-                            continueCertain++; // continua ativo mas não renova próx. mês
-                        }
-                    }
+                    if (s.plan === 'mensal') mensalRenewing++;
+                    else if (s.plan === 'trimestral') { if (expiresNextMonth) trimestralRenewing++; else continueCertain++; }
+                    else if (s.plan === 'anual') { if (expiresNextMonth) anualRenewing++; else continueCertain++; }
                 });
 
                 const totalContinue = continueCertain + mensalRenewing + trimestralRenewing + anualRenewing;
                 document.getElementById('monthContinueIps').textContent = totalContinue;
                 document.getElementById('monthContinueNote').textContent = continueCertain + ' certos (não expiram) + ' + (mensalRenewing + trimestralRenewing + anualRenewing) + ' renovando';
 
-                // Receita esperada no próximo mês
-                // Só conta IPs que vão gerar cobrança no próx. mês:
-                // - Mensal: sempre (R$ 199,70/mês)
-                // - Trimestral: só se expira no próx. mês (R$ 399 renovação)
-                // - Anual: só se expira no próx. mês (R$ 1.100 renovação)
-                // - Admin/Free: R$ 0
                 const projectedRevenue = (mensalRenewing * 199.70) + (trimestralRenewing * 399) + (anualRenewing * 1100);
                 document.getElementById('monthProjected').textContent = 'R$ ' + projectedRevenue.toFixed(2);
                 const parts = [];
@@ -985,9 +748,7 @@
                 if (trimestralRenewing > 0) parts.push(trimestralRenewing + ' trim × R$399');
                 if (anualRenewing > 0) parts.push(anualRenewing + ' anual × R$1.100');
                 document.getElementById('monthProjectedNote').textContent = parts.length > 0 ? parts.join(' + ') : 'Nenhuma renovação prevista no próx. mês';
-            } catch (e) {
-                console.error('Dashboard error:', e);
-            }
+            } catch (e) { console.error('Dashboard error:', e); }
         }
 
         // ---- USERS / IPS ----
@@ -1031,8 +792,7 @@
             try {
                 await apiFetch('/api/admin/ips/validate', { method: 'POST', body: JSON.stringify({ ip, status: 'active' }) });
                 showAlert('userFormAlert', `IP ${ip} validado com sucesso!`, 'success');
-                loadSubscriptions();
-                loadDashboard();
+                loadSubscriptions(); loadDashboard();
             } catch (e) { showAlert('userFormAlert', e.message, 'error'); }
         }
 
@@ -1041,8 +801,7 @@
             try {
                 await apiFetch('/api/admin/ips/invalidate', { method: 'POST', body: JSON.stringify({ ip }) });
                 showAlert('userFormAlert', `IP ${ip} desvalidado.`, 'success');
-                loadSubscriptions();
-                loadDashboard();
+                loadSubscriptions(); loadDashboard();
             } catch (e) { showAlert('userFormAlert', e.message, 'error'); }
         }
 
@@ -1056,9 +815,7 @@
                     if (a.code) msg += ` (código: ${a.code})`;
                 });
                 alert(msg);
-                loadSubscriptions();
-                loadAffiliates();
-                loadDashboard();
+                loadSubscriptions(); loadAffiliates(); loadDashboard();
             } catch (e) { alert(e.message); }
         }
 
@@ -1122,8 +879,7 @@
                     await apiFetch('/api/admin/subscriptions', { method: 'POST', body: JSON.stringify({ ip, plan, status, expires_at: expires, notes }) });
                     showAlert('userFormAlert', `IP ${ip} adicionado com sucesso!`, 'success');
                 }
-                resetUserForm();
-                loadSubscriptions();
+                resetUserForm(); loadSubscriptions();
             } catch (e) { showAlert('userFormAlert', e.message, 'error'); }
         }
 
@@ -1165,8 +921,7 @@
             try {
                 const result = await apiFetch(`/api/admin/activations/${id}/approve`, { method: 'POST' });
                 alert(`Ativado! API Key: ${result.apiKey}\nGateway: ${result.gatewayUrl}`);
-                loadActivations();
-                loadDashboard();
+                loadActivations(); loadDashboard();
             } catch (e) { alert(e.message); }
         }
 
@@ -1174,8 +929,7 @@
             const notes = prompt('Motivo da recusa (opcional):');
             try {
                 await apiFetch(`/api/admin/activations/${id}/reject`, { method: 'POST', body: JSON.stringify({ notes }) });
-                loadActivations();
-                loadDashboard();
+                loadActivations(); loadDashboard();
             } catch (e) { alert(e.message); }
         }
 
@@ -1186,29 +940,23 @@
                 const tbody = document.getElementById('affiliatesTableBody');
                 if (!allAffiliates.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Nenhum afiliado cadastrado.</td></tr>'; return; }
 
-                // Build tree structure
                 const affiliatesWithChildren = allAffiliates.map(a => ({ ...a, children: [] }));
                 const affiliateMap = {};
                 affiliatesWithChildren.forEach(a => { affiliateMap[a.id] = a; });
 
-                // Find root affiliates (no parent) and attach children
                 const rootAffiliates = [];
                 affiliatesWithChildren.forEach(a => {
                     if (a.parent_affiliate_id && affiliateMap[a.parent_affiliate_id]) {
                         affiliateMap[a.parent_affiliate_id].children.push(a);
-                    } else {
-                        rootAffiliates.push(a);
-                    }
+                    } else { rootAffiliates.push(a); }
                 });
 
-                // Render with hierarchy
                 let html = '';
                 function renderAffiliate(a, level = 0) {
                     const indent = level * 40;
                     const arrow = level > 0 ? '<span style="color:var(--accent-orange);margin-right:8px;">↳</span>' : '';
                     const parentInfo = a.parent_affiliate_id && affiliateMap[a.parent_affiliate_id]
-                        ? `<br><span style="font-size:10px;color:var(--text-muted);">Sub de: ${affiliateMap[a.parent_affiliate_id].code}</span>`
-                        : '';
+                        ? `<br><span style="font-size:10px;color:var(--text-muted);">Sub de: ${affiliateMap[a.parent_affiliate_id].code}</span>` : '';
 
                     html += `
                         <tr draggable="true" data-affiliate-id="${a.id}" ondragstart="handleDragStart(event, ${a.id})" ondragover="handleDragOver(event)" ondrop="handleDrop(event, ${a.id})" ondragleave="handleDragLeave(event)" style="cursor:move;">
@@ -1231,11 +979,7 @@
                             </td>
                         </tr>
                     `;
-
-                    // Render children
-                    if (a.children && a.children.length > 0) {
-                        a.children.forEach(child => renderAffiliate(child, level + 1));
-                    }
+                    if (a.children && a.children.length > 0) { a.children.forEach(child => renderAffiliate(child, level + 1)); }
                 }
 
                 rootAffiliates.forEach(a => renderAffiliate(a, 0));
@@ -1246,58 +990,28 @@
         }
 
         let draggedAffiliateId = null;
-
         function handleDragStart(event, affiliateId) {
             draggedAffiliateId = affiliateId;
             event.dataTransfer.effectAllowed = 'move';
             event.dataTransfer.setData('text/plain', affiliateId);
             event.target.style.opacity = '0.5';
         }
-
-        function handleDragOver(event) {
-            event.preventDefault();
-            event.dataTransfer.dropEffect = 'move';
-            event.currentTarget.style.background = 'rgba(240, 84, 9, 0.15)';
-        }
-
-        function handleDragLeave(event) {
-            event.currentTarget.style.background = '';
-        }
-
+        function handleDragOver(event) { event.preventDefault(); event.dataTransfer.dropEffect = 'move'; event.currentTarget.style.background = 'rgba(255, 85, 0, 0.15)'; }
+        function handleDragLeave(event) { event.currentTarget.style.background = ''; }
         async function handleDrop(event, targetAffiliateId) {
             event.preventDefault();
             event.currentTarget.style.background = '';
             event.currentTarget.style.opacity = '1';
-
-            if (draggedAffiliateId === targetAffiliateId) {
-                draggedAffiliateId = null;
-                return;
-            }
-
+            if (draggedAffiliateId === targetAffiliateId) { draggedAffiliateId = null; return; }
             const draggedAff = allAffiliates.find(a => a.id === draggedAffiliateId);
             const targetAff = allAffiliates.find(a => a.id === targetAffiliateId);
-
-            if (!draggedAff || !targetAff) {
-                draggedAffiliateId = null;
-                return;
-            }
-
-            if (!confirm(`Tornar ${draggedAff.user_email || draggedAff.code} subafiliado de ${targetAff.user_email || targetAff.code}?`)) {
-                draggedAffiliateId = null;
-                return;
-            }
-
+            if (!draggedAff || !targetAff) { draggedAffiliateId = null; return; }
+            if (!confirm(`Tornar ${draggedAff.user_email || draggedAff.code} subafiliado de ${targetAff.user_email || targetAff.code}?`)) { draggedAffiliateId = null; return; }
             try {
-                await apiFetch(`/api/admin/affiliates/${draggedAffiliateId}/sub-affiliate`, {
-                    method: 'POST',
-                    body: JSON.stringify({ parent_affiliate_id: targetAffiliateId })
-                });
+                await apiFetch(`/api/admin/affiliates/${draggedAffiliateId}/sub-affiliate`, { method: 'POST', body: JSON.stringify({ parent_affiliate_id: targetAffiliateId }) });
                 showAlert('affFormAlert', `${draggedAff.code} agora é subafiliado de ${targetAff.code}`, 'success');
                 loadAffiliates();
-            } catch (e) {
-                showAlert('affFormAlert', e.message, 'error');
-            }
-
+            } catch (e) { showAlert('affFormAlert', e.message, 'error'); }
             draggedAffiliateId = null;
         }
 
@@ -1311,17 +1025,6 @@
                 document.getElementById('affUserId').value = '';
                 loadAffiliates();
             } catch (e) { showAlert('affFormAlert', e.message, 'error'); }
-        }
-
-        // ---- SIDEBAR DRAWER ----
-        function openSidebar() {
-            document.getElementById('sidebarDrawer').classList.add('open');
-            document.getElementById('sidebarOverlay').classList.add('open');
-        }
-
-        function closeSidebar() {
-            document.getElementById('sidebarDrawer').classList.remove('open');
-            document.getElementById('sidebarOverlay').classList.remove('open');
         }
 
         // ---- WEBHOOK KIRVANO ----
@@ -1380,64 +1083,46 @@
             }
         }
 
-        // ── Settings ────────────────────────────────────────────────
+        // ---- SETTINGS ----
         async function loadSettings() {
             try {
                 const settings = await apiFetch('/api/admin/settings');
                 const input = document.getElementById('settingGatewayUrl');
                 if (input) input.value = settings.gateway_url || 'https://ghostcli.dev/v1';
-            } catch (e) {
-                showAlert('settingsAlert', 'Erro ao carregar configurações: ' + e.message, 'error');
-            }
+            } catch (e) { showAlert('settingsAlert', 'Erro ao carregar configurações: ' + e.message, 'error'); }
         }
 
         async function saveSettings() {
             const gatewayUrl = document.getElementById('settingGatewayUrl')?.value?.trim();
             if (!gatewayUrl) { showAlert('settingsAlert', 'URL do gateway não pode ser vazia.', 'error'); return; }
             try {
-                await apiFetch('/api/admin/settings', {
-                    method: 'PUT',
-                    body: JSON.stringify({ gateway_url: gatewayUrl })
-                });
+                await apiFetch('/api/admin/settings', { method: 'PUT', body: JSON.stringify({ gateway_url: gatewayUrl }) });
                 showAlert('settingsAlert', 'Configurações salvas com sucesso!', 'success');
-            } catch (e) {
-                showAlert('settingsAlert', 'Erro ao salvar: ' + e.message, 'error');
-            }
-        }
-
-        async function editAffiliate(id, currentPct) {
-            const newPct = prompt(`Nova comissão % (atual: ${currentPct}%):`, currentPct);
-            if (newPct === null) return;
-            try {
-                await apiFetch(`/api/admin/affiliates/${id}`, { method: 'PUT', body: JSON.stringify({ commission_pct: parseFloat(newPct) }) });
-                loadAffiliates();
-            } catch (e) { alert(e.message); }
+            } catch (e) { showAlert('settingsAlert', 'Erro ao salvar: ' + e.message, 'error'); }
         }
 
         async function editAffiliateCommission(id, currentPct, parentId) {
-            // Modal for editing commission with parent info
             const modal = document.createElement('div');
             modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:9999;';
-
             const parentInfo = parentId ? allAffiliates.find(a => a.id === parentId) : null;
             const parentCommission = parentInfo ? parentInfo.commission_pct : 0;
 
             modal.innerHTML = `
-                <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-xl);max-width:400px;width:90%;">
+                <div style="background:var(--bg-card-solid);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-xl);max-width:400px;width:90%;">
                     <h3 style="margin-bottom:var(--space-md);color:var(--text-primary);">Editar Comissão</h3>
                     <div style="margin-bottom:var(--space-md);">
                         <label style="display:block;font-size:13px;color:var(--text-secondary);margin-bottom:var(--space-xs);">Comissão do Afiliado (%)</label>
-                        <input type="number" id="modalCommission" value="${currentPct}" min="0" max="100" step="0.5" style="width:100%;padding:var(--space-sm);background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;">
+                        <input type="number" id="modalCommission" value="${currentPct}" min="0" max="100" step="0.5" style="width:100%;padding:var(--space-sm);background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;">
                     </div>
                     ${parentId ? `
-                    <div style="margin-bottom:var(--space-md);padding:var(--space-sm);background:rgba(16,185,129,0.1);border-radius:var(--radius-sm);border-left:3px solid var(--accent-green);">
+                    <div style="margin-bottom:var(--space-md);padding:var(--space-sm);background:rgba(0,255,148,0.1);border-radius:var(--radius-sm);border-left:3px solid var(--accent-green);">
                         <div style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;">Afiliado Mãe</div>
                         <div style="font-size:13px;color:var(--text-primary);">${parentInfo?.user_email || parentInfo?.code || 'N/A'}</div>
                         <div style="font-size:12px;color:var(--accent-green);margin-top:4px;">Comissão da mãe: ${parentCommission}%</div>
                     </div>
                     <div style="margin-bottom:var(--space-md);">
                         <label style="display:block;font-size:13px;color:var(--text-secondary);margin-bottom:var(--space-xs);">Comissão da Mãe (%)</label>
-                        <input type="number" id="modalParentCommission" value="${parentCommission}" min="0" max="100" step="0.5" style="width:100%;padding:var(--space-sm);background:var(--bg-input);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;">
+                        <input type="number" id="modalParentCommission" value="${parentCommission}" min="0" max="100" step="0.5" style="width:100%;padding:var(--space-sm);background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:14px;">
                     </div>
                     ` : ''}
                     <div style="display:flex;gap:var(--space-sm);justify-content:flex-end;">
@@ -1446,39 +1131,21 @@
                     </div>
                 </div>
             `;
-
             document.body.appendChild(modal);
 
             document.getElementById('modalSaveBtn').onclick = async () => {
                 const newPct = parseFloat(document.getElementById('modalCommission').value);
-                if (isNaN(newPct) || newPct < 0 || newPct > 100) {
-                    alert('Comissão deve ser entre 0 e 100%');
-                    return;
-                }
-
+                if (isNaN(newPct) || newPct < 0 || newPct > 100) { alert('Comissão deve ser entre 0 e 100%'); return; }
                 try {
-                    // Update affiliate commission
-                    await apiFetch(`/api/admin/affiliates/${id}`, {
-                        method: 'PUT',
-                        body: JSON.stringify({ commission_pct: newPct })
-                    });
-
-                    // Update parent commission if exists
+                    await apiFetch(`/api/admin/affiliates/${id}`, { method: 'PUT', body: JSON.stringify({ commission_pct: newPct }) });
                     if (parentId) {
                         const newParentPct = parseFloat(document.getElementById('modalParentCommission').value);
                         if (!isNaN(newParentPct) && newParentPct >= 0 && newParentPct <= 100) {
-                            await apiFetch(`/api/admin/affiliates/${parentId}`, {
-                                method: 'PUT',
-                                body: JSON.stringify({ commission_pct: newParentPct })
-                            });
+                            await apiFetch(`/api/admin/affiliates/${parentId}`, { method: 'PUT', body: JSON.stringify({ commission_pct: newParentPct }) });
                         }
                     }
-
-                    modal.remove();
-                    loadAffiliates();
-                } catch (e) {
-                    alert(e.message);
-                }
+                    modal.remove(); loadAffiliates();
+                } catch (e) { alert(e.message); }
             };
         }
 
@@ -1494,10 +1161,8 @@
                 const now = new Date();
                 const expired = subs.filter(s => s.expires_at && new Date(s.expires_at) < now);
                 const tbody = document.getElementById('expiredTableBody');
-                // Update badge count
                 const badge = document.getElementById('expiredCount');
-                if (expired.length > 0) { badge.textContent = expired.length; badge.style.display = 'inline'; }
-                else { badge.style.display = 'none'; }
+                if (expired.length > 0) { badge.textContent = expired.length; badge.style.display = 'inline'; } else { badge.style.display = 'none'; }
                 if (!expired.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Nenhum plano expirado. Tudo em dia!</td></tr>'; return; }
                 tbody.innerHTML = expired.map(s => {
                     const daysExpired = Math.floor((now - new Date(s.expires_at)) / (1000*60*60*24));
@@ -1526,8 +1191,7 @@
             const expiresAt = new Date(Date.now() + days * 24*60*60*1000).toISOString().slice(0,16);
             try {
                 await apiFetch(`/api/admin/subscriptions/${id}`, { method: 'PUT', body: JSON.stringify({ plan, status: 'active', expires_at: expiresAt }) });
-                loadExpired();
-                loadDashboard();
+                loadExpired(); loadDashboard();
             } catch (e) { alert(e.message); }
         }
 
@@ -1537,17 +1201,14 @@
                 const subs = await apiFetch('/api/admin/subscriptions');
                 const grouped = {};
                 const planOrder = ['admin', 'anual', 'trimestral', 'mensal', 'free'];
-                const planColors = { admin: '#a855f7', anual: '#f05409', trimestral: '#006ffe', mensal: '#006ffe', free: '#7a7575' };
+                const planColors = { admin: '#a855f7', anual: '#FF5500', trimestral: '#00D4FF', mensal: '#00D4FF', free: '#555555' };
                 const planLabels = { admin: 'Admin', anual: 'Anual', trimestral: 'Trimestral', mensal: 'Mensal', free: 'Free' };
-                subs.forEach(s => {
-                    if (!grouped[s.plan]) grouped[s.plan] = [];
-                    grouped[s.plan].push(s);
-                });
+                subs.forEach(s => { if (!grouped[s.plan]) grouped[s.plan] = []; grouped[s.plan].push(s); });
                 const container = document.getElementById('plansContainer');
                 let html = '';
                 for (const plan of planOrder) {
                     const ips = grouped[plan] || [];
-                    const color = planColors[plan] || '#7a7575';
+                    const color = planColors[plan] || '#555555';
                     html += `
                         <div class="card" style="border-left:3px solid ${color};">
                             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-md);">
@@ -1564,9 +1225,7 @@
                                                     <td>${badgeForStatus(s.status)}</td>
                                                     <td style="font-size:13px;color:var(--text-secondary);">${s.user_email || '—'}</td>
                                                     <td class="mono" style="font-size:12px;">${formatDate(s.expires_at)}</td>
-                                                    <td class="actions">
-                                                        <button class="btn btn-danger btn-sm" onclick="removeIpFromPlan(${s.id},'${s.ip}','${plan}')">Remover IP</button>
-                                                    </td>
+                                                    <td class="actions"><button class="btn btn-danger btn-sm" onclick="removeIpFromPlan(${s.id},'${s.ip}','${plan}')">Remover IP</button></td>
                                                 </tr>
                                             `).join('')}
                                         </tbody>
@@ -1576,7 +1235,6 @@
                         </div>
                     `;
                 }
-                // Any plans not in planOrder
                 for (const plan of Object.keys(grouped)) {
                     if (planOrder.includes(plan)) continue;
                     const ips = grouped[plan];
@@ -1593,9 +1251,7 @@
                                                 <td>${badgeForStatus(s.status)}</td>
                                                 <td style="font-size:13px;color:var(--text-secondary);">${s.user_email || '—'}</td>
                                                 <td class="mono" style="font-size:12px;">${formatDate(s.expires_at)}</td>
-                                                <td class="actions">
-                                                    <button class="btn btn-danger btn-sm" onclick="removeIpFromPlan(${s.id},'${s.ip}','${plan}')">Remover IP</button>
-                                                </td>
+                                                <td class="actions"><button class="btn btn-danger btn-sm" onclick="removeIpFromPlan(${s.id},'${s.ip}','${plan}')">Remover IP</button></td>
                                             </tr>
                                         `).join('')}
                                     </tbody>
@@ -1612,11 +1268,7 @@
 
         async function removeIpFromPlan(id, ip, plan) {
             if (!confirm(`Remover o IP ${ip} do plano ${plan}? Esta ação não pode ser desfeita.`)) return;
-            try {
-                await apiFetch(`/api/admin/subscriptions/${id}`, { method: 'DELETE' });
-                loadPlans();
-                loadDashboard();
-            } catch (e) { alert(e.message); }
+            try { await apiFetch(`/api/admin/subscriptions/${id}`, { method: 'DELETE' }); loadPlans(); loadDashboard(); } catch (e) { alert(e.message); }
         }
 
         // ---- COUPONS ----
@@ -1672,18 +1324,12 @@
         }
 
         async function toggleCoupon(id, newActive) {
-            try {
-                await apiFetch(`/api/admin/coupons/${id}`, { method: 'PUT', body: JSON.stringify({ active: newActive }) });
-                loadCoupons();
-            } catch (e) { alert(e.message); }
+            try { await apiFetch(`/api/admin/coupons/${id}`, { method: 'PUT', body: JSON.stringify({ active: newActive }) }); loadCoupons(); } catch (e) { alert(e.message); }
         }
 
         async function deleteCoupon(id, code) {
             if (!confirm(`Remover o cupom ${code}?`)) return;
-            try {
-                await apiFetch(`/api/admin/coupons/${id}`, { method: 'DELETE' });
-                loadCoupons();
-            } catch (e) { alert(e.message); }
+            try { await apiFetch(`/api/admin/coupons/${id}`, { method: 'DELETE' }); loadCoupons(); } catch (e) { alert(e.message); }
         }
 
         // ---- IP CHANGE REQUESTS ----
@@ -1692,15 +1338,9 @@
                 const requests = await apiFetch('/api/admin/ip-changes');
                 const pendingCount = requests.filter(r => r.status === 'pending').length;
                 const badge = document.getElementById('ipChangeCount');
-                if (badge) {
-                    badge.textContent = pendingCount;
-                    badge.style.display = pendingCount > 0 ? 'inline' : 'none';
-                }
+                if (badge) { badge.textContent = pendingCount; badge.style.display = pendingCount > 0 ? 'inline' : 'none'; }
                 const tbody = document.getElementById('ipChangesTableBody');
-                if (!requests.length) {
-                    tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhuma solicitação</td></tr>';
-                    return;
-                }
+                if (!requests.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhuma solicitação</td></tr>'; return; }
                 tbody.innerHTML = requests.map(r => {
                     const statusBadge = r.status === 'pending' ? '<span class="badge badge-pending">Pendente</span>' :
                         r.status === 'approved' ? '<span class="badge badge-approved">Aprovado</span>' :
@@ -1726,19 +1366,12 @@
 
         async function approveIpChange(id) {
             if (!confirm('Aprovar esta alteração de IP?')) return;
-            try {
-                await apiFetch(`/api/admin/ip-changes/${id}/approve`, { method: 'POST' });
-                loadIpChanges();
-                loadDashboard();
-            } catch (e) { alert(e.message); }
+            try { await apiFetch(`/api/admin/ip-changes/${id}/approve`, { method: 'POST' }); loadIpChanges(); loadDashboard(); } catch (e) { alert(e.message); }
         }
 
         async function rejectIpChange(id) {
             const notes = prompt('Motivo da recusa (opcional):');
-            try {
-                await apiFetch(`/api/admin/ip-changes/${id}/reject`, { method: 'POST', body: JSON.stringify({ notes }) });
-                loadIpChanges();
-            } catch (e) { alert(e.message); }
+            try { await apiFetch(`/api/admin/ip-changes/${id}/reject`, { method: 'POST', body: JSON.stringify({ notes }) }); loadIpChanges(); } catch (e) { alert(e.message); }
         }
 
         // ---- NOTIFICATIONS BROADCAST ----
@@ -1752,9 +1385,9 @@
 
             if (!title || !message) {
                 statusEl.style.display = 'block';
-                statusEl.style.background = 'rgba(244,63,94,0.1)';
+                statusEl.style.background = 'rgba(255,51,51,0.1)';
                 statusEl.style.color = 'var(--accent-red)';
-                statusEl.style.border = '1px solid rgba(244,63,94,0.3)';
+                statusEl.style.border = '1px solid rgba(255,51,51,0.3)';
                 statusEl.textContent = '❌ Título e mensagem são obrigatórios.';
                 return;
             }
@@ -1769,18 +1402,18 @@
                     body: JSON.stringify({ title, message, type, target_plan: targetPlan })
                 });
                 statusEl.style.display = 'block';
-                statusEl.style.background = 'rgba(16,185,129,0.1)';
+                statusEl.style.background = 'rgba(0,255,148,0.1)';
                 statusEl.style.color = 'var(--accent-green)';
-                statusEl.style.border = '1px solid rgba(16,185,129,0.3)';
+                statusEl.style.border = '1px solid rgba(0,255,148,0.3)';
                 statusEl.textContent = '✅ ' + (res.message || 'Notificação enviada com sucesso!');
                 document.getElementById('notifTitle').value = '';
                 document.getElementById('notifMessage').value = '';
                 loadNotifStats();
             } catch (e) {
                 statusEl.style.display = 'block';
-                statusEl.style.background = 'rgba(244,63,94,0.1)';
+                statusEl.style.background = 'rgba(255,51,51,0.1)';
                 statusEl.style.color = 'var(--accent-red)';
-                statusEl.style.border = '1px solid rgba(244,63,94,0.3)';
+                statusEl.style.border = '1px solid rgba(255,51,51,0.3)';
                 statusEl.textContent = '❌ Erro: ' + e.message;
             } finally {
                 btn.disabled = false;
@@ -1792,7 +1425,7 @@
             try {
                 const [usersRes, notifsRes] = await Promise.all([
                     apiFetch('/api/admin/stats'),
-                    fetch(API_BASE + '/api/admin/notifications/count', { headers: { 'x-admin-secret': localStorage.getItem('8token_admin_secret') || '' } }).catch(() => null)
+                    fetch(API_BASE + '/api/admin/notifications/count', { headers: { 'x-admin-secret': sessionStorage.getItem('8token_admin_secret') || '' } }).catch(() => null)
                 ]);
                 if (usersRes) {
                     document.getElementById('totalUsersCount').textContent = usersRes.total_users || usersRes.totalUsers || '-';
@@ -1805,7 +1438,7 @@
 
         // Responsive dash grid
         const style = document.createElement('style');
-        style.textContent = '@media(max-width:768px){.dash-grid{grid-template-columns:1fr!important;}}';
+        style.textContent = '@media(max-width:768px){.dash-grid{grid-template-columns:1fr!important;}.month-grid{grid-template-columns:1fr 1fr!important;}}';
         document.head.appendChild(style);
     </script>
 </body>
