@@ -340,8 +340,19 @@ app.put('/api/user/name', authenticateToken, async (req, res) => {
 
 // --- API KEYS ---
 app.get('/api/keys', authenticateToken, async (req, res) => {
-  const { data } = await supabase.from('api_keys').select('id, name, key_prefix, key_suffix, created_at, last_used_at, revoked').eq('user_id', req.user.id).order('created_at', { ascending: false });
-  res.json(data || []);
+  const { data } = await supabase.from('api_keys').select('id, name, key_prefix, key_suffix, key_encrypted, created_at, last_used_at, revoked').eq('user_id', req.user.id).order('created_at', { ascending: false });
+  // Decrypt keys for display
+  const keys = (data || []).map(k => {
+    let full_key = null;
+    if (k.key_encrypted) {
+      try {
+        const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(process.env.JWT_SECRET || 'fallback-secret-key-32chars!!', 'utf8').slice(0, 32), Buffer.alloc(16, 0));
+        full_key = decipher.update(k.key_encrypted, 'hex', 'utf8') + decipher.final('utf8');
+      } catch (e) { /* decryption failed, leave null */ }
+    }
+    return { ...k, full_key };
+  });
+  res.json(keys);
 });
 
 app.post('/api/keys', authenticateToken, async (req, res) => {
@@ -350,7 +361,13 @@ app.post('/api/keys', authenticateToken, async (req, res) => {
   const keyHash = crypto.createHash('sha256').update(apiKey).digest('hex');
   const prefix = apiKey.slice(0, 8);
   const suffix = apiKey.slice(-4);
-  const { data } = await supabase.from('api_keys').insert({ user_id: req.user.id, name: name || 'Nova chave', key_hash: keyHash, key_prefix: prefix, key_suffix: suffix }).select().single();
+  // Encrypt the full key for storage (so user can reveal it later)
+  let keyEncrypted = null;
+  try {
+    const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(process.env.JWT_SECRET || 'fallback-secret-key-32chars!!', 'utf8').slice(0, 32), Buffer.alloc(16, 0));
+    keyEncrypted = cipher.update(apiKey, 'utf8', 'hex') + cipher.final('hex');
+  } catch (e) { console.error('Key encryption failed:', e.message); }
+  const { data } = await supabase.from('api_keys').insert({ user_id: req.user.id, name: name || 'Nova chave', key_hash: keyHash, key_prefix: prefix, key_suffix: suffix, key_encrypted: keyEncrypted }).select().single();
   res.json({ id: data.id, key: apiKey, name: name || 'Nova chave', prefix, suffix });
 });
 

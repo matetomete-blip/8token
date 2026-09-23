@@ -36,10 +36,14 @@ CREATE TABLE IF NOT EXISTS api_keys (
   key_hash TEXT NOT NULL,
   key_prefix TEXT,
   key_suffix TEXT,
+  key_encrypted TEXT,
   revoked BOOLEAN DEFAULT false,
   last_used_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- Migration: add key_encrypted column to existing api_keys table
+-- ALTER TABLE api_keys ADD COLUMN IF NOT EXISTS key_encrypted TEXT;
 
 -- Invoices
 CREATE TABLE IF NOT EXISTS invoices (
