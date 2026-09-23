@@ -1287,7 +1287,7 @@ app.get('/api/user/gateway-url', authenticateToken, async (req, res) => {
     return res.status(403).json({ error: 'Plano ativo necessário para acessar o gateway.' });
   }
   const { data: setting } = await supabase.from('site_settings').select('value').eq('key', 'gateway_url').single();
-  const gatewayUrl = setting?.value || 'https://ghostcli.dev/v1';
+  const gatewayUrl = setting?.value || 'https://8token.tech/v1';
   res.json({ gateway_url: gatewayUrl });
 });
 
