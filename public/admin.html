@@ -435,10 +435,16 @@ Configurações
 <div class="tab-panel" id="tab-users">
 <h1 style="font-size: 28px; font-weight: 700; margin-bottom: var(--space-lg);">Usuários / IPs</h1>
 <div class="card">
-<div class="card-title">Adicionar IP Manualmente</div>
+<div class="card-title">Adicionar / Editar IP</div>
 <div id="userFormAlert" class="alert"></div>
 <input type="hidden" id="editId">
 <div class="form-row">
+<div class="form-group">
+<label class="form-label">Usuário (buscar por nome ou email)</label>
+<input type="text" id="fieldUserSearch" class="form-input" placeholder="Digite nome ou email..." oninput="filterUserSelect()" list="userList">
+<datalist id="userList"></datalist>
+<input type="hidden" id="fieldUserId">
+</div>
 <div class="form-group">
 <label class="form-label">Endereço IP</label>
 <input type="text" id="fieldIp" class="form-input" placeholder="203.0.113.42">
@@ -453,6 +459,8 @@ Configurações
 <option value="admin">Admin</option>
 </select>
 </div>
+</div>
+<div class="form-row">
 <div class="form-group">
 <label class="form-label">Status</label>
 <select id="fieldStatus" class="form-select">
@@ -462,8 +470,6 @@ Configurações
 <option value="suspended">Suspenso</option>
 </select>
 </div>
-</div>
-<div class="form-row">
 <div class="form-group">
 <label class="form-label">Expira em</label>
 <input type="datetime-local" id="fieldExpires" class="form-input">
@@ -987,9 +993,53 @@ async function loadSubscriptions() {
 try {
 allSubs = await apiFetch('/api/admin/subscriptions');
 filterUsersTable();
+loadUsersForSelect(); // Populate user datalist
 } catch (e) {
 document.getElementById('usersTableBody').innerHTML = `<tr><td colspan="7" class="empty-state" style="color:var(--accent-red);">${e.message}</td></tr>`;
 if (e.message.includes('Acesso negado')) sessionStorage.removeItem('8token_admin_secret');
+}
+}
+
+// ---- USER SELECT FOR IP FORM ----
+let allUsersList = [];
+async function loadUsersForSelect() {
+try {
+// Fetch all users from a new admin endpoint or reuse stats if it lists users
+// Since we don't have a dedicated /api/admin/users list endpoint yet, let's create a quick fetch logic
+// Actually, let's just fetch from the existing CRM endpoint if available, or create a simple one.
+// For now, let's assume we can get users from the subscriptions data we already have + maybe a separate call.
+// Better: Add a quick fetch to /api/admin/crm/users which exists in server.js (line 1600+)
+const res = await fetch(API_BASE + '/api/admin/crm/users', {
+headers: { 'X-Admin-Secret': getAdminSecret() }
+});
+if (res.ok) {
+const data = await res.json();
+allUsersList = data.users || [];
+const datalist = document.getElementById('userList');
+if (datalist) {
+datalist.innerHTML = allUsersList.map(u =>
+`<option value="${u.email}" data-id="${u.id}">${u.name ? u.name + ' (' + u.email + ')' : u.email}</option>`
+).join('');
+}
+}
+} catch (e) { console.error('Load users for select error:', e); }
+}
+
+function filterUserSelect() {
+const input = document.getElementById('fieldUserSearch');
+const hiddenId = document.getElementById('fieldUserId');
+const val = input.value.toLowerCase();
+const match = allUsersList.find(u =>
+(u.email && u.email.toLowerCase() === val) ||
+(u.name && u.name.toLowerCase() === val) ||
+(u.email && u.email.toLowerCase().includes(val))
+);
+if (match) {
+hiddenId.value = match.id;
+input.style.borderColor = 'var(--accent-green)';
+} else {
+hiddenId.value = '';
+input.style.borderColor = '';
 }
 }
 
@@ -1012,6 +1062,10 @@ document.getElementById('fieldStatus').value = 'active';
 document.getElementById('fieldExpires').value = '';
 document.getElementById('fieldNotes').value = '';
 document.getElementById('fieldIp').disabled = false;
+// Reset user select
+document.getElementById('fieldUserSearch').value = '';
+document.getElementById('fieldUserId').value = '';
+document.getElementById('fieldUserSearch').style.borderColor = '';
 }
 
 function editSub(id) {
@@ -1024,6 +1078,16 @@ document.getElementById('fieldPlan').value = sub.plan;
 document.getElementById('fieldStatus').value = sub.status;
 document.getElementById('fieldExpires').value = sub.expires_at ? sub.expires_at.slice(0, 16) : '';
 document.getElementById('fieldNotes').value = sub.notes || '';
+// Populate user field if available
+if (sub.users) {
+const displayName = sub.users.name ? `${sub.users.name} (${sub.users.email})` : sub.users.email;
+document.getElementById('fieldUserSearch').value = displayName;
+document.getElementById('fieldUserId').value = sub.user_id;
+document.getElementById('fieldUserSearch').style.borderColor = 'var(--accent-green)';
+} else {
+document.getElementById('fieldUserSearch').value = sub.user_email || '';
+document.getElementById('fieldUserId').value = sub.user_id || '';
+}
 window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -1034,13 +1098,15 @@ const plan = document.getElementById('fieldPlan').value;
 const status = document.getElementById('fieldStatus').value;
 const expires = document.getElementById('fieldExpires').value || null;
 const notes = document.getElementById('fieldNotes').value.trim() || null;
+const userId = document.getElementById('fieldUserId').value || null;
+
 if (!editId && !ip) { showAlert('userFormAlert', 'O endereço IP é obrigatório.', 'error'); return; }
 try {
 if (editId) {
-await apiFetch(`/api/admin/subscriptions/${editId}`, { method: 'PUT', body: JSON.stringify({ plan, status, expires_at: expires, notes }) });
+await apiFetch(`/api/admin/subscriptions/${editId}`, { method: 'PUT', body: JSON.stringify({ plan, status, expires_at: expires, notes, user_id: userId }) });
 showAlert('userFormAlert', 'Assinatura atualizada com sucesso!', 'success');
 } else {
-await apiFetch('/api/admin/subscriptions', { method: 'POST', body: JSON.stringify({ ip, plan, status, expires_at: expires, notes }) });
+await apiFetch('/api/admin/subscriptions', { method: 'POST', body: JSON.stringify({ ip, plan, status, expires_at: expires, notes, user_id: userId }) });
 showAlert('userFormAlert', `IP ${ip} adicionado com sucesso!`, 'success');
 }
 resetUserForm();
@@ -1141,8 +1207,8 @@ ${arrow}${a.user_email || '—'}${parentInfo}<br>
 <td class="mono">${a.paid_referrals || 0}</td>
 <td class="mono">R$ ${(a.total_commission_base || 0).toFixed(2)}</td>
 <td class="actions">
-<button class="btn btn-secondary btn-sm" onclick="editAffiliateCommission(${a.id}, ${a.commission_pct}, ${a.parent_affiliate_id || 'null'})">Editar %</button>
-<button class="btn btn-danger btn-sm" onclick="removeAffiliate(${a.id})">Remover</button>
+<button class="btn btn-secondary btn-sm" onclick="editAffiliateCommission('${a.id}', ${a.commission_pct}, '${a.parent_affiliate_id || ''}')">Editar %</button>
+<button class="btn btn-danger btn-sm" onclick="removeAffiliate('${a.id}')">Remover</button>
 </td>
 </tr>
 `;
@@ -1224,7 +1290,7 @@ ${ips.map(s => `
 <td style="font-size:13px;color:var(--text-secondary);">${s.user_email || '—'}</td>
 <td class="mono" style="font-size:12px;">${formatDate(s.expires_at)}</td>
 <td class="actions">
-<button class="btn btn-danger btn-sm" onclick="removeIpFromPlan(${s.id},'${s.ip}','${plan}')">Remover IP</button>
+<button class="btn btn-danger btn-sm" onclick="removeIpFromPlan('${s.id}','${s.ip}','${plan}')">Remover IP</button>
 </td>
 </tr>
 `).join('')}
