@@ -69,38 +69,92 @@ padding: 2px 10px; border-radius: 999px; font-size: 10px; font-weight: 700;
 text-transform: uppercase; letter-spacing: 0.05em; margin-left: 8px;
 }
 
-/* Tabs */
-.tabs-bar {
-margin-top: 70px; background: var(--bg-secondary);
-border-bottom: 1px solid var(--border); overflow-x: auto;
+/* Layout with Sidebar */
+.admin-layout {
+display: grid;
+grid-template-columns: 260px 1fr;
+min-height: 100vh;
+padding-top: 70px;
 }
-.tabs-inner {
-max-width: 1600px; margin: 0 auto; padding: 0 var(--space-md);
-display: flex; gap: 0;
-}
-.tab-btn {
-padding: 16px 24px; font-size: 13px; font-weight: 600;
-color: var(--text-muted); background: none; border: none;
-border-bottom: 2px solid transparent; cursor: pointer;
-transition: var(--transition); white-space: nowrap;
-}
-.tab-btn:hover { color: var(--text-secondary); }
-.tab-btn.active { color: var(--accent-orange); border-bottom-color: var(--accent-orange); }
+@media (max-width: 1024px) { .admin-layout { grid-template-columns: 1fr; } }
 
-/* Layout */
-.page-container {
-max-width: 1600px; margin: 0 auto; padding: var(--space-lg) var(--space-md);
+/* Sidebar */
+.sidebar {
+background: var(--bg-secondary);
+border-right: 1px solid var(--border);
+padding: var(--space-md) 0;
+position: sticky;
+top: 70px;
+height: calc(100vh - 70px);
+overflow-y: auto;
+}
+.sidebar-section {
+padding: 0 var(--space-md);
+margin-bottom: var(--space-md);
+}
+.sidebar-label {
+font-size: 11px;
+font-weight: 700;
+color: var(--text-muted);
+text-transform: uppercase;
+letter-spacing: 0.08em;
+margin-bottom: var(--space-xs);
+padding: 0 var(--space-sm);
+}
+.nav-link {
+display: flex;
+align-items: center;
+gap: var(--space-sm);
+padding: 10px var(--space-sm);
+border-radius: var(--radius-sm);
+color: var(--text-secondary);
+font-size: 14px;
+font-weight: 500;
+cursor: pointer;
+transition: var(--transition);
+border: 1px solid transparent;
+margin-bottom: 2px;
+}
+.nav-link:hover { background: rgba(255,255,255,0.03); color: var(--text-primary); }
+.nav-link.active {
+background: rgba(255, 85, 0, 0.1);
+color: var(--accent-orange);
+border-color: rgba(255, 85, 0, 0.2);
+}
+.nav-link svg { width: 18px; height: 18px; opacity: 0.7; flex-shrink: 0; }
+.nav-link.active svg { opacity: 1; }
+.nav-link .badge-count {
+margin-left: auto;
+background: var(--accent-orange);
+color: white;
+font-size: 10px;
+font-weight: 700;
+padding: 2px 6px;
+border-radius: 999px;
+min-width: 18px;
+text-align: center;
+}
+
+/* Main Content */
+.main-content {
+padding: var(--space-lg);
+max-width: 1400px;
 }
 
 /* Stats Grid */
 .stats-grid {
-display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-gap: var(--space-md); margin-bottom: var(--space-xl);
+display: grid;
+grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+gap: var(--space-md);
+margin-bottom: var(--space-xl);
 }
 .stat-card {
-background: var(--bg-card); backdrop-filter: var(--glass);
-border: 1px solid var(--border); border-radius: var(--radius-md);
-padding: var(--space-md); transition: var(--transition);
+background: var(--bg-card);
+backdrop-filter: var(--glass);
+border: 1px solid var(--border);
+border-radius: var(--radius-md);
+padding: var(--space-md);
+transition: var(--transition);
 }
 .stat-card:hover { border-color: var(--border-hover); transform: translateY(-2px); }
 .stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; }
@@ -108,18 +162,33 @@ padding: var(--space-md); transition: var(--transition);
 
 /* Cards & Tables */
 .card {
-background: var(--bg-card); backdrop-filter: var(--glass);
-border: 1px solid var(--border); border-radius: var(--radius-lg);
-padding: var(--space-lg); margin-bottom: var(--space-lg);
+background: var(--bg-card);
+backdrop-filter: var(--glass);
+border: 1px solid var(--border);
+border-radius: var(--radius-lg);
+padding: var(--space-lg);
+margin-bottom: var(--space-lg);
 }
-.card-title { font-size: 16px; font-weight: 600; margin-bottom: var(--space-md); display: flex; align-items: center; gap: var(--space-sm); }
-
+.card-title {
+font-size: 16px;
+font-weight: 600;
+margin-bottom: var(--space-md);
+display: flex;
+align-items: center;
+gap: var(--space-sm);
+}
 .table-wrap { overflow-x: auto; border-radius: var(--radius-sm); border: 1px solid var(--border); }
 table { width: 100%; border-collapse: collapse; min-width: 800px; }
 thead { background: rgba(255,255,255,0.02); }
 th {
-font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
-color: var(--text-muted); padding: 12px 16px; text-align: left; white-space: nowrap;
+font-size: 11px;
+font-weight: 700;
+text-transform: uppercase;
+letter-spacing: 0.08em;
+color: var(--text-muted);
+padding: 12px 16px;
+text-align: left;
+white-space: nowrap;
 }
 td { padding: 12px 16px; font-size: 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
 tr:last-child td { border-bottom: none; }
@@ -128,9 +197,14 @@ td.mono { font-family: var(--font-mono); font-size: 13px; color: var(--text-seco
 
 /* Badges */
 .badge {
-display: inline-flex; align-items: center; padding: 2px 10px;
-font-size: 10px; font-weight: 700; border-radius: 999px;
-text-transform: uppercase; letter-spacing: 0.03em;
+display: inline-flex;
+align-items: center;
+padding: 2px 10px;
+font-size: 10px;
+font-weight: 700;
+border-radius: 999px;
+text-transform: uppercase;
+letter-spacing: 0.03em;
 }
 .badge-active { background: rgba(0, 255, 148, 0.1); color: var(--accent-green); }
 .badge-pending { background: rgba(255, 85, 0, 0.1); color: var(--accent-orange); }
@@ -138,17 +212,21 @@ text-transform: uppercase; letter-spacing: 0.03em;
 .badge-admin { background: rgba(168, 85, 247, 0.1); color: var(--accent-purple); }
 .badge-pro { background: rgba(0, 212, 255, 0.1); color: var(--accent-blue); }
 .badge-danger { background: rgba(255, 51, 51, 0.1); color: var(--accent-red); }
-.badge-warning { background: rgba(255, 85, 0, 0.1); color: var(--accent-orange); }
-.badge-approved { background: rgba(0, 255, 148, 0.1); color: var(--accent-green); }
-.badge-rejected { background: rgba(255, 51, 51, 0.1); color: var(--accent-red); }
-.badge-suspended { background: rgba(255, 85, 0, 0.1); color: var(--accent-orange); }
+.badge-free { background: rgba(85, 85, 85, 0.2); color: var(--text-muted); }
 
 /* Buttons */
 .btn {
-display: inline-flex; align-items: center; justify-content: center;
-padding: 8px 16px; font-size: 13px; font-weight: 600;
-border-radius: var(--radius-sm); cursor: pointer; transition: var(--transition);
-border: none; gap: 6px;
+display: inline-flex;
+align-items: center;
+justify-content: center;
+padding: 8px 16px;
+font-size: 13px;
+font-weight: 600;
+border-radius: var(--radius-sm);
+cursor: pointer;
+transition: var(--transition);
+border: none;
+gap: 6px;
 }
 .btn-primary { background: var(--accent-orange); color: white; }
 .btn-primary:hover { background: #ff6b00; box-shadow: 0 0 15px var(--accent-orange-glow); }
@@ -164,13 +242,23 @@ border: none; gap: 6px;
 .form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-md); margin-bottom: var(--space-md); }
 .form-group { display: flex; flex-direction: column; gap: 6px; }
 .form-label { font-size: 11px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em; }
-.form-input, .form-select {
-width: 100%; height: 40px; padding: 0 var(--space-sm);
-background: var(--bg-secondary); border: 1px solid var(--border);
-border-radius: var(--radius-sm); color: var(--text-primary);
-font-size: 14px; outline: none; transition: var(--transition);
+.form-input, .form-select, .form-textarea {
+width: 100%;
+padding: 10px var(--space-sm);
+background: var(--bg-secondary);
+border: 1px solid var(--border);
+border-radius: var(--radius-sm);
+color: var(--text-primary);
+font-size: 14px;
+outline: none;
+transition: var(--transition);
+font-family: var(--font-sans);
 }
-.form-input:focus, .form-select:focus { border-color: var(--accent-orange); box-shadow: 0 0 0 2px var(--accent-orange-glow); }
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+border-color: var(--accent-orange);
+box-shadow: 0 0 0 2px var(--accent-orange-glow);
+}
+.form-textarea { min-height: 100px; resize: vertical; }
 
 /* Alert */
 .alert { padding: var(--space-sm) var(--space-md); border-radius: var(--radius-sm); font-size: 13px; margin-bottom: var(--space-md); display: none; }
@@ -183,16 +271,55 @@ font-size: 14px; outline: none; transition: var(--transition);
 /* Actions cell */
 .actions { display: flex; gap: 6px; flex-wrap: wrap; }
 
+/* Tab panels */
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
 /* Responsive */
 @media (max-width: 768px) {
 .stats-grid { grid-template-columns: repeat(2, 1fr); }
-.tabs-inner { padding: 0; }
-.tab-btn { padding: 12px 16px; font-size: 12px; }
-.page-container { padding: var(--space-md) var(--space-sm); }
+.sidebar { display: none; }
+.admin-layout { grid-template-columns: 1fr; }
+.main-content { padding: var(--space-md); }
 }
+/* Custom Modal (replaces native prompt/alert) */
+.modal-overlay {
+position: fixed; inset: 0; z-index: 9999;
+background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+display: none; align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+background: var(--bg-card-solid); border: 1px solid var(--border);
+border-radius: var(--radius-lg); padding: var(--space-lg);
+max-width: 420px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 20px var(--accent-orange-glow);
+}
+.modal-title { font-size: 18px; font-weight: 700; margin-bottom: var(--space-sm); color: var(--text-primary); }
+.modal-message { font-size: 14px; color: var(--text-secondary); margin-bottom: var(--space-md); line-height: 1.6; }
+.modal-input {
+width: 100%; height: 44px; padding: 0 var(--space-sm);
+background: var(--bg-secondary); border: 1px solid var(--border);
+border-radius: var(--radius-sm); color: var(--text-primary);
+font-size: 14px; outline: none; transition: var(--transition);
+margin-bottom: var(--space-md);
+}
+.modal-input:focus { border-color: var(--accent-orange); box-shadow: 0 0 0 2px var(--accent-orange-glow); }
+.modal-actions { display: flex; gap: var(--space-sm); justify-content: flex-end; }
 </style>
 </head>
 <body>
+<!-- Custom Modal (replaces native prompt/alert/confirm) -->
+<div class="modal-overlay" id="customModal">
+<div class="modal-box">
+<div class="modal-title" id="modalTitle">8Token Admin</div>
+<div class="modal-message" id="modalMessage"></div>
+<input type="text" class="modal-input" id="modalInput" style="display:none;" placeholder="">
+<div class="modal-actions">
+<button class="btn btn-secondary" id="modalCancelBtn" onclick="closeModal(null)">Cancelar</button>
+<button class="btn btn-primary" id="modalOkBtn" onclick="closeModal(document.getElementById('modalInput').style.display !== 'none' ? document.getElementById('modalInput').value : true)">OK</button>
+</div>
+</div>
+</div>
 <!-- Navbar -->
 <nav class="navbar">
 <div class="nav-inner">
@@ -210,27 +337,68 @@ font-size: 14px; outline: none; transition: var(--transition);
 </div>
 </nav>
 
-<!-- Tabs Navigation -->
-<div class="tabs-bar">
-<div class="tabs-inner">
-<button class="tab-btn active" onclick="switchTab('dashboard', this)">Dashboard</button>
-<button class="tab-btn" onclick="switchTab('users', this)">Usuários / IPs</button>
-<button class="tab-btn" onclick="switchTab('activations', this)">Ativações <span id="activationCount" class="badge badge-pending" style="margin-left:6px;display:none;">0</span></button>
-<button class="tab-btn" onclick="switchTab('affiliates', this)">Afiliados</button>
-<button class="tab-btn" onclick="switchTab('plans', this)">Planos</button>
-<button class="tab-btn" onclick="switchTab('coupons', this)">Cupons</button>
-<button class="tab-btn" onclick="switchTab('webhook', this)">Webhook</button>
-<button class="tab-btn" onclick="switchTab('notifications', this)">🔔 Notificações</button>
-<button class="tab-btn" onclick="switchTab('apikeys', this)">🔑 Chaves API</button>
-<button class="tab-btn" onclick="switchTab('metrics', this)">📊 Métricas</button>
-<button class="tab-btn" onclick="switchTab('settings', this)">Configurações</button>
+<div class="admin-layout">
+<!-- Sidebar -->
+<aside class="sidebar">
+<div class="sidebar-section">
+<div class="sidebar-label">Principal</div>
+<div class="nav-link active" onclick="switchTab('dashboard', this)">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+Dashboard
+</div>
+<div class="nav-link" onclick="switchTab('users', this)">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+Usuários / IPs
+</div>
+<div class="nav-link" onclick="switchTab('activations', this)">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+Ativações
+<span class="badge-count" id="activationCount" style="display:none;">0</span>
 </div>
 </div>
 
+<div class="sidebar-section">
+<div class="sidebar-label">Gestão</div>
+<div class="nav-link" onclick="switchTab('affiliates', this)">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+Afiliados
+</div>
+<div class="nav-link" onclick="switchTab('plans', this)">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+Planos
+</div>
+<div class="nav-link" onclick="switchTab('apikeys', this)">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+Chaves API
+</div>
+</div>
+
+<div class="sidebar-section">
+<div class="sidebar-label">Sistema</div>
+<div class="nav-link" onclick="switchTab('webhook', this)">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+Webhook
+</div>
+<div class="nav-link" onclick="switchTab('notifications', this)">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+Notificações
+</div>
+<div class="nav-link" onclick="switchTab('metrics', this)">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+Métricas
+</div>
+<div class="nav-link" onclick="switchTab('settings', this)">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+Configurações
+</div>
+</div>
+</aside>
+
 <!-- Main Content -->
-<main class="page-container">
+<main class="main-content">
 <!-- Dashboard Tab -->
 <div class="tab-panel active" id="tab-dashboard">
+<h1 style="font-size: 28px; font-weight: 700; margin-bottom: var(--space-lg);">Dashboard</h1>
 <div class="stats-grid">
 <div class="stat-card">
 <div class="stat-label">Receita Total</div>
@@ -249,7 +417,6 @@ font-size: 14px; outline: none; transition: var(--transition);
 <div class="stat-value" style="color: var(--accent-orange);" id="dashPaidPlans">0</div>
 </div>
 </div>
-
 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:var(--space-lg); margin-bottom:var(--space-lg);">
 <div class="card">
 <div class="card-title">Distribuição por Plano</div>
@@ -265,7 +432,8 @@ font-size: 14px; outline: none; transition: var(--transition);
 </div>
 
 <!-- Users Tab -->
-<div class="tab-panel" id="tab-users" style="display:none;">
+<div class="tab-panel" id="tab-users">
+<h1 style="font-size: 28px; font-weight: 700; margin-bottom: var(--space-lg);">Usuários / IPs</h1>
 <div class="card">
 <div class="card-title">Adicionar IP Manualmente</div>
 <div id="userFormAlert" class="alert"></div>
@@ -309,14 +477,13 @@ font-size: 14px; outline: none; transition: var(--transition);
 </div>
 </div>
 </div>
-
 <div class="card">
 <div class="card-title" style="justify-content:space-between;">
-<span>Assinaturas / IPs</span>
+<span>Todos os Usuários e IPs</span>
 <button class="btn btn-secondary btn-sm" onclick="resetUserForm()">+ Novo IP</button>
 </div>
 <div style="margin-bottom:var(--space-md);">
-<input type="text" id="userSearchInput" class="form-input" placeholder="Buscar por IP, email, plano..." oninput="filterUsersTable()" style="max-width:400px;">
+<input type="text" id="userSearchInput" class="form-input" placeholder="Buscar por IP, email, plano, status..." oninput="filterUsersTable()" style="max-width:400px;">
 </div>
 <div class="table-wrap">
 <table>
@@ -340,9 +507,10 @@ font-size: 14px; outline: none; transition: var(--transition);
 </div>
 
 <!-- Activations Tab -->
-<div class="tab-panel" id="tab-activations" style="display:none;">
+<div class="tab-panel" id="tab-activations">
+<h1 style="font-size: 28px; font-weight: 700; margin-bottom: var(--space-lg);">Ativações</h1>
 <div class="card">
-<div class="card-title">Pedidos de Ativação</div>
+<div class="card-title">Pedidos de Ativação (Pendentes e Recentes)</div>
 <div class="table-wrap">
 <table>
 <thead>
@@ -366,7 +534,8 @@ font-size: 14px; outline: none; transition: var(--transition);
 </div>
 
 <!-- Affiliates Tab -->
-<div class="tab-panel" id="tab-affiliates" style="display:none;">
+<div class="tab-panel" id="tab-affiliates">
+<h1 style="font-size: 28px; font-weight: 700; margin-bottom: var(--space-lg);">Afiliados</h1>
 <div class="card">
 <div class="card-title">Adicionar Afiliado</div>
 <div id="affFormAlert" class="alert"></div>
@@ -409,61 +578,53 @@ font-size: 14px; outline: none; transition: var(--transition);
 </div>
 
 <!-- Plans Tab -->
-<div class="tab-panel" id="tab-plans" style="display:none;">
+<div class="tab-panel" id="tab-plans">
+<h1 style="font-size: 28px; font-weight: 700; margin-bottom: var(--space-lg);">Planos</h1>
 <div id="plansContainer">
 <div class="empty-state">Carregando...</div>
 </div>
 </div>
 
-<!-- Coupons Tab -->
-<div class="tab-panel" id="tab-coupons" style="display:none;">
+<!-- API Keys Tab -->
+<div class="tab-panel" id="tab-apikeys">
+<h1 style="font-size: 28px; font-weight: 700; margin-bottom: var(--space-lg);">Chaves API</h1>
 <div class="card">
-<div class="card-title">Criar Cupom</div>
-<div id="couponFormAlert" class="alert"></div>
-<div class="form-row">
-<div class="form-group">
-<label class="form-label">Código</label>
-<input type="text" id="couponCode" class="form-input" placeholder="PROMO10" style="text-transform:uppercase;">
+<div class="card-title">Gestão de Chaves API</div>
+<p style="color:var(--text-secondary);font-size:13px;margin-bottom:var(--space-lg);line-height:1.6;">
+Controle total sobre todas as chaves API emitidas. Veja o dono de cada chave, revogue ou reative, e monitore o uso individual.
+</p>
+<div id="apiKeysAlert" class="alert"></div>
+<div style="display:flex;gap:var(--space-md);margin-bottom:var(--space-lg);flex-wrap:wrap;">
+<div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:var(--space-md) var(--space-lg);flex:1;min-width:120px;">
+<div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;font-weight:600;">Total</div>
+<div style="font-size:24px;font-weight:700;font-family:var(--font-mono);" id="keysStatTotal">—</div>
 </div>
-<div class="form-group">
-<label class="form-label">Desconto (%)</label>
-<input type="number" id="couponDiscount" class="form-input" value="10" min="1" max="100">
+<div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:var(--space-md) var(--space-lg);flex:1;min-width:120px;">
+<div style="font-size:11px;color:var(--accent-green);text-transform:uppercase;letter-spacing:0.08em;font-weight:600;">Ativas</div>
+<div style="font-size:24px;font-weight:700;font-family:var(--font-mono);color:var(--accent-green);" id="keysStatActive">—</div>
 </div>
-<div class="form-group">
-<label class="form-label">Usos Máximos</label>
-<input type="number" id="couponMaxUses" class="form-input" placeholder="∞">
-</div>
-</div>
-<div class="form-row">
-<div class="form-group">
-<label class="form-label">Expira em</label>
-<input type="datetime-local" id="couponExpires" class="form-input">
-</div>
-<div class="form-group">
-<label class="form-label">Notas</label>
-<input type="text" id="couponNotes" class="form-input" placeholder="Observações...">
-</div>
-<div class="form-group" style="justify-content:flex-end;">
-<button class="btn btn-primary" style="width:100%; height:40px;" onclick="createCoupon()">Criar Cupom</button>
+<div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:var(--space-md) var(--space-lg);flex:1;min-width:120px;">
+<div style="font-size:11px;color:var(--accent-red);text-transform:uppercase;letter-spacing:0.08em;font-weight:600;">Revogadas</div>
+<div style="font-size:24px;font-weight:700;font-family:var(--font-mono);color:var(--accent-red);" id="keysStatRevoked">—</div>
 </div>
 </div>
+<div style="margin-bottom:var(--space-md);">
+<input type="text" id="keysSearchInput" class="form-input" placeholder="Buscar por email, nome ou prefixo da chave..." oninput="filterKeysTable()" style="max-width:400px;">
 </div>
-<div class="card">
-<div class="card-title">Cupons Cadastrados</div>
 <div class="table-wrap">
 <table>
 <thead>
 <tr>
-<th>Código</th>
-<th>Desconto</th>
-<th>Usos</th>
-<th>Máximo</th>
-<th>Expira</th>
+<th>Chave</th>
+<th>Nome</th>
+<th>Dono (Email)</th>
 <th>Status</th>
+<th>Último Uso</th>
+<th>Criada em</th>
 <th>Ações</th>
 </tr>
 </thead>
-<tbody id="couponsTableBody">
+<tbody id="apiKeysTableBody">
 <tr><td colspan="7" class="empty-state">Carregando...</td></tr>
 </tbody>
 </table>
@@ -472,9 +633,10 @@ font-size: 14px; outline: none; transition: var(--transition);
 </div>
 
 <!-- Webhook Tab -->
-<div class="tab-panel" id="tab-webhook" style="display:none;">
+<div class="tab-panel" id="tab-webhook">
+<h1 style="font-size: 28px; font-weight: 700; margin-bottom: var(--space-lg);">Webhook Kirvano</h1>
 <div class="card">
-<div class="card-title">Configuração Webhook Kirvano</div>
+<div class="card-title">Configuração Webhook</div>
 <div id="webhookFormAlert" class="alert"></div>
 <div class="form-row">
 <div class="form-group" style="grid-column: 1 / -1;">
@@ -534,7 +696,8 @@ font-size: 14px; outline: none; transition: var(--transition);
 </div>
 
 <!-- Notifications Tab -->
-<div class="tab-panel" id="tab-notifications" style="display:none;">
+<div class="tab-panel" id="tab-notifications">
+<h1 style="font-size: 28px; font-weight: 700; margin-bottom: var(--space-lg);">Notificações</h1>
 <div class="card">
 <div class="card-title">Enviar Notificação Broadcast</div>
 <div id="notifSendStatus" class="alert" style="display:none;"></div>
@@ -565,64 +728,19 @@ font-size: 14px; outline: none; transition: var(--transition);
 </div>
 <div class="form-group" style="margin-bottom:var(--space-md);">
 <label class="form-label">Mensagem</label>
-<textarea id="notifMessage" class="form-input" style="height:100px;padding:var(--space-sm);resize:vertical;" placeholder="Mensagem da notificação..."></textarea>
+<textarea id="notifMessage" class="form-textarea" placeholder="Mensagem da notificação..."></textarea>
 </div>
 <button id="sendNotifBtn" class="btn btn-primary" onclick="sendBroadcastNotification()">🚀 Enviar Notificação</button>
 </div>
 </div>
 
-<!-- API Keys Tab -->
-<div class="tab-panel" id="tab-apikeys" style="display:none;">
-<div class="card">
-<div class="card-title">Gestão de Chaves API</div>
-<p style="color:var(--text-secondary);font-size:13px;margin-bottom:var(--space-lg);line-height:1.6;">
-Controle total sobre todas as chaves API emitidas. Veja o dono de cada chave, revogue ou reative, e monitore o uso individual.
-</p>
-<div id="apiKeysAlert" class="alert"></div>
-<div style="display:flex;gap:var(--space-md);margin-bottom:var(--space-lg);flex-wrap:wrap;">
-<div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:var(--space-md) var(--space-lg);flex:1;min-width:120px;">
-<div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;font-weight:600;">Total</div>
-<div style="font-size:24px;font-weight:700;font-family:var(--font-mono);" id="keysStatTotal">—</div>
-</div>
-<div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:var(--space-md) var(--space-lg);flex:1;min-width:120px;">
-<div style="font-size:11px;color:var(--accent-green);text-transform:uppercase;letter-spacing:0.08em;font-weight:600;">Ativas</div>
-<div style="font-size:24px;font-weight:700;font-family:var(--font-mono);color:var(--accent-green);" id="keysStatActive">—</div>
-</div>
-<div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:var(--space-md) var(--space-lg);flex:1;min-width:120px;">
-<div style="font-size:11px;color:var(--accent-red);text-transform:uppercase;letter-spacing:0.08em;font-weight:600;">Revogadas</div>
-<div style="font-size:24px;font-weight:700;font-family:var(--font-mono);color:var(--accent-red);" id="keysStatRevoked">—</div>
-</div>
-</div>
-<div style="margin-bottom:var(--space-md);">
-<input type="text" id="keysSearchInput" class="form-input" placeholder="Buscar por email, nome ou prefixo da chave..." oninput="filterKeysTable()" style="max-width:400px;">
-</div>
-<div class="table-wrap">
-<table>
-<thead>
-<tr>
-<th>Chave</th>
-<th>Nome</th>
-<th>Dono (Email)</th>
-<th>Status</th>
-<th>Último Uso</th>
-<th>Criada em</th>
-<th>Ações</th>
-</tr>
-</thead>
-<tbody id="apiKeysTableBody">
-<tr><td colspan="7" class="empty-state">Carregando...</td></tr>
-</tbody>
-</table>
-</div>
-</div>
-</div>
-
 <!-- Metrics Tab -->
-<div class="tab-panel" id="tab-metrics" style="display:none;">
+<div class="tab-panel" id="tab-metrics">
+<h1 style="font-size: 28px; font-weight: 700; margin-bottom: var(--space-lg);">Métricas Globais</h1>
 <div class="card">
-<div class="card-title">Métricas Globais do Proxy</div>
+<div class="card-title">Estatísticas de Uso do Proxy</div>
 <p style="color:var(--text-secondary);font-size:13px;margin-bottom:var(--space-lg);line-height:1.6;">
-Estatísticas de uso do gateway API — requisições, tokens consumidos, latência e top usuários.
+Requisições, tokens consumidos, latência e top usuários.
 </p>
 <div id="metricsAlert" class="alert"></div>
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:var(--space-md);margin-bottom:var(--space-xl);">
@@ -680,7 +798,8 @@ Estatísticas de uso do gateway API — requisições, tokens consumidos, latên
 </div>
 
 <!-- Settings Tab -->
-<div class="tab-panel" id="tab-settings" style="display:none;">
+<div class="tab-panel" id="tab-settings">
+<h1 style="font-size: 28px; font-weight: 700; margin-bottom: var(--space-lg);">Configurações</h1>
 <div class="card">
 <div class="card-title">Configurações Globais</div>
 <p style="color:var(--text-secondary);font-size:13px;margin-bottom:var(--space-lg);line-height:1.6;">
@@ -700,6 +819,7 @@ Configure valores globais do sistema. A URL do gateway abaixo é a mesma para to
 </div>
 </div>
 </main>
+</div>
 
 <script>
 const API_BASE = '';
@@ -710,13 +830,19 @@ let allAffiliates = [];
 function getAdminSecret() {
 let secret = sessionStorage.getItem('8token_admin_secret');
 if (!secret) {
-try {
-secret = prompt('Digite a senha de administrador:');
-} catch (e) {
 const params = new URLSearchParams(window.location.search);
-secret = params.get('key') || '8token-admin-change-me';
+secret = params.get('key') || '';
+if (!secret) {
+// Show custom modal for password
+showModal('8Token Admin', 'Digite a senha de administrador:', { input: true, inputPlaceholder: 'Senha...', okText: 'Entrar' }).then(val => {
+if (val) {
+sessionStorage.setItem('8token_admin_secret', val);
+loadDashboard();
 }
-if (secret) sessionStorage.setItem('8token_admin_secret', secret);
+});
+return null;
+}
+sessionStorage.setItem('8token_admin_secret', secret);
 }
 return secret;
 }
@@ -733,26 +859,26 @@ return data;
 
 function showAlert(id, message, type) {
 const el = document.getElementById(id);
+if (!el) return;
 el.textContent = message;
 el.className = 'alert ' + type;
+setTimeout(() => { el.style.display = 'none'; }, 5000);
 }
 
 // ---- TABS ----
 function switchTab(name, btnEl) {
-document.querySelectorAll('.tab-panel').forEach(p => p.style.display = 'none');
-document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-document.getElementById('tab-' + name).style.display = 'block';
+document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+document.querySelectorAll('.nav-link').forEach(b => b.classList.remove('active'));
+document.getElementById('tab-' + name).classList.add('active');
 if (btnEl) btnEl.classList.add('active');
-else document.querySelector(`[onclick*="${name}"]`)?.classList.add('active');
 // Load data for specific tabs
 if (name === 'dashboard') loadDashboard();
 if (name === 'users') loadSubscriptions();
 if (name === 'activations') loadActivations();
 if (name === 'affiliates') loadAffiliates();
 if (name === 'plans') loadPlans();
-if (name === 'coupons') loadCoupons();
-if (name === 'webhook') { loadWebhookConfig(); loadWebhookLogs(); }
 if (name === 'apikeys') loadApiKeys();
+if (name === 'webhook') { loadWebhookConfig(); loadWebhookLogs(); }
 if (name === 'metrics') loadGlobalMetrics();
 if (name === 'settings') loadSettings();
 }
@@ -765,7 +891,6 @@ document.getElementById('dashRevenue').textContent = 'R$ ' + (stats.totalRevenue
 document.getElementById('dashActiveIps').textContent = stats.activeIps || 0;
 document.getElementById('dashTotalUsers').textContent = stats.totalUsers || 0;
 document.getElementById('dashPaidPlans').textContent = stats.paidPlans || 0;
-
 // Plan distribution
 const breakdown = stats.planBreakdown || [];
 const planColors = { admin: '#a855f7', anual: '#FF5500', trimestral: '#00D4FF', mensal: '#00D4FF', free: '#555555' };
@@ -790,7 +915,6 @@ return `
 } else {
 distEl.innerHTML = '<div style="color:var(--text-muted);font-size:13px;">Sem dados.</div>';
 }
-
 // Recent invoices
 const invoices = stats.recentInvoices || [];
 const invEl = document.getElementById('recentInvoices');
@@ -811,12 +935,12 @@ console.error('Dashboard error:', e);
 
 // ---- USERS / SUBSCRIPTIONS ----
 function badgeForPlan(plan) {
-const colors = { admin: 'badge-admin', anual: 'badge-pro', trimestral: 'badge-active', mensal: 'badge-pending', free: 'badge-expired' };
-return `<span class="badge ${colors[plan] || 'badge-pending'}">${plan || '—'}</span>`;
+const colors = { admin: 'badge-admin', anual: 'badge-pro', trimestral: 'badge-active', mensal: 'badge-pending', free: 'badge-free' };
+return `<span class="badge ${colors[plan] || 'badge-free'}">${plan || '—'}</span>`;
 }
 
 function badgeForStatus(status) {
-const map = { active: 'badge-active', pending: 'badge-pending', expired: 'badge-expired', suspended: 'badge-suspended' };
+const map = { active: 'badge-active', pending: 'badge-pending', expired: 'badge-expired', suspended: 'badge-expired' };
 return `<span class="badge ${map[status] || 'badge-pending'}">${status || '—'}</span>`;
 }
 
@@ -874,7 +998,8 @@ const q = (document.getElementById('userSearchInput').value || '').toLowerCase()
 if (!q) { renderUsersTable(allSubs); return; }
 renderUsersTable(allSubs.filter(s =>
 (s.ip||'').toLowerCase().includes(q) || (s.user_email||'').toLowerCase().includes(q) ||
-(s.notes||'').toLowerCase().includes(q) || (s.plan||'').toLowerCase().includes(q)
+(s.notes||'').toLowerCase().includes(q) || (s.plan||'').toLowerCase().includes(q) ||
+(s.status||'').toLowerCase().includes(q)
 ));
 }
 
@@ -923,8 +1048,9 @@ loadSubscriptions();
 }
 
 async function deleteSub(id, ip) {
-if (!confirm(`Remover assinatura do IP ${ip}?`)) return;
-try { await apiFetch(`/api/admin/subscriptions/${id}`, { method: 'DELETE' }); loadSubscriptions(); } catch (e) { alert(e.message); }
+const ok = await customConfirm('Remover Assinatura', `Remover assinatura do IP ${ip}?`);
+if (!ok) return;
+try { await apiFetch(`/api/admin/subscriptions/${id}`, { method: 'DELETE' }); loadSubscriptions(); } catch (e) { await customAlert('Erro', e.message); }
 }
 
 // ---- ACTIVATIONS ----
@@ -935,7 +1061,7 @@ const tbody = document.getElementById('activationsTableBody');
 const pendingCount = allActivations.filter(a => a.status === 'pending').length;
 const badge = document.getElementById('activationCount');
 if (badge) { badge.textContent = pendingCount; badge.style.display = pendingCount > 0 ? 'inline' : 'none'; }
-if (!allActivations.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Nenhum pedido de ativação pendente.</td></tr>'; return; }
+if (!allActivations.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Nenhum pedido de ativação.</td></tr>'; return; }
 tbody.innerHTML = allActivations.map(a => `
 <tr>
 <td class="mono">#${a.id}</td>
@@ -1043,23 +1169,24 @@ loadAffiliates();
 }
 
 async function editAffiliateCommission(id, currentPct, parentId) {
-const newPct = prompt(`Nova comissão % (atual: ${currentPct}%):`, currentPct);
+const newPct = await customPrompt('Editar Comissão', `Nova comissão % (atual: ${currentPct}%):`, currentPct);
 if (newPct === null) return;
 try {
 await apiFetch(`/api/admin/affiliates/${id}`, { method: 'PUT', body: JSON.stringify({ commission_pct: parseFloat(newPct) }) });
 if (parentId && parentId !== 'null') {
-const newParentPct = prompt('Nova comissão da mãe % (opcional):');
+const newParentPct = await customPrompt('Comissão da Mãe', 'Nova comissão da mãe % (opcional):');
 if (newParentPct !== null) {
 await apiFetch(`/api/admin/affiliates/${parentId}`, { method: 'PUT', body: JSON.stringify({ commission_pct: parseFloat(newParentPct) }) });
 }
 }
 loadAffiliates();
-} catch (e) { alert(e.message); }
+} catch (e) { await customAlert('Erro', e.message); }
 }
 
 async function removeAffiliate(id) {
-if (!confirm('Remover este afiliado?')) return;
-try { await apiFetch(`/api/admin/affiliates/${id}`, { method: 'DELETE' }); loadAffiliates(); } catch (e) { alert(e.message); }
+const ok = await customConfirm('Remover Afiliado', 'Remover este afiliado?');
+if (!ok) return;
+try { await apiFetch(`/api/admin/affiliates/${id}`, { method: 'DELETE' }); loadAffiliates(); } catch (e) { await customAlert('Erro', e.message); }
 }
 
 // ---- PLANS ----
@@ -1114,79 +1241,110 @@ document.getElementById('plansContainer').innerHTML = `<div class="empty-state" 
 }
 
 async function removeIpFromPlan(id, ip, plan) {
-if (!confirm(`Remover o IP ${ip} do plano ${plan}?`)) return;
+const ok = await customConfirm('Remover IP', `Remover o IP ${ip} do plano ${plan}?`);
+if (!ok) return;
 try {
 await apiFetch(`/api/admin/subscriptions/${id}`, { method: 'DELETE' });
 loadPlans();
 loadDashboard();
-} catch (e) { alert(e.message); }
+} catch (e) { await customAlert('Erro', e.message); }
 }
 
-// ---- COUPONS ----
-async function loadCoupons() {
+// ---- API KEYS MANAGEMENT ----
+let allApiKeys = [];
+
+async function loadApiKeys() {
 try {
-const coupons = await apiFetch('/api/admin/coupons');
-const tbody = document.getElementById('couponsTableBody');
-if (!coupons.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhum cupom cadastrado.</td></tr>'; return; }
-tbody.innerHTML = coupons.map(c => {
-const isExpired = c.expires_at && new Date(c.expires_at) < new Date();
-const isExhausted = c.max_uses && c.uses_count >= c.max_uses;
-const isActive = c.active && !isExpired && !isExhausted;
-const statusBadge = isActive ? '<span class="badge badge-active">Ativo</span>' :
-isExpired ? '<span class="badge badge-expired">Expirado</span>' :
-isExhausted ? '<span class="badge badge-suspended">Esgotado</span>' :
-'<span class="badge badge-suspended">Inativo</span>';
-return `<tr>
-<td class="mono" style="font-weight:700;color:var(--accent-orange);">${c.code}</td>
-<td><span class="badge badge-pro">${c.discount_pct}%</span></td>
-<td class="mono">${c.uses_count || 0}</td>
-<td class="mono">${c.max_uses || '∞'}</td>
-<td class="mono" style="font-size:12px;">${c.expires_at ? formatDate(c.expires_at) : '—'}</td>
-<td>${statusBadge}</td>
-<td class="actions">
-<button class="btn btn-secondary btn-sm" onclick="toggleCoupon(${c.id}, ${c.active ? 0 : 1})">${c.active ? 'Desativar' : 'Ativar'}</button>
-<button class="btn btn-danger btn-sm" onclick="deleteCoupon(${c.id}, '${c.code}')">Remover</button>
-</td>
-</tr>`;
-}).join('');
+const result = await apiFetch('/api/admin/keys');
+allApiKeys = result.keys || [];
+const stats = result.stats || {};
+document.getElementById('keysStatTotal').textContent = stats.total || 0;
+document.getElementById('keysStatActive').textContent = stats.active || 0;
+document.getElementById('keysStatRevoked').textContent = stats.revoked || 0;
+filterKeysTable();
 } catch (e) {
-document.getElementById('couponsTableBody').innerHTML = `<tr><td colspan="7" class="empty-state" style="color:var(--accent-red);">${e.message}</td></tr>`;
+document.getElementById('apiKeysTableBody').innerHTML = `<tr><td colspan="7" class="empty-state" style="color:var(--accent-red);">${e.message}</td></tr>`;
 }
 }
 
-async function createCoupon() {
-const code = document.getElementById('couponCode').value.trim().toUpperCase();
-const discount = parseFloat(document.getElementById('couponDiscount').value) || 10;
-const maxUses = document.getElementById('couponMaxUses').value ? parseInt(document.getElementById('couponMaxUses').value) : null;
-const expires = document.getElementById('couponExpires').value || null;
-const notes = document.getElementById('couponNotes').value.trim() || null;
-if (!code) { showAlert('couponFormAlert', 'Código é obrigatório.', 'error'); return; }
-if (discount < 1 || discount > 100) { showAlert('couponFormAlert', 'Desconto deve ser entre 1% e 100%.', 'error'); return; }
-try {
-const result = await apiFetch('/api/admin/coupons', { method: 'POST', body: JSON.stringify({ code, discount_pct: discount, max_uses: maxUses, expires_at: expires, notes }) });
-showAlert('couponFormAlert', `Cupom ${result.code} criado com sucesso!`, 'success');
-document.getElementById('couponCode').value = '';
-document.getElementById('couponDiscount').value = '10';
-document.getElementById('couponMaxUses').value = '';
-document.getElementById('couponExpires').value = '';
-document.getElementById('couponNotes').value = '';
-loadCoupons();
-} catch (e) { showAlert('couponFormAlert', e.message, 'error'); }
+function filterKeysTable() {
+const q = (document.getElementById('keysSearchInput')?.value || '').toLowerCase().trim();
+if (!q) { renderKeysTable(allApiKeys); return; }
+renderKeysTable(allApiKeys.filter(k =>
+(k.users?.email || '').toLowerCase().includes(q) ||
+(k.users?.name || '').toLowerCase().includes(q) ||
+(k.key_prefix || '').toLowerCase().includes(q) ||
+(k.name || '').toLowerCase().includes(q)
+));
 }
 
-async function toggleCoupon(id, newActive) {
-try {
-await apiFetch(`/api/admin/coupons/${id}`, { method: 'PUT', body: JSON.stringify({ active: newActive }) });
-loadCoupons();
-} catch (e) { alert(e.message); }
+function renderKeysTable(keys) {
+const tbody = document.getElementById('apiKeysTableBody');
+if (!keys.length) {
+tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhuma chave encontrada.</td></tr>';
+return;
+}
+tbody.innerHTML = keys.map(k => `
+<tr style="${k.revoked ? 'opacity:0.5;' : ''}">
+<td class="mono" style="font-size:12px;">${k.key_prefix || '8tk_'}••••${k.key_suffix || '••••'}</td>
+<td style="font-size:13px;">${escHtmlAdmin(k.name || 'Sem nome')}</td>
+<td style="font-size:13px;">${escHtmlAdmin(k.users?.email || '—')}<br><span style="font-size:11px;color:var(--text-muted);">${escHtmlAdmin(k.users?.name || '')}</span></td>
+<td>${k.revoked ? '<span class="badge badge-danger">Revogada</span>' : '<span class="badge badge-active">Ativa</span>'}</td>
+<td class="mono" style="font-size:11px;">${k.last_used_at ? new Date(k.last_used_at).toLocaleString('pt-BR') : 'Nunca'}</td>
+<td class="mono" style="font-size:11px;">${new Date(k.created_at).toLocaleDateString('pt-BR')}</td>
+<td class="actions">
+${k.revoked
+? `<button class="btn btn-secondary btn-sm" onclick="restoreApiKey('${k.id}')">Reativar</button>`
+: `<button class="btn btn-danger btn-sm" onclick="revokeApiKeyAdmin('${k.id}', '${escHtmlAdmin(k.users?.email || '')}')">Revogar</button>`
+}
+<button class="btn btn-secondary btn-sm" onclick="viewKeyUsage('${k.id}')">Uso</button>
+</td>
+</tr>
+`).join('');
 }
 
-async function deleteCoupon(id, code) {
-if (!confirm(`Remover o cupom ${code}?`)) return;
+function escHtmlAdmin(str) {
+const div = document.createElement('div');
+div.textContent = str;
+return div.innerHTML;
+}
+
+async function revokeApiKeyAdmin(id, email) {
+const ok = await customConfirm('Revogar Chave', `Revogar chave de ${email}? Ela parará de funcionar imediatamente.`);
+if (!ok) return;
 try {
-await apiFetch(`/api/admin/coupons/${id}`, { method: 'DELETE' });
-loadCoupons();
-} catch (e) { alert(e.message); }
+await apiFetch(`/api/admin/keys/${id}/revoke`, { method: 'PUT' });
+showAlert('apiKeysAlert', 'Chave revogada com sucesso!', 'success');
+loadApiKeys();
+} catch (e) { showAlert('apiKeysAlert', e.message, 'error'); }
+}
+
+async function restoreApiKey(id) {
+const ok = await customConfirm('Reativar Chave', 'Reativar esta chave?');
+if (!ok) return;
+try {
+await apiFetch(`/api/admin/keys/${id}/restore`, { method: 'PUT' });
+showAlert('apiKeysAlert', 'Chave reativada com sucesso!', 'success');
+loadApiKeys();
+} catch (e) { showAlert('apiKeysAlert', e.message, 'error'); }
+}
+
+async function viewKeyUsage(id) {
+try {
+const result = await apiFetch(`/api/admin/keys/${id}/usage`);
+const stats = result.stats || {};
+const logs = result.logs || [];
+let msg = `📊 Uso da Chave\n\n`;
+msg += `Total de requisições: ${stats.total_requests}\n`;
+msg += `Tokens totais: ${stats.total_tokens?.toLocaleString()}\n`;
+msg += `Tokens entrada: ${stats.total_tokens_in?.toLocaleString()}\n`;
+msg += `Tokens saída: ${stats.total_tokens_out?.toLocaleString()}\n\n`;
+msg += `Últimas 10 requisições:\n`;
+logs.slice(0, 10).forEach((l, i) => {
+msg += `${i + 1}. ${l.model || '?'} — ${(l.tokens_in + l.tokens_out)} tokens — ${new Date(l.created_at).toLocaleString('pt-BR')}\n`;
+});
+await customAlert('Uso da Chave API', msg);
+} catch (e) { await customAlert('Erro', e.message); }
 }
 
 // ---- WEBHOOK ----
@@ -1250,7 +1408,7 @@ if (!logs.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty-state">N
 tbody.innerHTML = logs.map(log => `
 <tr>
 <td class="mono" style="font-size:12px;">${new Date(log.created_at).toLocaleString('pt-BR')}</td>
-<td><span class="badge ${log.event === 'SALE_APPROVED' ? 'badge-pro' : log.event === 'SALE_REFUSED' ? 'badge-danger' : 'badge-warning'}">${log.event}</span></td>
+<td><span class="badge ${log.event === 'SALE_APPROVED' ? 'badge-pro' : log.event === 'SALE_REFUSED' ? 'badge-danger' : 'badge-pending'}">${log.event}</span></td>
 <td>${log.status || '—'}</td>
 <td style="font-size:13px;">${log.customer_email || '—'}</td>
 <td class="mono" style="font-size:12px;">${log.customer_ip || '—'}</td>
@@ -1263,101 +1421,6 @@ document.getElementById('webhookLogsBody').innerHTML = `<tr><td colspan="7" clas
 }
 }
 
-// ---- API KEYS MANAGEMENT ----
-let allApiKeys = [];
-
-async function loadApiKeys() {
-try {
-const result = await apiFetch('/api/admin/keys');
-allApiKeys = result.keys || [];
-const stats = result.stats || {};
-document.getElementById('keysStatTotal').textContent = stats.total || 0;
-document.getElementById('keysStatActive').textContent = stats.active || 0;
-document.getElementById('keysStatRevoked').textContent = stats.revoked || 0;
-filterKeysTable();
-} catch (e) {
-document.getElementById('apiKeysTableBody').innerHTML = `<tr><td colspan="7" class="empty-state" style="color:var(--accent-red);">${e.message}</td></tr>`;
-}
-}
-
-function filterKeysTable() {
-const q = (document.getElementById('keysSearchInput')?.value || '').toLowerCase().trim();
-if (!q) { renderKeysTable(allApiKeys); return; }
-renderKeysTable(allApiKeys.filter(k =>
-(k.users?.email || '').toLowerCase().includes(q) ||
-(k.users?.name || '').toLowerCase().includes(q) ||
-(k.key_prefix || '').toLowerCase().includes(q) ||
-(k.name || '').toLowerCase().includes(q)
-));
-}
-
-function renderKeysTable(keys) {
-const tbody = document.getElementById('apiKeysTableBody');
-if (!keys.length) {
-tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhuma chave encontrada.</td></tr>';
-return;
-}
-tbody.innerHTML = keys.map(k => `
-<tr style="${k.revoked ? 'opacity:0.5;' : ''}">
-<td class="mono" style="font-size:12px;">${k.key_prefix || '8tk_'}••••${k.key_suffix || '••••'}</td>
-<td style="font-size:13px;">${escHtmlAdmin(k.name || 'Sem nome')}</td>
-<td style="font-size:13px;">${escHtmlAdmin(k.users?.email || '—')}<br><span style="font-size:11px;color:var(--text-muted);">${escHtmlAdmin(k.users?.name || '')}</span></td>
-<td>${k.revoked ? '<span class="badge badge-danger">Revogada</span>' : '<span class="badge badge-active">Ativa</span>'}</td>
-<td class="mono" style="font-size:11px;">${k.last_used_at ? new Date(k.last_used_at).toLocaleString('pt-BR') : 'Nunca'}</td>
-<td class="mono" style="font-size:11px;">${new Date(k.created_at).toLocaleDateString('pt-BR')}</td>
-<td class="actions">
-${k.revoked
-? `<button class="btn btn-secondary btn-sm" onclick="restoreApiKey('${k.id}')">Reativar</button>`
-: `<button class="btn btn-danger btn-sm" onclick="revokeApiKeyAdmin('${k.id}', '${escHtmlAdmin(k.users?.email || '')}')">Revogar</button>`
-}
-<button class="btn btn-secondary btn-sm" onclick="viewKeyUsage('${k.id}')">Uso</button>
-</td>
-</tr>
-`).join('');
-}
-
-function escHtmlAdmin(str) {
-const div = document.createElement('div');
-div.textContent = str;
-return div.innerHTML;
-}
-
-async function revokeApiKeyAdmin(id, email) {
-if (!confirm(`Revogar chave de ${email}? Ela parará de funcionar imediatamente.`)) return;
-try {
-await apiFetch(`/api/admin/keys/${id}/revoke`, { method: 'PUT' });
-showAlert('apiKeysAlert', 'Chave revogada com sucesso!', 'success');
-loadApiKeys();
-} catch (e) { showAlert('apiKeysAlert', e.message, 'error'); }
-}
-
-async function restoreApiKey(id) {
-if (!confirm('Reativar esta chave?')) return;
-try {
-await apiFetch(`/api/admin/keys/${id}/restore`, { method: 'PUT' });
-showAlert('apiKeysAlert', 'Chave reativada com sucesso!', 'success');
-loadApiKeys();
-} catch (e) { showAlert('apiKeysAlert', e.message, 'error'); }
-}
-
-async function viewKeyUsage(id) {
-try {
-const result = await apiFetch(`/api/admin/keys/${id}/usage`);
-const stats = result.stats || {};
-const logs = result.logs || [];
-let msg = `📊 Uso da Chave\n`;
-msg += `Total de requisições: ${stats.total_requests}\n`;
-msg += `Tokens totais: ${stats.total_tokens?.toLocaleString()}\n`;
-msg += `Tokens entrada: ${stats.total_tokens_in?.toLocaleString()}\n`;
-msg += `Tokens saída: ${stats.total_tokens_out?.toLocaleString()}\n`;
-msg += `Últimas 10 requisições:\n`;
-logs.slice(0, 10).forEach((l, i) => {
-msg += `${i + 1}. ${l.model || '?'} — ${(l.tokens_in + l.tokens_out)} tokens — ${new Date(l.created_at).toLocaleString('pt-BR')}\n`;
-});
-alert(msg);
-} catch (e) { alert('Erro: ' + e.message); }
-}
-
 // ---- GLOBAL METRICS ----
 async function loadGlobalMetrics() {
 try {
@@ -1368,7 +1431,6 @@ document.getElementById('metricWeekReq').textContent = (stats.week_requests || 0
 document.getElementById('metricWeekTokens').textContent = formatNumAdmin(stats.week_tokens || 0);
 document.getElementById('metricMonthReq').textContent = (stats.month_requests || 0).toLocaleString();
 document.getElementById('metricAvgLatency').textContent = (stats.avg_latency_ms || 0) + 'ms';
-
 const dailyContainer = document.getElementById('metricsDailyChart');
 const daily = stats.daily_usage || [];
 if (daily.length) {
@@ -1389,7 +1451,6 @@ return `
 } else {
 dailyContainer.innerHTML = '<div style="color:var(--text-muted);font-size:13px;width:100%;text-align:center;align-self:center;">Sem dados dos últimos 7 dias.</div>';
 }
-
 const topBody = document.getElementById('metricsTopUsersBody');
 const topUsers = stats.top_users || [];
 if (topUsers.length) {
@@ -1449,7 +1510,6 @@ const type = document.getElementById('notifType').value;
 const targetPlan = document.getElementById('notifTargetPlan').value;
 const statusEl = document.getElementById('notifSendStatus');
 const btn = document.getElementById('sendNotifBtn');
-
 if (!title || !message) {
 statusEl.style.display = 'block';
 statusEl.style.background = 'rgba(255,51,51,0.1)';
@@ -1458,11 +1518,9 @@ statusEl.style.border = '1px solid rgba(255,51,51,0.3)';
 statusEl.textContent = '❌ Título e mensagem são obrigatórios.';
 return;
 }
-
 btn.disabled = true;
 btn.textContent = '⏳ Enviando...';
 statusEl.style.display = 'none';
-
 try {
 const res = await apiFetch('/api/admin/notifications/broadcast', {
 method: 'POST',
@@ -1487,6 +1545,58 @@ btn.textContent = '🚀 Enviar Notificação';
 }
 }
 
+// ---- CUSTOM MODAL (replaces native prompt/alert/confirm) ----
+let _modalResolve = null;
+function showModal(title, message, opts = {}) {
+return new Promise(resolve => {
+_modalResolve = resolve;
+const overlay = document.getElementById('customModal');
+const titleEl = document.getElementById('modalTitle');
+const msgEl = document.getElementById('modalMessage');
+const inputEl = document.getElementById('modalInput');
+const cancelBtn = document.getElementById('modalCancelBtn');
+const okBtn = document.getElementById('modalOkBtn');
+titleEl.textContent = title || '8Token Admin';
+msgEl.textContent = message || '';
+if (opts.input !== undefined) {
+inputEl.style.display = 'block';
+inputEl.value = opts.inputValue || '';
+inputEl.placeholder = opts.inputPlaceholder || '';
+setTimeout(() => inputEl.focus(), 100);
+} else {
+inputEl.style.display = 'none';
+}
+cancelBtn.style.display = opts.hideCancel ? 'none' : 'inline-flex';
+okBtn.textContent = opts.okText || 'OK';
+cancelBtn.textContent = opts.cancelText || 'Cancelar';
+overlay.classList.add('open');
+});
+}
+function closeModal(value) {
+document.getElementById('customModal').classList.remove('open');
+if (_modalResolve) { _modalResolve(value); _modalResolve = null; }
+}
+// Close modal on overlay click
+document.getElementById('customModal').addEventListener('click', function(e) {
+if (e.target === this) closeModal(null);
+});
+// Close modal on Escape key
+document.addEventListener('keydown', function(e) {
+if (e.key === 'Escape') closeModal(null);
+});
+// Replace native prompt with custom modal
+async function customPrompt(title, message, defaultValue) {
+return await showModal(title, message, { input: true, inputValue: defaultValue || '', inputPlaceholder: defaultValue || '' });
+}
+// Replace native alert with custom modal
+async function customAlert(title, message) {
+return await showModal(title, message, { hideCancel: true, okText: 'Entendi' });
+}
+// Replace native confirm with custom modal
+async function customConfirm(title, message) {
+const result = await showModal(title, message, { okText: 'Confirmar', cancelText: 'Cancelar' });
+return result === true;
+}
 // ---- INIT ----
 loadDashboard();
 </script>
