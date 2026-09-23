@@ -1,4 +1,10 @@
 require('dotenv').config();
+
+// Polyfill WebSocket para Node.js < 22 (Supabase SDK exige WS nativo)
+if (typeof globalThis.WebSocket === 'undefined') {
+  try { globalThis.WebSocket = require('ws'); } catch (e) { /* ws not installed, will fail at Supabase init */ }
+}
+
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
