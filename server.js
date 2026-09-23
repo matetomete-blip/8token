@@ -1862,10 +1862,10 @@ app.get('/api/admin/crm/ip-history/:user_id', adminAuth, async (req, res) => {
 const GHOSTCLI_BASE_URL = process.env.GHOSTCLI_BASE_URL || 'https://ghostcli.dev/v1';
 const GHOSTCLI_API_KEY = process.env.GHOSTCLI_API_KEY || '';
 
-// --- Cache em memória para validação de chaves (TTL 60s) ---
+// --- Cache em memória para validação de chaves (TTL 300s) ---
 const keyCache = new Map(); // keyHash → { userId, revoked, cachedAt }
 const subCache = new Map(); // userId → { ip, additional_ip, has_additional_ip, plan, status, expires_at, cachedAt }
-const CACHE_TTL_MS = 60 * 1000;
+const CACHE_TTL_MS = 5 * 60 * 1000; // 300s — reduz queries ao Supabase em 5×
 
 function getCached(map, key) {
   const entry = map.get(key);
@@ -1895,34 +1895,30 @@ async function validateApiKey(req, res, next) {
 
     const keyHash = crypto.createHash('sha256').update(apiKey).digest('hex');
 
-    // 1. Buscar chave no cache ou no banco
+    // 1+2. JOIN único: buscar chave + subscription em 1 query (corta latência pela metade)
     let keyData = getCached(keyCache, keyHash);
-    if (!keyData) {
-      const { data } = await supabase.from('api_keys')
-        .select('id, user_id, revoked')
+    let sub = keyData ? getCached(subCache, keyData.userId) : null;
+
+    if (!keyData || !sub) {
+      // Query única com JOIN via PostgREST foreign table
+      const { data, error } = await supabase.from('api_keys')
+        .select('id, user_id, revoked, ip_subscriptions(ip, additional_ip, has_additional_ip, plan, status, expires_at)')
         .eq('key_hash', keyHash)
         .single();
-      if (!data) return res.status(401).json({ error: 'Chave API não encontrada' });
+
+      if (!data || error) return res.status(401).json({ error: 'Chave API não encontrada' });
       if (data.revoked) return res.status(401).json({ error: 'Chave API revogada' });
+
       keyData = { id: data.id, userId: data.user_id, revoked: data.revoked };
       setCached(keyCache, keyHash, keyData);
-    }
-    if (keyData.revoked) return res.status(401).json({ error: 'Chave API revogada' });
 
-    // 2. Buscar subscription no cache ou no banco
-    let sub = getCached(subCache, keyData.userId);
-    if (!sub) {
-      const { data } = await supabase.from('ip_subscriptions')
-        .select('ip, additional_ip, has_additional_ip, plan, status, expires_at')
-        .eq('user_id', keyData.userId)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
-      if (!data) return res.status(403).json({ error: 'Nenhum plano ativo encontrado' });
-      sub = data;
+      // Pegar a primeira subscription ativa do array retornado pelo JOIN
+      const activeSub = (data.ip_subscriptions || []).find(s => s.status === 'active');
+      if (!activeSub) return res.status(403).json({ error: 'Nenhum plano ativo encontrado' });
+      sub = activeSub;
       setCached(subCache, keyData.userId, sub);
     }
+    if (keyData.revoked) return res.status(401).json({ error: 'Chave API revogada' });
 
     // 3. Verificar expiração
     if (sub.expires_at && new Date(sub.expires_at) < new Date()) {
@@ -1954,7 +1950,7 @@ async function validateApiKey(req, res, next) {
 }
 
 // --- Tracking de uso ---
-async function trackUsage(req, data, startTime) {
+async function trackUsage(req, data, latencyMs) {
   try {
     const usage = data.usage || {};
     await supabase.from('usage_logs').insert({
@@ -1963,7 +1959,7 @@ async function trackUsage(req, data, startTime) {
       model: data.model || req.body?.model || 'unknown',
       tokens_in: usage.prompt_tokens || 0,
       tokens_out: usage.completion_tokens || 0,
-      latency_ms: Date.now() - startTime,
+      latency_ms: latencyMs || 0, // Usa TTFB real (não inclui tempo do insert)
       ip: req.clientIp,
       status: 'success'
     });
@@ -1990,6 +1986,7 @@ function parseSseUsage(fullResponse) {
 // --- Proxy routes ---
 async function proxyRequest(req, res, path) {
   const startTime = Date.now();
+  let ttfb = 0; // Time To First Byte — latência real do upstream
   try {
     const upstream = await fetch(`${GHOSTCLI_BASE_URL}${path}`, {
       method: req.method,
@@ -1999,6 +1996,7 @@ async function proxyRequest(req, res, path) {
       },
       body: ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body),
     });
+    ttfb = Date.now() - startTime; // Captura latência real ANTES de qualquer processing
 
     // Forward status and headers
     res.status(upstream.status);
@@ -2024,16 +2022,17 @@ async function proxyRequest(req, res, path) {
       }
       res.end();
 
-      // Track usage from last SSE data line
+      // Track usage fire-and-forget (não bloqueia resposta)
       const sseData = parseSseUsage(fullResponse);
-      if (sseData) trackUsage(req, sseData, startTime);
+      if (sseData) trackUsage(req, sseData, ttfb).catch(() => {});
     } else {
       // Non-streaming: read full response
       const contentType = upstream.headers.get('content-type') || '';
       if (contentType.includes('application/json')) {
         const data = await upstream.json();
         res.json(data);
-        if (upstream.ok) trackUsage(req, data, startTime);
+        // Track usage fire-and-forget (não bloqueia resposta)
+        if (upstream.ok) trackUsage(req, data, ttfb).catch(() => {});
       } else {
         const buffer = Buffer.from(await upstream.arrayBuffer());
         res.send(buffer);
