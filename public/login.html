@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entrar 8Token</title>
+    <meta name="description" content="Entre na sua conta 8Token para acessar modelos de IA ilimitados para código.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <style>
+        :root {
+            --bg-primary: #0f0e0e;
+            --bg-card: #1a1818;
+            --bg-card-alt: #141212;
+            --bg-input: #0f0e0e;
+            --border: #2a2727;
+            --border-hover: #3d3939;
+            --border-focus: #f05409;
+            --text-primary: #ffffff;
+            --text-secondary: #a8a2a2;
+            --text-muted: #6b6565;
+            --accent-green: #10B981;
+            --accent-red: #F43F5E;
+            --accent-amber: #F59E0B;
+            --accent-orange: #f05409;
+            --accent-orange-hover: #ff6a1a;
+            --accent-orange-dim: rgba(240, 84, 9, 0.12);
+            --glow-orange: rgba(240, 84, 9, 0.2);
+            --space-unit: 4px;
+            --space-xs: calc(var(--space-unit) * 2);
+            --space-sm: calc(var(--space-unit) * 3);
+            --space-md: calc(var(--space-unit) * 4);
+            --space-lg: calc(var(--space-unit) * 6);
+            --space-xl: calc(var(--space-unit) * 8);
+            --space-2xl: calc(var(--space-unit) * 12);
+            --space-3xl: calc(var(--space-unit) * 16);
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+            --radius-pill: 999px;
+            --transition-fast: 150ms ease;
+            --transition-base: 250ms ease;
+        }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        a { color: inherit; text-decoration: none; transition: color var(--transition-fast); }
+        a:hover { color: var(--accent-orange); }
+
+        /* ── Navbar ── */
+        .navbar {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+            background: rgba(15, 14, 14, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+        }
+        .navbar-inner {
+            max-width: 1200px; margin: 0 auto; padding: 0 var(--space-lg);
+            display: flex; align-items: center; justify-content: space-between; height: 64px;
+        }
+        .navbar-logo {
+            display: flex; align-items: center; gap: var(--space-sm);
+            font-weight: 800; font-size: 18px; letter-spacing: -0.02em;
+        }
+        .navbar-logo svg { width: 28px; height: 28px; }
+
+        /* ── Login Page Layout ── */
+        .login-page {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: calc(64px + var(--space-2xl)) var(--space-lg) var(--space-2xl);
+            position: relative;
+            min-height: 100vh;
+        }
+
+        /* Background glow effects */
+        .login-page::before {
+            content: '';
+            position: absolute;
+            top: -10%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 800px;
+            height: 500px;
+            background: radial-gradient(ellipse at center, rgba(240, 84, 9, 0.08) 0%, transparent 65%);
+            pointer-events: none;
+        }
+        .login-page::after {
+            content: '';
+            position: absolute;
+            bottom: -5%;
+            right: -5%;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(240, 84, 9, 0.04) 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+        .login-wrapper {
+            width: 100%;
+            max-width: 440px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Back link */
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: var(--space-xl);
+            transition: color var(--transition-fast);
+            font-weight: 500;
+        }
+        .back-link:hover { color: var(--text-primary); }
+        .back-link svg { width: 16px; height: 16px; }
+
+        /* Header */
+        .login-header {
+            text-align: center;
+            margin-bottom: var(--space-2xl);
+        }
+        .login-header h1 {
+            font-size: 26px;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            margin-bottom: var(--space-xs);
+            line-height: 1.2;
+        }
+        .login-header p {
+            color: var(--text-secondary);
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        /* Card */
+        .login-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            padding: var(--space-xl);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255,255,255,0.03) inset;
+        }
+
+        /* ── Tabs ── */
+        .auth-tabs {
+            display: flex;
+            background: var(--bg-card-alt);
+            border-radius: var(--radius-sm);
+            padding: 3px;
+            margin-bottom: var(--space-lg);
+            border: 1px solid var(--border);
+        }
+        .auth-tab {
+            flex: 1;
+            padding: 10px 0;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            background: none;
+            border: none;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all var(--transition-fast);
+            position: relative;
+        }
+        .auth-tab.active {
+            color: var(--text-primary);
+            background: var(--bg-card);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+        .auth-tab:hover:not(.active) {
+            color: var(--text-secondary);
+        }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.2s ease; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Google Button ── */
+        .btn-google {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-sm);
+            width: 100%;
+            height: 46px;
+            background: var(--bg-card-alt);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 600;
+            font-family: var(--font-sans);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+        .btn-google:hover {
+            border-color: var(--border-hover);
+            background: rgba(255,255,255,0.04);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        .btn-google:active { transform: translateY(0); }
+        .btn-google svg { width: 18px; height: 18px; flex-shrink: 0; }
+        .btn-google:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        /* ── Divider ── */
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+            margin: var(--space-lg) 0;
+        }
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+        .divider span {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-weight: 600;
+        }
+
+        /* ── Form ── */
+        .form-group { margin-bottom: var(--space-md); }
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+        .form-input {
+            width: 100%;
+            height: 46px;
+            padding: 0 var(--space-md);
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-size: 14px;
+            font-family: var(--font-sans);
+            transition: all var(--transition-fast);
+            outline: none;
+        }
+        .form-input:focus {
+            border-color: var(--accent-orange);
+            box-shadow: 0 0 0 3px var(--glow-orange);
+        }
+        .form-input::placeholder { color: var(--text-muted); }
+
+        .form-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--space-lg);
+        }
+        .form-checkbox {
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+            cursor: pointer;
+        }
+        .form-checkbox input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--accent-orange);
+            cursor: pointer;
+            border-radius: 3px;
+        }
+        .form-checkbox span {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        .form-link {
+            font-size: 13px;
+            color: var(--accent-orange);
+            font-weight: 600;
+        }
+        .form-link:hover { color: var(--accent-orange-hover); }
+
+        /* ── Submit Button ── */
+        .btn-submit {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 46px;
+            background: var(--accent-orange);
+            border: none;
+            border-radius: var(--radius-md);
+            color: white;
+            font-size: 14px;
+            font-weight: 700;
+            font-family: var(--font-sans);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            letter-spacing: 0.01em;
+        }
+        .btn-submit:hover {
+            background: var(--accent-orange-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px var(--glow-orange);
+        }
+        .btn-submit:active { transform: translateY(0); }
+        .btn-submit:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* ── Footer ─ */
+        .login-footer {
+            text-align: center;
+            margin-top: var(--space-lg);
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+        .login-footer a {
+            color: var(--accent-orange);
+            font-weight: 600;
+        }
+        .login-footer a:hover { color: var(--accent-orange-hover); }
+
+        /* ── Alert ─ */
+        .alert {
+            padding: var(--space-sm) var(--space-md);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: var(--space-md);
+            display: none;
+            line-height: 1.4;
+        }
+        .alert.success {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.25);
+            color: var(--accent-green);
+            display: block;
+        }
+        .alert.error {
+            background: rgba(244, 63, 94, 0.1);
+            border: 1px solid rgba(244, 63, 94, 0.25);
+            color: var(--accent-red);
+            display: block;
+        }
+
+        /* ── Spinner ── */
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── Responsive ─ */
+        @media (max-width: 480px) {
+            .login-card { padding: var(--space-lg); border-radius: var(--radius-lg); }
+            .login-header h1 { font-size: 22px; }
+            .login-page { padding-left: var(--space-md); padding-right: var(--space-md); }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-inner">
+            <a href="index.html" class="navbar-logo">
+                <svg viewBox="0 0 48 48" fill="var(--accent-orange)" width="28" height="28">
+                    <path d="M24 4C14 4 8 12 8 22v14c0 2 1 4 3 4h2l3-4h4l3 4h2l3-4h4l3 4h2c2 0 3-2 3-4V22C40 12 34 4 24 4zm-8 22a3 3 0 110-6 3 3 0 010 6zm16 0a3 3 0 110-6 3 3 0 010 6z"/>
+                </svg>
+                8Token
+            </a>
+        </div>
+    </nav>
+
+    <main class="login-page">
+        <div class="login-wrapper">
+            <a href="index.html" class="back-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="15 18 9 12 15 6"/>
+                </svg>
+                Voltar ao site
+            </a>
+
+            <div class="login-header">
+                <h1 id="pageTitle">Entrar na sua conta</h1>
+                <p id="pageSubtitle">Acesse seus modelos ilimitados para código</p>
+            </div>
+
+            <div class="login-card">
+                <div id="authAlert" class="alert"></div>
+
+                <!-- Tabs -->
+                <div class="auth-tabs">
+                    <button class="auth-tab active" onclick="switchTab('login')">Entrar</button>
+                    <button class="auth-tab" onclick="switchTab('register')">Criar conta</button>
+                </div>
+
+                <!-- Google Sign In -->
+                <button class="btn-google" id="googleBtn" onclick="handleGoogleLogin()">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                    </svg>
+                    Continuar com Google
+                </button>
+
+                <div class="divider"><span>ou</span></div>
+
+                <!-- Login Tab -->
+                <div class="tab-content active" id="tab-login">
+                    <form id="loginForm" onsubmit="handleLogin(event)">
+                        <div class="form-group">
+                            <label class="form-label" for="loginEmail">Email</label>
+                            <input type="email" id="loginEmail" class="form-input" placeholder="seu@email.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="loginPassword">Senha</label>
+                            <input type="password" id="loginPassword" class="form-input" placeholder="••••••••" required>
+                        </div>
+                        <div class="form-row">
+                            <label class="form-checkbox">
+                                <input type="checkbox" checked>
+                                <span>Lembrar de mim</span>
+                            </label>
+                            <a href="#" class="form-link">Esqueceu a senha?</a>
+                        </div>
+                        <button type="submit" class="btn-submit" id="loginBtn">Entrar</button>
+                    </form>
+                </div>
+
+                <!-- Register Tab -->
+                <div class="tab-content" id="tab-register">
+                    <form id="registerForm" onsubmit="handleRegister(event)">
+                        <div class="form-group">
+                            <label class="form-label" for="regName">Nome</label>
+                            <input type="text" id="regName" class="form-input" placeholder="Seu nome">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="regEmail">Email</label>
+                            <input type="email" id="regEmail" class="form-input" placeholder="seu@email.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="regPassword">Senha</label>
+                            <input type="password" id="regPassword" class="form-input" placeholder="Mínimo 6 caracteres" required minlength="6">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="regConfirm">Confirmar senha</label>
+                            <input type="password" id="regConfirm" class="form-input" placeholder="••••••••" required minlength="6">
+                        </div>
+                        <button type="submit" class="btn-submit" id="registerBtn" style="margin-top:var(--space-sm);">Criar conta</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="login-footer" id="footerText">
+                Não tem uma conta? <a href="#" onclick="switchTab('register');return false;">Criar conta grátis</a>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // TODO [PRODUÇÃO]:
+        // 1. Alterar API_BASE para a URL real do backend em produção (ex: https://api.8token.com)
+        // 2. Configurar GOOGLE_CLIENT_ID real no Google Cloud Console e inserir no initialize() abaixo
+        //    - Sem isso, o botão "Continuar com Google" não abre o popup real
+        //    - Instruções completas estão no arquivo .env
+        // 3. O fallback com prompt() é apenas para desenvolvimento — remover em produção
+        // 4. Adicionar tratamento de erro para token expirado (redirecionar para login com mensagem)
+        // 5. Considerar adicionar "Esqueceu a senha?" funcional com envio de email de reset
+
+        const API_BASE = ''; // Usa URL relativa — funciona em localhost e em produção (Vercel)
+
+        // Suporte a redirect pós-login (ex: checkout.html?plan=trimestral)
+        function getRedirectUrl() {
+            var params = new URLSearchParams(window.location.search);
+            var redirect = params.get('redirect');
+            if (redirect) {
+                try { return decodeURIComponent(redirect); } catch(e) { return redirect; }
+            }
+            return 'dashboard.html';
+        }
+        var REDIRECT_AFTER_LOGIN = getRedirectUrl();
+
+        // If already logged in with valid token, redirect
+        if (localStorage.getItem('8token_token')) {
+            window.location.href = REDIRECT_AFTER_LOGIN;
+        }
+
+        function showAlert(message, type) {
+            const el = document.getElementById('authAlert');
+            el.textContent = message;
+            el.className = 'alert ' + type;
+            setTimeout(() => { el.className = 'alert'; }, 5000);
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.auth-tab').forEach((t, i) => {
+                t.classList.toggle('active', (tab === 'login' && i === 0) || (tab === 'register' && i === 1));
+            });
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.getElementById('tab-' + tab).classList.add('active');
+
+            if (tab === 'register') {
+                document.getElementById('pageTitle').textContent = 'Criar sua conta';
+                document.getElementById('pageSubtitle').textContent = 'Comece a usar modelos de IA ilimitados';
+                document.getElementById('footerText').innerHTML = 'Já tem uma conta? <a href="#" onclick="switchTab(\'login\');return false;">Entrar</a>';
+            } else {
+                document.getElementById('pageTitle').textContent = 'Entrar na sua conta';
+                document.getElementById('pageSubtitle').textContent = 'Acesse seus modelos ilimitados para código';
+                document.getElementById('footerText').innerHTML = 'Não tem uma conta? <a href="#" onclick="switchTab(\'register\');return false;">Criar conta grátis</a>';
+            }
+        }
+
+        function setLoggedIn(token, user) {
+            localStorage.setItem('8token_token', token);
+            localStorage.setItem('8token_logged_in', 'true');
+            localStorage.setItem('8token_email', user.email);
+            localStorage.setItem('8token_user', JSON.stringify(user));
+        }
+
+        // Google Login
+        async function handleGoogleLogin() {
+            const btn = document.getElementById('googleBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Conectando...';
+
+            try {
+                if (window.google && google.accounts && google.accounts.id) {
+                    google.accounts.id.initialize({
+                        client_id: '',
+                        callback: async (response) => {
+                            try {
+                                const res = await fetch(API_BASE + '/api/auth/google', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ credential: response.credential })
+                                });
+                                const data = await res.json();
+                                if (data.token) {
+                                    setLoggedIn(data.token, data.user);
+                                    window.location.href = REDIRECT_AFTER_LOGIN;
+                                } else {
+                                    showAlert(data.error || 'Erro no login com Google', 'error');
+                                }
+                            } catch (e) {
+                                showAlert('Erro ao conectar com o servidor', 'error');
+                            }
+                            resetGoogleBtn();
+                        }
+                    });
+                    google.accounts.id.prompt();
+                    return;
+                }
+
+                // Fallback demo mode
+                const credential = prompt('Cole o Google ID Token (JWT) para login demo, ou cancele para usar email/senha:');
+                if (!credential) { resetGoogleBtn(); return; }
+
+                const res = await fetch(API_BASE + '/api/auth/google', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ credential })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+                setLoggedIn(data.token, data.user);
+                window.location.href = REDIRECT_AFTER_LOGIN;
+            } catch (e) {
+                showAlert(e.message || 'Erro no login com Google', 'error');
+                resetGoogleBtn();
+            }
+        }
+
+        function resetGoogleBtn() {
+            const btn = document.getElementById('googleBtn');
+            btn.disabled = false;
+            btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg> Continuar com Google';
+        }
+
+        // Email/Password Login
+        async function handleLogin(e) {
+            e.preventDefault();
+            const btn = document.getElementById('loginBtn');
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Entrando...';
+
+            try {
+                const res = await fetch(API_BASE + '/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+                setLoggedIn(data.token, data.user);
+                window.location.href = REDIRECT_AFTER_LOGIN;
+            } catch (err) {
+                showAlert(err.message, 'error');
+                btn.disabled = false;
+                btn.textContent = 'Entrar';
+            }
+        }
+
+        // Register
+        async function handleRegister(e) {
+            e.preventDefault();
+            const btn = document.getElementById('registerBtn');
+            const name = document.getElementById('regName').value;
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+            const confirm = document.getElementById('regConfirm').value;
+
+            if (password !== confirm) {
+                showAlert('As senhas não coincidem', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Criando conta...';
+
+            try {
+                const res = await fetch(API_BASE + '/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, name })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+                setLoggedIn(data.token, data.user);
+                window.location.href = REDIRECT_AFTER_LOGIN;
+            } catch (err) {
+                showAlert(err.message, 'error');
+                btn.disabled = false;
+                btn.textContent = 'Criar conta';
+            }
+        }
+    </script>
+</body>
+</html>

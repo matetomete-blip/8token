@@ -1778,15 +1778,461 @@ app.get('/api/admin/crm/ip-history/:user_id', adminAuth, async (req, res) => {
   }
 });
 
+// =============================================================================
+// PROXY LEVE — OpenAI-Compatible Gateway para GhostCLI
+// =============================================================================
+
+const GHOSTCLI_BASE_URL = process.env.GHOSTCLI_BASE_URL || 'https://ghostcli.dev/v1';
+const GHOSTCLI_API_KEY = process.env.GHOSTCLI_API_KEY || '';
+
+// --- Cache em memória para validação de chaves (TTL 60s) ---
+const keyCache = new Map(); // keyHash → { userId, revoked, cachedAt }
+const subCache = new Map(); // userId → { ip, additional_ip, has_additional_ip, plan, status, expires_at, cachedAt }
+const CACHE_TTL_MS = 60 * 1000;
+
+function getCached(map, key) {
+  const entry = map.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.cachedAt > CACHE_TTL_MS) { map.delete(key); return null; }
+  return entry;
+}
+
+function setCached(map, key, value) {
+  map.set(key, { ...value, cachedAt: Date.now() });
+}
+
+// Invalidar cache (chamado quando admin revoga chave ou muda IP)
+function invalidateKeyCache(keyHash) { keyCache.delete(keyHash); }
+function invalidateSubCache(userId) { subCache.delete(userId); }
+function invalidateAllCache() { keyCache.clear(); subCache.clear(); }
+
+// --- Middleware: validateApiKey ---
+// Valida chave 8tk_* + IP binding + plano ativo em cada request ao proxy
+async function validateApiKey(req, res, next) {
+  try {
+    const authHeader = req.headers['authorization'] || '';
+    const apiKey = authHeader.replace('Bearer ', '').trim();
+    if (!apiKey || !apiKey.startsWith('8tk_')) {
+      return res.status(401).json({ error: 'Chave API inválida. Use Authorization: Bearer 8tk_xxx' });
+    }
+
+    const keyHash = crypto.createHash('sha256').update(apiKey).digest('hex');
+
+    // 1. Buscar chave no cache ou no banco
+    let keyData = getCached(keyCache, keyHash);
+    if (!keyData) {
+      const { data } = await supabase.from('api_keys')
+        .select('id, user_id, revoked')
+        .eq('key_hash', keyHash)
+        .single();
+      if (!data) return res.status(401).json({ error: 'Chave API não encontrada' });
+      if (data.revoked) return res.status(401).json({ error: 'Chave API revogada' });
+      keyData = { id: data.id, userId: data.user_id, revoked: data.revoked };
+      setCached(keyCache, keyHash, keyData);
+    }
+    if (keyData.revoked) return res.status(401).json({ error: 'Chave API revogada' });
+
+    // 2. Buscar subscription no cache ou no banco
+    let sub = getCached(subCache, keyData.userId);
+    if (!sub) {
+      const { data } = await supabase.from('ip_subscriptions')
+        .select('ip, additional_ip, has_additional_ip, plan, status, expires_at')
+        .eq('user_id', keyData.userId)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      if (!data) return res.status(403).json({ error: 'Nenhum plano ativo encontrado' });
+      sub = data;
+      setCached(subCache, keyData.userId, sub);
+    }
+
+    // 3. Verificar expiração
+    if (sub.expires_at && new Date(sub.expires_at) < new Date()) {
+      return res.status(403).json({ error: 'Plano expirado. Renove sua assinatura.' });
+    }
+
+    // 4. Verificar IP binding
+    const clientIp = req.clientIp;
+    const allowedIps = [sub.ip];
+    if (sub.has_additional_ip && sub.additional_ip) allowedIps.push(sub.additional_ip);
+    if (!allowedIps.includes(clientIp)) {
+      return res.status(403).json({
+        error: `IP não autorizado. Seu IP (${clientIp}) não está vinculado a esta chave. IPs autorizados: ${allowedIps.join(', ')}`
+      });
+    }
+
+    // 5. Atachar dados ao request
+    req.apiKeyUser = { id: keyData.id, user_id: keyData.userId };
+    req.subscription = sub;
+
+    // 6. Atualizar last_used_at (async, sem bloquear)
+    supabase.from('api_keys').update({ last_used_at: new Date().toISOString() }).eq('id', keyData.id).then(() => {}).catch(() => {});
+
+    next();
+  } catch (err) {
+    console.error('[validateApiKey] Error:', err);
+    res.status(500).json({ error: 'Erro interno na validação' });
+  }
+}
+
+// --- Tracking de uso ---
+async function trackUsage(req, data, startTime) {
+  try {
+    const usage = data.usage || {};
+    await supabase.from('usage_logs').insert({
+      user_id: req.apiKeyUser.user_id,
+      api_key_id: req.apiKeyUser.id,
+      model: data.model || req.body?.model || 'unknown',
+      tokens_in: usage.prompt_tokens || 0,
+      tokens_out: usage.completion_tokens || 0,
+      latency_ms: Date.now() - startTime,
+      ip: req.clientIp,
+      status: 'success'
+    });
+  } catch (e) {
+    console.error('[usage] Failed to log:', e.message);
+  }
+}
+
+// Parsear última chunk SSE para extrair usage em streaming
+function parseSseUsage(fullResponse) {
+  try {
+    const lines = fullResponse.split('\n');
+    for (let i = lines.length - 1; i >= 0; i--) {
+      const line = lines[i].trim();
+      if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+        const json = JSON.parse(line.slice(6));
+        if (json.usage) return json;
+      }
+    }
+  } catch (e) { /* ignore parse errors */ }
+  return null;
+}
+
+// --- Proxy routes ---
+async function proxyRequest(req, res, path) {
+  const startTime = Date.now();
+  try {
+    const upstream = await fetch(`${GHOSTCLI_BASE_URL}${path}`, {
+      method: req.method,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${GHOSTCLI_API_KEY}`,
+      },
+      body: ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body),
+    });
+
+    // Forward status and headers
+    res.status(upstream.status);
+    upstream.headers.forEach((value, key) => {
+      const lk = key.toLowerCase();
+      if (!['transfer-encoding', 'connection', 'content-length'].includes(lk)) {
+        res.setHeader(key, value);
+      }
+    });
+
+    if (req.body?.stream && upstream.ok) {
+      // Streaming SSE: pipe chunks and capture usage from final chunk
+      let fullResponse = '';
+      const reader = upstream.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        fullResponse += chunk;
+        res.write(chunk);
+      }
+      res.end();
+
+      // Track usage from last SSE data line
+      const sseData = parseSseUsage(fullResponse);
+      if (sseData) trackUsage(req, sseData, startTime);
+    } else {
+      // Non-streaming: read full response
+      const contentType = upstream.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const data = await upstream.json();
+        res.json(data);
+        if (upstream.ok) trackUsage(req, data, startTime);
+      } else {
+        const buffer = Buffer.from(await upstream.arrayBuffer());
+        res.send(buffer);
+      }
+    }
+  } catch (err) {
+    console.error('[proxy] Error:', err.message);
+    if (!res.headersSent) {
+      res.status(502).json({ error: 'Erro ao conectar com o provedor upstream' });
+    }
+  }
+}
+
+app.post('/v1/chat/completions', validateApiKey, (req, res) => proxyRequest(req, res, '/chat/completions'));
+app.post('/v1/completions', validateApiKey, (req, res) => proxyRequest(req, res, '/completions'));
+app.get('/v1/models', validateApiKey, (req, res) => proxyRequest(req, res, '/models'));
+app.post('/v1/messages', validateApiKey, (req, res) => proxyRequest(req, res, '/messages'));
+app.post('/v1/embeddings', validateApiKey, (req, res) => proxyRequest(req, res, '/embeddings'));
+
+// =============================================================================
+// USER: USAGE STATS (métricas de consumo para o dashboard do cliente)
+// =============================================================================
+app.get('/api/user/usage-stats', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Totais gerais
+    const { data: allLogs } = await supabase.from('usage_logs')
+      .select('model, tokens_in, tokens_out, created_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    const logs = allLogs || [];
+    const totalMessages = logs.length;
+    const totalTokensIn = logs.reduce((s, l) => s + (l.tokens_in || 0), 0);
+    const totalTokensOut = logs.reduce((s, l) => s + (l.tokens_out || 0), 0);
+
+    // Por modelo
+    const byModel = {};
+    logs.forEach(l => {
+      const m = l.model || 'unknown';
+      if (!byModel[m]) byModel[m] = { model: m, messages: 0, tokens_in: 0, tokens_out: 0 };
+      byModel[m].messages++;
+      byModel[m].tokens_in += l.tokens_in || 0;
+      byModel[m].tokens_out += l.tokens_out || 0;
+    });
+
+    // Últimos 7 dias
+    const now = new Date();
+    const d7 = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const d30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const last7d = logs.filter(l => new Date(l.created_at) >= d7);
+    const last30d = logs.filter(l => new Date(l.created_at) >= d30);
+
+    // Agrupar por dia (últimos 7 dias)
+    const dailyMap = {};
+    last7d.forEach(l => {
+      const day = l.created_at.slice(0, 10);
+      if (!dailyMap[day]) dailyMap[day] = { date: day, messages: 0, tokens_in: 0, tokens_out: 0 };
+      dailyMap[day].messages++;
+      dailyMap[day].tokens_in += l.tokens_in || 0;
+      dailyMap[day].tokens_out += l.tokens_out || 0;
+    });
+
+    // Hoje
+    const todayStr = now.toISOString().slice(0, 10);
+    const todayLogs = logs.filter(l => l.created_at.slice(0, 10) === todayStr);
+    const todayMessages = todayLogs.length;
+    const todayTokens = todayLogs.reduce((s, l) => s + (l.tokens_in || 0) + (l.tokens_out || 0), 0);
+
+    // Latência média
+    const { data: latencyData } = await supabase.from('usage_logs')
+      .select('latency_ms')
+      .eq('user_id', userId)
+      .not('latency_ms', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(100);
+    const avgLatency = (latencyData || []).length > 0
+      ? Math.round((latencyData || []).reduce((s, l) => s + (l.latency_ms || 0), 0) / (latencyData || []).length)
+      : 0;
+
+    res.json({
+      total_messages: totalMessages,
+      total_tokens_in: totalTokensIn,
+      total_tokens_out: totalTokensOut,
+      total_tokens: totalTokensIn + totalTokensOut,
+      today_messages: todayMessages,
+      today_tokens: todayTokens,
+      avg_latency_ms: avgLatency,
+      usage_by_model: Object.values(byModel).sort((a, b) => (b.tokens_in + b.tokens_out) - (a.tokens_in + a.tokens_out)),
+      usage_last_7d: Object.values(dailyMap).sort((a, b) => a.date.localeCompare(b.date)),
+      usage_last_30d_count: last30d.length,
+      usage_last_30d_tokens: last30d.reduce((s, l) => s + (l.tokens_in || 0) + (l.tokens_out || 0), 0)
+    });
+  } catch (err) {
+    console.error('Usage stats error:', err);
+    res.status(500).json({ error: 'Erro ao carregar métricas: ' + err.message });
+  }
+});
+
+// =============================================================================
+// ADMIN: API KEYS MANAGEMENT (controle total de chaves)
+// =============================================================================
+app.get('/api/admin/keys', adminAuth, async (req, res) => {
+  try {
+    const search = (req.query.search || '').trim();
+    let query = supabase.from('api_keys')
+      .select('*, users(email, name, plan)')
+      .order('created_at', { ascending: false });
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    let keys = data || [];
+    if (search) {
+      const q = search.toLowerCase();
+      keys = keys.filter(k =>
+        (k.users?.email || '').toLowerCase().includes(q) ||
+        (k.users?.name || '').toLowerCase().includes(q) ||
+        (k.key_prefix || '').toLowerCase().includes(q) ||
+        (k.name || '').toLowerCase().includes(q)
+      );
+    }
+
+    // Stats
+    const activeCount = keys.filter(k => !k.revoked).length;
+    const revokedCount = keys.filter(k => k.revoked).length;
+
+    res.json({ keys, stats: { total: keys.length, active: activeCount, revoked: revokedCount } });
+  } catch (err) {
+    console.error('Admin keys error:', err);
+    res.status(500).json({ error: 'Erro ao carregar chaves: ' + err.message });
+  }
+});
+
+app.put('/api/admin/keys/:id/revoke', adminAuth, async (req, res) => {
+  try {
+    const { data } = await supabase.from('api_keys').select('key_hash, user_id').eq('id', req.params.id).single();
+    if (!data) return res.status(404).json({ error: 'Chave não encontrada' });
+    await supabase.from('api_keys').update({ revoked: true }).eq('id', req.params.id);
+    invalidateKeyCache(data.key_hash);
+    invalidateSubCache(data.user_id);
+    res.json({ success: true, message: 'Chave revogada com sucesso' });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao revogar chave: ' + err.message });
+  }
+});
+
+app.put('/api/admin/keys/:id/restore', adminAuth, async (req, res) => {
+  try {
+    const { data } = await supabase.from('api_keys').select('key_hash, user_id').eq('id', req.params.id).single();
+    if (!data) return res.status(404).json({ error: 'Chave não encontrada' });
+    await supabase.from('api_keys').update({ revoked: false }).eq('id', req.params.id);
+    invalidateKeyCache(data.key_hash);
+    invalidateSubCache(data.user_id);
+    res.json({ success: true, message: 'Chave reativada com sucesso' });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao reativar chave: ' + err.message });
+  }
+});
+
+app.get('/api/admin/keys/:id/usage', adminAuth, async (req, res) => {
+  try {
+    const { data } = await supabase.from('usage_logs')
+      .select('*')
+      .eq('api_key_id', req.params.id)
+      .order('created_at', { ascending: false })
+      .limit(100);
+    const logs = data || [];
+    const totalTokens = logs.reduce((s, l) => s + (l.tokens_in || 0) + (l.tokens_out || 0), 0);
+    res.json({
+      logs,
+      stats: {
+        total_requests: logs.length,
+        total_tokens: totalTokens,
+        total_tokens_in: logs.reduce((s, l) => s + (l.tokens_in || 0), 0),
+        total_tokens_out: logs.reduce((s, l) => s + (l.tokens_out || 0), 0)
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao carregar uso da chave: ' + err.message });
+  }
+});
+
+// Admin: métricas globais de uso
+app.get('/api/admin/usage/stats', adminAuth, async (req, res) => {
+  try {
+    const now = new Date();
+    const todayStr = now.toISOString().slice(0, 10);
+    const d7 = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const d30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+    const { data: allLogs } = await supabase.from('usage_logs')
+      .select('tokens_in, tokens_out, model, created_at, latency_ms')
+      .order('created_at', { ascending: false });
+
+    const logs = allLogs || [];
+    const todayLogs = logs.filter(l => l.created_at >= todayStr);
+    const weekLogs = logs.filter(l => l.created_at >= d7);
+    const monthLogs = logs.filter(l => l.created_at >= d30);
+
+    // Por dia (últimos 7 dias)
+    const dailyMap = {};
+    weekLogs.forEach(l => {
+      const day = l.created_at.slice(0, 10);
+      if (!dailyMap[day]) dailyMap[day] = { date: day, requests: 0, tokens: 0 };
+      dailyMap[day].requests++;
+      dailyMap[day].tokens += (l.tokens_in || 0) + (l.tokens_out || 0);
+    });
+
+    // Top usuários por consumo
+    const { data: topUsersRaw } = await supabase.from('usage_logs')
+      .select('user_id, tokens_in, tokens_out, users!inner(email, name)')
+      .gte('created_at', d30);
+
+    const userMap = {};
+    (topUsersRaw || []).forEach(l => {
+      const uid = l.user_id;
+      if (!userMap[uid]) userMap[uid] = { email: l.users?.email, name: l.users?.name, tokens: 0, requests: 0 };
+      userMap[uid].tokens += (l.tokens_in || 0) + (l.tokens_out || 0);
+      userMap[uid].requests++;
+    });
+    const topUsers = Object.values(userMap).sort((a, b) => b.tokens - a.tokens).slice(0, 10);
+
+    // Latência média
+    const latencies = logs.filter(l => l.latency_ms).map(l => l.latency_ms);
+    const avgLatency = latencies.length > 0 ? Math.round(latencies.reduce((s, v) => s + v, 0) / latencies.length) : 0;
+
+    res.json({
+      total_requests: logs.length,
+      total_tokens: logs.reduce((s, l) => s + (l.tokens_in || 0) + (l.tokens_out || 0), 0),
+      today_requests: todayLogs.length,
+      today_tokens: todayLogs.reduce((s, l) => s + (l.tokens_in || 0) + (l.tokens_out || 0), 0),
+      week_requests: weekLogs.length,
+      week_tokens: weekLogs.reduce((s, l) => s + (l.tokens_in || 0) + (l.tokens_out || 0), 0),
+      month_requests: monthLogs.length,
+      month_tokens: monthLogs.reduce((s, l) => s + (l.tokens_in || 0) + (l.tokens_out || 0), 0),
+      avg_latency_ms: avgLatency,
+      daily_usage: Object.values(dailyMap).sort((a, b) => a.date.localeCompare(b.date)),
+      top_users: topUsers
+    });
+  } catch (err) {
+    console.error('Admin usage stats error:', err);
+    res.status(500).json({ error: 'Erro ao carregar métricas globais: ' + err.message });
+  }
+});
+
+// =============================================================================
+// STATIC FILE SERVING (para VPS — serve frontend diretamente)
+// =============================================================================
+const path = require('path');
+const publicDir = path.join(__dirname, 'public');
+
+// Serve static files from public/ directory
+app.use(express.static(publicDir));
+
+// SPA-style routes for frontend pages
+app.get('/account', (req, res) => res.sendFile(path.join(publicDir, 'account.html')));
+app.get('/admin', (req, res) => res.sendFile(path.join(publicDir, 'admin.html')));
+app.get('/dashboard', (req, res) => res.sendFile(path.join(publicDir, 'dashboard.html')));
+app.get('/login', (req, res) => res.sendFile(path.join(publicDir, 'login.html')));
+app.get('/docs', (req, res) => res.sendFile(path.join(publicDir, 'docs.html')));
+
 // Health check
-app.get('/api/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
+app.get('/api/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString(), proxy: !!GHOSTCLI_API_KEY }));
 
 // Export for Vercel — @vercel/node expects module.exports = handler(req, res)
 // Express app works directly as a handler
 module.exports = app;
 
-// Also support local development
+// Also support local development / VPS with PM2
 if (require.main === module) {
-  const PORT = process.env.PORT || 3001;
-  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`🚀 8Token server running on port ${PORT}`);
+    console.log(`📡 Proxy gateway: ${GHOSTCLI_API_KEY ? 'ATIVO' : 'INATIVO (GHOSTCLI_API_KEY não configurada)'}`);
+    console.log(`🔗 GhostCLI upstream: ${GHOSTCLI_BASE_URL}`);
+  });
 }

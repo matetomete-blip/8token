@@ -125,11 +125,22 @@ CREATE TABLE IF NOT EXISTS affiliate_referrals (
 CREATE TABLE IF NOT EXISTS usage_logs (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  api_key_id UUID REFERENCES api_keys(id),
   model TEXT,
   tokens_in INTEGER DEFAULT 0,
   tokens_out INTEGER DEFAULT 0,
+  latency_ms INTEGER,
+  ip TEXT,
+  status TEXT DEFAULT 'success',
   created_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- Migration: add new columns to existing usage_logs table
+-- Run this if the table already exists without these columns:
+-- ALTER TABLE usage_logs ADD COLUMN IF NOT EXISTS api_key_id UUID REFERENCES api_keys(id);
+-- ALTER TABLE usage_logs ADD COLUMN IF NOT EXISTS latency_ms INTEGER;
+-- ALTER TABLE usage_logs ADD COLUMN IF NOT EXISTS ip TEXT;
+-- ALTER TABLE usage_logs ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'success';
 
 -- Webhook Logs
 CREATE TABLE IF NOT EXISTS webhook_logs (

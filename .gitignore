@@ -1,21 +1,33 @@
+# Dependencies
 node_modules/
-8token.db
-*.db
+
+# Environment (NUNCA commitar .env real)
 .env
-.env.local
-.vercel/
-analysis_output.txt
-auth_*.txt
-dump_auth.py
-extract_*.py
-parse_semgrep.py
-read_server.py
-lines.txt
-RESUMO-*.txt
-capture-*.mjs
-checkout-banner-*
-design paina 8token/
-.vercel
-.gstack/
-.gstack/
-.env*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Playwright
+.playwright-mcp/
+
+# Claude internal
+.claude/
+
+# Build artifacts
+*.log
+
+# Conversas extraídas e provas sociais (não fazem parte do deploy)
+CONVERSA EXTRAIDA/
+provas sociais/
+CONTEXTO-8TOKEN-IMPLEMENTACAO.md
+
+# Criativos de marketing (não fazem parte do backend)
+criativo-*.html
+
+# Contexto anterior (arquivo de sessão)
+contexto-anterior.txt
