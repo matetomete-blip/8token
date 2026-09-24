@@ -374,7 +374,7 @@
                     <input type="hidden" id="editId" value="">
                     <div class="form-row">
                         <div class="form-group"><label class="form-label">Endereço IP *</label><input type="text" id="fieldIp" class="form-input" placeholder="Ex: 203.0.113.42"></div>
-                        <div class="form-group"><label class="form-label">Plano *</label><select id="fieldPlan" class="form-select"><option value="free">Free</option><option value="mensal">Mensal</option><option value="trimestral">Trimestral</option><option value="anual">Anual</option><option value="admin">Admin</option></select></div>
+                        <div class="form-group"><label class="form-label">Plano *</label><select id="fieldPlan" class="form-select"><option value="free">Free</option><option value="mensal">Mensal</option><option value="trimestral">Trimestral</option><option value="anual">Anual</option></select></div>
                         <div class="form-group"><label class="form-label">Status</label><select id="fieldStatus" class="form-select"><option value="active">IP Ativo</option><option value="pending">Não Programado</option><option value="suspended">Desativado</option></select></div>
                         <div class="form-group"><label class="form-label">Expira em</label><input type="datetime-local" id="fieldExpires" class="form-input"></div>
                     </div>
@@ -387,8 +387,8 @@
                 <div class="search-bar"><input type="text" id="userSearchInput" class="form-input" placeholder="Buscar por IP, email ou notas..." oninput="filterUsersTable()"></div>
                 <div class="table-wrap">
                     <table>
-                        <thead><tr><th>ID</th><th>Nome</th><th>IP</th><th>Plano</th><th>Status</th><th>Usuário</th><th>Expira</th><th>Notas</th><th>Atualizado</th><th>Ações</th></tr></thead>
-                        <tbody id="usersTableBody"><tr><td colspan="10" class="empty-state">Carregando...</td></tr></tbody>
+                        <thead><tr><th>ID</th><th>Nome</th><th>Cargo</th><th>IP</th><th>Plano</th><th>Status</th><th>Usuário</th><th>Expira</th><th>Notas</th><th>Atualizado</th><th>Ações</th></tr></thead>
+                        <tbody id="usersTableBody"><tr><td colspan="11" class="empty-state">Carregando...</td></tr></tbody>
                     </table>
                 </div>
             </div>
@@ -447,7 +447,7 @@
                         <div><label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-xs);">Mensagem *</label><textarea id="notifMessage" rows="4" placeholder="Escreva a mensagem da notificação..." class="form-input"></textarea></div>
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-md);">
                             <div><label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-xs);">Tipo</label><select id="notifType" class="form-select"><option value="info">ℹ️ Info</option><option value="success">✅ Sucesso</option><option value="warning">⚠️ Aviso</option><option value="error">❌ Erro</option></select></div>
-                            <div><label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-xs);">Plano Alvo</label><select id="notifTargetPlan" class="form-select"><option value="all">🌍 Todos os usuários</option><option value="free">Free</option><option value="mensal">Mensal</option><option value="trimestral">Trimestral</option><option value="anual">Anual</option><option value="admin">Admin</option></select></div>
+                            <div><label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-xs);">Plano Alvo</label><select id="notifTargetPlan" class="form-select"><option value="all">🌍 Todos os usuários</option><option value="free">Free</option><option value="mensal">Mensal</option><option value="trimestral">Trimestral</option><option value="anual">Anual</option></select></div>
                         </div>
                         <button onclick="sendBroadcastNotification()" id="sendNotifBtn" class="btn btn-primary" style="margin-top:var(--space-sm);">🚀 Enviar Notificação</button>
                         <div id="notifSendStatus" style="display:none;padding:var(--space-md);border-radius:var(--radius-sm);font-size:13px;font-weight:600;"></div>
@@ -669,7 +669,7 @@
                 const badge = document.getElementById('pendingCount');
                 if (stats.pendingActivations > 0) { badge.textContent = stats.pendingActivations; badge.style.display = 'inline'; } else { badge.style.display = 'none'; }
 
-                const planColors = { free: '#555555', mensal: '#00D4FF', trimestral: '#00D4FF', anual: '#FF5500', admin: '#a855f7' };
+                const planColors = { free: '#555555', mensal: '#00D4FF', trimestral: '#00D4FF', anual: '#FF5500' };
                 const maxCount = Math.max(...(stats.planBreakdown || []).map(p => p.count), 1);
                 const barsHtml = (stats.planBreakdown || []).map(p => `
                     <div class="plan-bar-row">
@@ -753,8 +753,15 @@
 
         // ---- USERS / IPS ----
         function badgeForPlan(plan) {
-            const map = { free: 'badge-free', mensal: 'badge-pro', trimestral: 'badge-pro', anual: 'badge-max', admin: 'badge-admin' };
-            return `<span class="badge ${map[plan] || 'badge-free'}">${plan}</span>`;
+            const map = { free: 'badge-free', mensal: 'badge-pro', trimestral: 'badge-pro', anual: 'badge-max' };
+            const labels = { free: 'Free', mensal: 'Mensal', trimestral: 'Trimestral', anual: 'Anual' };
+            return `<span class="badge ${map[plan] || 'badge-free'}">${labels[plan] || plan}</span>`;
+        }
+        function badgeForRole(role) {
+            if (!role || role === 'user') return '';
+            const map = { admin: 'badge-admin', affiliate: 'badge-affiliate' };
+            const labels = { admin: '👑 Admin', affiliate: '🤝 Afiliado' };
+            return `<span class="badge ${map[role] || 'badge-free'}" style="margin-left:4px;font-size:10px;">${labels[role] || role}</span>`;
         }
         function badgeForStatus(status) {
             const map = { active: 'badge-active', pending: 'badge-pending', expired: 'badge-expired', suspended: 'badge-suspended', approved: 'badge-approved', rejected: 'badge-rejected', paid: 'badge-active', unpaid: 'badge-pending' };
@@ -768,12 +775,12 @@
 
         function renderUsersTable(subs) {
             const tbody = document.getElementById('usersTableBody');
-            if (!subs.length) { tbody.innerHTML = '<tr><td colspan="10" class="empty-state">Nenhum registro encontrado.</td></tr>'; return; }
+            if (!subs.length) { tbody.innerHTML = '<tr><td colspan="11" class="empty-state">Nenhum registro encontrado.</td></tr>'; return; }
             // Group subscriptions by user_id
             const grouped = {};
             subs.forEach(s => {
                 const key = s.user_id || 'no-user';
-                if (!grouped[key]) grouped[key] = { user_id: s.user_id, user_name: s.users?.name || s.users?.email || s.user_email || '—', user_email: s.users?.email || s.user_email || '—', subs: [] };
+                if (!grouped[key]) grouped[key] = { user_id: s.user_id, user_name: s.users?.name || s.users?.email || s.user_email || '—', user_email: s.users?.email || s.user_email || '—', user_role: s.users?.role || 'user', subs: [] };
                 grouped[key].subs.push(s);
             });
             let html = '';
@@ -784,6 +791,7 @@
                     html += `<tr data-id="${s.id}" style="${!isMain ? 'background:rgba(255,255,255,0.02);' : ''}">
                         <td class="mono" style="font-size:11px;color:var(--text-muted);">${isMain ? userIdShort : ''}</td>
                         <td style="font-size:13px;color:var(--text-secondary);">${isMain ? (g.user_name !== '—' ? g.user_name : g.user_email) : ''}</td>
+                        <td>${isMain ? badgeForRole(g.user_role) : ''}</td>
                         <td class="mono" style="${!isMain ? 'padding-left:24px;color:var(--accent-blue);' : ''}">${isMain ? s.ip : '↳ ' + s.ip}</td>
                         <td>${badgeForPlan(s.plan)}</td>
                         <td>${badgeForStatus(s.status)}</td>
@@ -1215,9 +1223,9 @@
             try {
                 const subs = await apiFetch('/api/admin/subscriptions');
                 const grouped = {};
-                const planOrder = ['admin', 'anual', 'trimestral', 'mensal', 'free'];
-                const planColors = { admin: '#a855f7', anual: '#FF5500', trimestral: '#00D4FF', mensal: '#00D4FF', free: '#555555' };
-                const planLabels = { admin: 'Admin', anual: 'Anual', trimestral: 'Trimestral', mensal: 'Mensal', free: 'Free' };
+                const planOrder = ['anual', 'trimestral', 'mensal', 'free'];
+                const planColors = { anual: '#FF5500', trimestral: '#00D4FF', mensal: '#00D4FF', free: '#555555' };
+                const planLabels = { anual: 'Anual', trimestral: 'Trimestral', mensal: 'Mensal', free: 'Free' };
                 subs.forEach(s => { if (!grouped[s.plan]) grouped[s.plan] = []; grouped[s.plan].push(s); });
                 const container = document.getElementById('plansContainer');
                 let html = '';

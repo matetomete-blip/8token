@@ -879,8 +879,8 @@
                         const planNames = { mensal: 'Mensal', trimestral: 'Trimestral', anual: 'Anual', admin: 'Admin', free: 'Free' };
                         planEl.textContent = planNames[profile.plan] || profile.plan;
                     }
-                    // Show admin links if user plan is admin (from users table, not ip_subscriptions)
-                    if (profile.plan === 'admin') {
+                    // Show admin links if user role is admin (cargo separado do plano)
+                    if (profile.role === 'admin') {
                         const adminLink = document.getElementById('adminLink');
                         const sidebarAdminLink = document.getElementById('sidebarAdminLink');
                         if (adminLink) adminLink.style.display = 'inline-flex';

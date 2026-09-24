@@ -163,14 +163,16 @@ app.post('/api/auth/register', async (req, res) => {
     const passwordHash = await bcrypt.hash(password, 12);
     const userId = crypto.randomUUID();
 
-    // Create in custom users table
-    const plan = email === 'matetomete@gmail.com' ? 'admin' : 'free';
+    // Create in custom users table — role is separate from plan
+    const role = email === 'matetomete@gmail.com' ? 'admin' : 'user';
+    const plan = 'free';
     const { data: newUser, error } = await supabase.from('users').insert({
       id: userId,
       email,
       password_hash: passwordHash,
       name: displayName,
-      plan
+      plan,
+      role
     }).select().single();
 
     if (error) {
@@ -215,15 +217,15 @@ app.post('/api/auth/login', async (req, res) => {
       await supabase.from('users').update({ password_hash: passwordHash }).eq('id', user.id);
     }
 
-    // Auto-promote matetomete@gmail.com to admin
-    if (email === 'matetomete@gmail.com' && user.plan !== 'admin') {
-      await supabase.from('users').update({ plan: 'admin' }).eq('id', user.id);
-      user.plan = 'admin';
+    // Auto-promote matetomete@gmail.com to admin role (separate from plan)
+    if (email === 'matetomete@gmail.com' && user.role !== 'admin') {
+      await supabase.from('users').update({ role: 'admin' }).eq('id', user.id);
+      user.role = 'admin';
     }
 
     const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '30d' });
     await ensureIpRecord(req.clientIp, user.id);
-    res.json({ token, user: { id: user.id, email: user.email, name: user.name, plan: user.plan } });
+    res.json({ token, user: { id: user.id, email: user.email, name: user.name, plan: user.plan, role: user.role || 'user' } });
   } catch (err) {
     console.error('Login error:', err);
     res.status(500).json({ error: 'Erro interno do servidor' });
@@ -256,15 +258,15 @@ app.post('/api/auth/google', async (req, res) => {
       user.name = user.name || name;
     }
 
-    // Auto-promote matetomete@gmail.com to admin via Google login too
-    if (email === 'matetomete@gmail.com' && user.plan !== 'admin') {
-      await supabase.from('users').update({ plan: 'admin' }).eq('id', user.id);
-      user.plan = 'admin';
+    // Auto-promote matetomete@gmail.com to admin role via Google login too
+    if (email === 'matetomete@gmail.com' && user.role !== 'admin') {
+      await supabase.from('users').update({ role: 'admin' }).eq('id', user.id);
+      user.role = 'admin';
     }
 
     const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '30d' });
     await ensureIpRecord(req.clientIp, user.id);
-    res.json({ token, user: { id: user.id, email: user.email, name: user.name || name, plan: user.plan } });
+    res.json({ token, user: { id: user.id, email: user.email, name: user.name || name, plan: user.plan, role: user.role || 'user' } });
   } catch (err) {
     console.error('Google auth error:', err);
     res.status(500).json({ error: 'Erro na autenticação com Google' });
@@ -290,7 +292,7 @@ app.post('/api/admin/set-password', adminAuth, async (req, res) => {
 // --- USER ROUTES ---
 
 app.get('/api/user/profile', authenticateToken, async (req, res) => {
-  const { data: user } = await supabase.from('users').select('id, email, name, plan, plan_expires_at, avatar_url, created_at').eq('id', req.user.id).single();
+  const { data: user } = await supabase.from('users').select('id, email, name, plan, role, plan_expires_at, avatar_url, created_at').eq('id', req.user.id).single();
   if (!user) return res.status(404).json({ error: 'Usuário não encontrado' });
   res.json(user);
 });
@@ -574,7 +576,7 @@ app.post('/api/user/additional-ip', authenticateToken, async (req, res) => {
   const { data: sub } = await supabase.from('ip_subscriptions').select('*').eq('user_id', req.user.id).eq('status', 'active').single();
   if (!sub) return res.status(400).json({ error: 'Nenhum plano ativo encontrado.' });
   if (sub.has_additional_ip) return res.status(400).json({ error: 'Você já possui um IP adicional ativo.' });
-  if (sub.plan === 'admin' || sub.plan === 'free') return res.status(400).json({ error: 'Planos admin/free não podem comprar IP adicional.' });
+  if (sub.plan === 'free') return res.status(400).json({ error: 'Plano free não pode comprar IP adicional.' });
   await supabase.from('invoices').insert({ user_id: req.user.id, plan: 'ip_adicional', amount: 74.90, status: 'pending' });
   await supabase.from('ip_subscriptions').update({ has_additional_ip: true }).eq('id', sub.id);
   res.json({ success: true, price: 74.90, message: 'IP adicional solicitado.' });
@@ -841,10 +843,10 @@ app.post('/api/admin/test-accounts/create', adminAuth, async (req, res) => {
       password_hash: adminPass, 
       name: 'Admin Teste' 
     }).select().single();
-    await supabase.from('ip_subscriptions').insert({ 
-      ip: '127.0.0.1', 
-      user_id: adminUser.id, 
-      plan: 'admin', 
+    await supabase.from('ip_subscriptions').insert({
+      ip: '0.0.0.0',
+      user_id: adminUser.id,
+      plan: 'anual',
       status: 'active',
       expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
     });
@@ -1122,23 +1124,23 @@ app.post('/api/admin/setup', adminAuth, async (req, res) => {
   try {
     const results = [];
 
-    // 1. Promote matetomete@gmail.com to admin in custom table
+    // 1. Promote matetomete@gmail.com to admin role in custom table
     const { data: adminUser } = await supabase.from('users').select('*').eq('email', 'matetomete@gmail.com').single();
     if (adminUser) {
-      await supabase.from('users').update({ plan: 'admin' }).eq('id', adminUser.id);
+      await supabase.from('users').update({ role: 'admin' }).eq('id', adminUser.id);
       results.push({ action: 'promote-admin', email: 'matetomete@gmail.com', status: 'updated', id: adminUser.id });
     } else {
       // Try to sync from Supabase Auth
       // Create admin record directly in custom table using the known Supabase Auth UID from the screenshot
       const knownUid = 'cc492624-1fdd-4d15-92d9-3caea304e662';
       const { data: newUser, error: insErr } = await supabase.from('users').insert({
-        id: knownUid, email: 'matetomete@gmail.com', name: 'Admin', plan: 'admin'
+        id: knownUid, email: 'matetomete@gmail.com', name: 'Admin', plan: 'anual', role: 'admin'
       }).select().single();
       if (newUser) {
         results.push({ action: 'promote-admin', email: 'matetomete@gmail.com', status: 'created', id: newUser.id });
       } else if (insErr && insErr.code === '23505') {
         // Already exists — just promote
-        await supabase.from('users').update({ plan: 'admin' }).eq('email', 'matetomete@gmail.com');
+        await supabase.from('users').update({ role: 'admin' }).eq('email', 'matetomete@gmail.com');
         results.push({ action: 'promote-admin', email: 'matetomete@gmail.com', status: 'already-exists-promoted' });
       } else {
         results.push({ action: 'promote-admin', email: 'matetomete@gmail.com', status: 'error', error: insErr?.message });
@@ -1147,7 +1149,7 @@ app.post('/api/admin/setup', adminAuth, async (req, res) => {
 
     // 2. Create 5 test accounts
     const testAccounts = [
-      { email: 'admin@test.8token.com', password: 'admin123', name: 'Admin Teste', plan: 'admin', ip: '127.0.0.1', ipStatus: 'active', ipPlan: 'admin' },
+      { email: 'admin@test.8token.com', password: 'admin123', name: 'Admin Teste', plan: 'anual', role: 'admin', ip: '127.0.0.1', ipStatus: 'active', ipPlan: 'anual' },
       { email: 'afiliado@test.8token.com', password: 'afiliado123', name: 'Afiliado Teste', plan: 'free', ip: null, ipStatus: null, ipPlan: null, affiliate: true, commission: 15 },
       { email: 'subafiliado@test.8token.com', password: 'sub123', name: 'Subafiliado Teste', plan: 'free', ip: null, ipStatus: null, ipPlan: null, affiliate: true, commission: 10 },
       { email: 'ativo@test.8token.com', password: 'ativo123', name: 'Usuário Ativo', plan: 'mensal', ip: '192.168.1.100', ipStatus: 'active', ipPlan: 'mensal', expiresDays: 30 },
@@ -1527,7 +1529,7 @@ app.get('/api/admin/crm/users', adminAuth, async (req, res) => {
         .limit(1)
         .single();
       const st = computeCrmStatus(aSub);
-      if (st === 'active' && aSub && aSub.plan !== 'free' && aSub.plan !== 'admin') segments.active_paid++;
+      if (st === 'active' && aSub && aSub.plan !== 'free') segments.active_paid++;
       else if (st === 'active' && (!aSub || aSub.plan === 'free')) segments.free_only++;
       else if (st === 'expired') segments.expired++;
       else if (st === 'cancelled') segments.cancelled++;
@@ -1759,8 +1761,7 @@ app.get('/api/admin/crm/metrics/expiry', adminAuth, async (req, res) => {
       .from('ip_subscriptions')
       .select('*', { count: 'exact', head: true })
       .eq('status', 'active')
-      .neq('plan', 'free')
-      .neq('plan', 'admin');
+      .neq('plan', 'free');
 
     // Expiring this month (active, expires_at between now and end of month)
     const { count: expiringThisMonth } = await supabase
@@ -1825,8 +1826,7 @@ app.get('/api/admin/crm/revenue/projection', adminAuth, async (req, res) => {
       .from('ip_subscriptions')
       .select('plan, expires_at')
       .eq('status', 'active')
-      .neq('plan', 'free')
-      .neq('plan', 'admin');
+      .neq('plan', 'free');
 
     const mrrByPlan = { mensal: 0, trimestral: 0, anual: 0 };
     let projectedNext30d = 0;
