@@ -768,10 +768,22 @@
         async function loadIpInfo() {
             try {
                 const token = localStorage.getItem('8token_token');
+                console.log('[IP DEBUG] Token exists:', !!token);
+                if (!token) {
+                    console.error('[IP DEBUG] No token found in localStorage');
+                    const ipMainEl = document.getElementById('ipMainValue');
+                    const statusBadge = document.getElementById('ipStatusBadge');
+                    const currentIpEl = document.getElementById('ipCurrentNetwork');
+                    if (ipMainEl) ipMainEl.textContent = 'Faça login';
+                    if (statusBadge) statusBadge.textContent = 'Não autenticado';
+                    if (currentIpEl) currentIpEl.textContent = 'Faça login';
+                    return;
+                }
                 const headers = { 'Authorization': 'Bearer ' + token };
                 const controller = new AbortController();
                 const timeout = setTimeout(() => controller.abort(), 8000);
 
+                console.log('[IP DEBUG] Fetching IP info...');
                 // Fetch IP info and current network IP in parallel with timeout
                 const [ipRes, currentIpRes] = await Promise.all([
                     fetch(API_BASE + '/api/user/ip-info', { headers, signal: controller.signal }),
@@ -779,8 +791,14 @@
                 ]);
                 clearTimeout(timeout);
 
+                console.log('[IP DEBUG] ip-info status:', ipRes.status);
+                console.log('[IP DEBUG] current-ip status:', currentIpRes.status);
+
                 const data = ipRes.ok ? await ipRes.json() : {};
                 const currentIpData = currentIpRes.ok ? await currentIpRes.json() : {};
+
+                console.log('[IP DEBUG] ip-info response:', data);
+                console.log('[IP DEBUG] current-ip response:', currentIpData);
 
                 currentNetworkIp = currentIpData.ip || null;
                 authorizedIp = data.ip || null;
@@ -865,7 +883,15 @@
                     if (purchasedEl) purchasedEl.style.display = 'none';
                     if (additionalExpiresEl) additionalExpiresEl.style.display = 'none';
                 }
-            } catch (e) { console.error('Load IP info error:', e); }
+            } catch (e) {
+                console.error('[IP DEBUG] Load IP info error:', e);
+                const ipMainEl = document.getElementById('ipMainValue');
+                const statusBadge = document.getElementById('ipStatusBadge');
+                const currentIpEl = document.getElementById('ipCurrentNetwork');
+                if (ipMainEl) ipMainEl.textContent = 'Erro ao carregar';
+                if (statusBadge) { statusBadge.textContent = 'Erro'; statusBadge.style.color = 'var(--accent-red)'; }
+                if (currentIpEl) currentIpEl.textContent = 'Erro ao detectar';
+            }
         }
         loadIpInfo();
 

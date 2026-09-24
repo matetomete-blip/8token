@@ -727,31 +727,66 @@ app.put('/api/admin/subscriptions/:id', adminAuth, async (req, res) => {
   if (expires_at !== undefined) update.expires_at = expires_at;
   if (ip !== undefined) update.ip = ip;
 
-  // Update ip_subscriptions
-  const { data: updatedSub, error: subError } = await supabase.from('ip_subscriptions').update(update).eq('id', req.params.id).select('user_id, plan, status, expires_at').single();
+  // Step 1: Get the current subscription to know its IP before updating
+  const { data: currentSub } = await supabase.from('ip_subscriptions').select('id, ip, user_id').eq('id', req.params.id).single();
+  if (!currentSub) return res.status(404).json({ error: 'Subscription not found' });
 
+  // Step 2: Update THIS subscription
+  const { data: updatedSub, error: subError } = await supabase.from('ip_subscriptions').update(update).eq('id', req.params.id).select('user_id, ip, plan, status, expires_at').single();
   if (subError) return res.status(500).json({ error: subError.message });
 
-  // CRITICAL: Sync users table (plan, expiry, AND user_data like name/email/role)
-  if (updatedSub && updatedSub.user_id) {
+  // Step 3: Also update ALL other subscriptions with the same IP (plan + status + expires_at)
+  // This ensures duplicate/orphan subs for the same IP stay in sync
+  const targetIp = updatedSub?.ip || currentSub.ip;
+  if (targetIp && (plan !== undefined || status !== undefined || expires_at !== undefined)) {
+    const bulkUpdate = {};
+    if (plan !== undefined) bulkUpdate.plan = plan;
+    if (status !== undefined) bulkUpdate.status = status;
+    if (expires_at !== undefined) bulkUpdate.expires_at = expires_at;
+    await supabase.from('ip_subscriptions').update(bulkUpdate).eq('ip', targetIp).neq('id', req.params.id);
+    console.log(`[Admin PUT] Bulk-updated all subs with IP ${targetIp} (except ${req.params.id})`);
+  }
+
+  // Step 4: Find the user_id to sync — from this sub, or from any sibling sub with the same IP
+  let syncedUserId = updatedSub?.user_id;
+  if (!syncedUserId && targetIp) {
+    const { data: linkedSub } = await supabase
+      .from('ip_subscriptions')
+      .select('user_id')
+      .eq('ip', targetIp)
+      .not('user_id', 'is', null)
+      .limit(1)
+      .single();
+    if (linkedSub?.user_id) {
+      syncedUserId = linkedSub.user_id;
+      console.log(`[Admin PUT] Sub ${req.params.id} has no user_id — found linked user ${syncedUserId} via IP ${targetIp}`);
+    }
+  }
+
+  // Step 5: Sync users.plan so dashboard reflects admin changes immediately
+  if (syncedUserId) {
     const userUpdate = {};
     if (plan !== undefined) userUpdate.plan = plan;
     if (expires_at !== undefined) userUpdate.plan_expires_at = expires_at;
-
-    // Handle user_data fields from the new modal
     if (user_data) {
       if (user_data.name !== undefined) userUpdate.name = user_data.name;
       if (user_data.email !== undefined) userUpdate.email = user_data.email;
       if (user_data.role !== undefined) userUpdate.role = user_data.role;
     }
-
     if (Object.keys(userUpdate).length > 0) {
       userUpdate.updated_at = new Date().toISOString();
-      const { error: userError } = await supabase.from('users').update(userUpdate).eq('id', updatedSub.user_id);
-      if (userError) console.error('Failed to sync user data:', userError);
+      const { error: userError } = await supabase.from('users').update(userUpdate).eq('id', syncedUserId);
+      if (userError) {
+        console.error(`[Admin PUT] Failed to sync user ${syncedUserId}:`, userError);
+      } else {
+        console.log(`[Admin PUT] ✅ Synced user ${syncedUserId} → plan=${plan}, expires=${expires_at}`);
+      }
     }
+  } else {
+    console.warn(`[Admin PUT] ⚠️ Sub ${req.params.id} (IP ${targetIp}) has no user_id and no linked sub — users.plan NOT synced`);
   }
-  res.json({ success: true });
+
+  res.json({ success: true, synced_user_id: syncedUserId || null });
 });
 
 app.delete('/api/admin/subscriptions/:id', adminAuth, async (req, res) => {
