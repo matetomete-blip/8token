@@ -2331,6 +2331,7 @@ app.get('/admin', (req, res) => res.sendFile(path.join(publicDir, 'admin.html'))
 app.get('/dashboard', (req, res) => res.sendFile(path.join(publicDir, 'dashboard.html')));
 app.get('/login', (req, res) => res.sendFile(path.join(publicDir, 'login.html')));
 app.get('/docs', (req, res) => res.sendFile(path.join(publicDir, 'docs.html')));
+app.get('/affiliate', (req, res) => res.sendFile(path.join(publicDir, 'affiliate.html')));
 
 // Health check
 app.get('/api/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString(), proxy: !!GHOSTCLI_API_KEY }));
