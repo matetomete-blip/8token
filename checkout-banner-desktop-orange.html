@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&family=JetBrains+Mono:wght@600&display=swap');
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: transparent;
+  width: 1200px;
+  height: 240px;
+  overflow: hidden;
+}
+.banner {
+  width: 1200px;
+  height: 240px;
+  background: linear-gradient(135deg, #f05409 0%, #ff6a1a 100%);
+  display: flex;
+  align-items: center;
+  padding: 0 48px;
+  gap: 48px;
+  position: relative;
+  overflow: hidden;
+}
+.banner::before {
+  content: '';
+  position: absolute;
+  top: -80px; right: -80px;
+  width: 280px; height: 280px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.12), transparent 70%);
+  pointer-events: none;
+}
+.banner::after {
+  content: '';
+  position: absolute;
+  bottom: -60px; left: 200px;
+  width: 200px; height: 200px;
+  background: radial-gradient(circle, rgba(0, 0, 0, 0.08), transparent 70%);
+  pointer-events: none;
+}
+.logo-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  min-width: 140px;
+}
+.logo-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.logo-row svg { width: 48px; height: 48px; }
+.logo-text {
+  font-weight: 800;
+  font-size: 32px;
+  color: #ffffff;
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
+.logo-tagline {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-family: 'JetBrains Mono', monospace;
+}
+.divider {
+  width: 1px;
+  height: 140px;
+  background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.4), transparent);
+  flex-shrink: 0;
+}
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.headline {
+  font-size: 22px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+.headline .accent { color: #fff3e0; }
+.features {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px 32px;
+}
+.feature {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.92);
+  line-height: 1.4;
+}
+.feature svg {
+  width: 16px; height: 16px;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+.feature strong { color: #ffffff; font-weight: 700; }
+.badges {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  flex-direction: column;
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 100px;
+  padding: 6px 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ffffff;
+  white-space: nowrap;
+}
+.badge svg { width: 12px; height: 12px; color: #ffffff; }
+</style>
+</head>
+<body>
+<div class="banner">
+  <div class="logo-block">
+    <div class="logo-row">
+      <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M32 4C18.745 4 8 14.745 8 28v24c0 2.21 1.79 4 4 4 1.1 0 2.1-.45 2.83-1.17L18 51.66l3.17 3.17C21.9 55.55 22.9 56 24 56s2.1-.45 2.83-1.17L30 51.66l3.17 3.17C33.9 55.55 34.9 56 36 56s2.1-.45 2.83-1.17L42 51.66l3.17 3.17C45.9 55.55 46.9 56 48 56c2.21 0 4-1.79 4-4V28C52 14.745 41.255 4 32 4z" fill="#ffffff"/>
+        <circle cx="22" cy="26" r="5" fill="#f05409"/>
+        <circle cx="42" cy="26" r="5" fill="#f05409"/>
+      </svg>
+      <span class="logo-text">8Token</span>
+    </div>
+    <span class="logo-tagline">IA Ilimitada</span>
+  </div>
+  <div class="divider"></div>
+  <div class="content">
+    <div class="headline">Sem surpresa na fatura. <span class="accent">Uso ilimitado de verdade.</span></div>
+    <div class="features">
+      <div class="feature">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        <span><strong>Tokens infinitos</strong> sem quota, sem crédito</span>
+      </div>
+      <div class="feature">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        <span><strong>5 modelos frontier</strong> Fable 5.1, Opus 5, Sonnet 5, GPT-6 Astra, GLM 5.3</span>
+      </div>
+      <div class="feature">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        <span><strong>1 IP por conta</strong> uso pessoal; IP extra no painel após ativar</span>
+      </div>
+      <div class="feature">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        <span><strong>Cancele quando quiser</strong> sem fidelidade, sem letras miúdas</span>
+      </div>
+    </div>
+  </div>
+  <div class="badges">
+    <span class="badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      SSL Seguro
+    </span>
+    <span class="badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      Pix &amp; Cartão
+    </span>
+    <span class="badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      Ativação Imediata
+    </span>
+  </div>
+</div>
+</body>
+</html>

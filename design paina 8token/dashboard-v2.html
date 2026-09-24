@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard 8Token</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* DESIGN SYSTEM V2 — Dashboard */
+        :root {
+            --bg-primary: #050505;
+            --bg-secondary: #0A0A0A;
+            --bg-card: rgba(17, 17, 17, 0.9);
+            --bg-card-solid: #111111;
+            --border: #222222;
+            --border-hover: #333333;
+            --text-primary: #FFFFFF;
+            --text-secondary: #A0A0A0;
+            --text-muted: #555555;
+            --accent-orange: #FF5500;
+            --accent-orange-glow: rgba(255, 85, 0, 0.25);
+            --accent-blue: #00D4FF;
+            --accent-green: #00FF94;
+            --accent-red: #FF3333;
+            --space-xs: 8px;
+            --space-sm: 16px;
+            --space-md: 24px;
+            --space-lg: 32px;
+            --space-xl: 48px;
+            --font-sans: 'Inter', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --glass: blur(10px);
+            --transition: all 0.3s ease-in-out;
+        }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            background-image: radial-gradient(circle at 50% 0%, #1a1a1a 0%, var(--bg-primary) 60%);
+            background-attachment: fixed;
+        }
+        a { text-decoration: none; color: inherit; transition: var(--transition); }
+
+        /* Navbar */
+        .navbar {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+            background: rgba(5, 5, 5, 0.8); backdrop-filter: var(--glass);
+            border-bottom: 1px solid var(--border); height: 80px;
+            display: flex; align-items: center;
+        }
+        .nav-inner {
+            max-width: 1400px; margin: 0 auto; width: 100%; padding: 0 var(--space-md);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .logo { font-size: 24px; font-weight: 800; display: flex; align-items: center; gap: var(--space-xs); }
+        .logo svg { width: 32px; height: 32px; fill: var(--accent-orange); }
+        .nav-actions { display: flex; align-items: center; gap: var(--space-md); }
+
+        .user-pill {
+            display: flex; align-items: center; gap: var(--space-sm);
+            padding: 8px 16px; background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border); border-radius: var(--radius-pill);
+        }
+        .avatar {
+            width: 32px; height: 32px; border-radius: 50%;
+            background: var(--accent-orange); display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 14px; color: white;
+        }
+        .btn-icon {
+            width: 40px; height: 40px; border-radius: var(--radius-sm);
+            border: 1px solid var(--border); background: transparent;
+            color: var(--text-secondary); cursor: pointer; transition: var(--transition);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .btn-icon:hover { border-color: var(--accent-orange); color: var(--accent-orange); }
+
+        /* Layout */
+        .dashboard-container {
+            max-width: 1400px; margin: 0 auto; padding: 120px var(--space-md) var(--space-xl);
+            display: grid; grid-template-columns: 280px 1fr; gap: var(--space-xl);
+        }
+        @media (max-width: 1024px) { .dashboard-container { grid-template-columns: 1fr; } }
+
+        /* Sidebar */
+        .sidebar { display: flex; flex-direction: column; gap: var(--space-xs); }
+        .nav-link {
+            padding: 12px 16px; border-radius: var(--radius-sm);
+            color: var(--text-secondary); font-weight: 500; font-size: 14px;
+            display: flex; align-items: center; gap: var(--space-sm);
+            transition: var(--transition); border: 1px solid transparent;
+        }
+        .nav-link:hover { background: rgba(255,255,255,0.03); color: var(--text-primary); }
+        .nav-link.active {
+            background: rgba(255, 85, 0, 0.1); color: var(--accent-orange);
+            border-color: rgba(255, 85, 0, 0.2);
+        }
+        .nav-link svg { width: 20px; height: 20px; opacity: 0.7; }
+        .nav-link.active svg { opacity: 1; }
+
+        /* Content Area */
+        .content-area { display: flex; flex-direction: column; gap: var(--space-lg); }
+
+        /* KPI Grid */
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--space-md); }
+        .kpi-card {
+            background: var(--bg-card); backdrop-filter: var(--glass);
+            border: 1px solid var(--border); border-radius: var(--radius-md);
+            padding: var(--space-lg); transition: var(--transition);
+        }
+        .kpi-card:hover { border-color: var(--border-hover); transform: translateY(-2px); }
+        .kpi-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: var(--space-xs); }
+        .kpi-value { font-size: 32px; font-weight: 700; font-family: var(--font-mono); line-height: 1; }
+        .kpi-sub { font-size: 13px; color: var(--text-secondary); margin-top: var(--space-xs); }
+
+        /* Cards & Sections */
+        .card {
+            background: var(--bg-card); backdrop-filter: var(--glass);
+            border: 1px solid var(--border); border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+        }
+        .section-title { font-size: 18px; font-weight: 600; margin-bottom: var(--space-md); display: flex; align-items: center; gap: var(--space-sm); }
+
+        /* Plan Card Specifics */
+        .plan-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--space-md); flex-wrap: wrap; gap: var(--space-md); }
+        .plan-badge {
+            background: rgba(255, 85, 0, 0.15); color: var(--accent-orange);
+            padding: 4px 12px; border-radius: var(--radius-pill);
+            font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        .plan-price { font-family: var(--font-mono); font-size: 24px; font-weight: 700; color: var(--text-primary); }
+        .plan-period { font-size: 14px; color: var(--text-muted); font-weight: 400; }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            padding: 12px 24px; font-size: 14px; font-weight: 600;
+            border-radius: var(--radius-sm); cursor: pointer; transition: var(--transition);
+            border: none; gap: var(--space-xs);
+        }
+        .btn-primary { background: var(--accent-orange); color: white; box-shadow: 0 0 15px var(--accent-orange-glow); }
+        .btn-primary:hover { background: #ff6b00; transform: translateY(-2px); }
+        .btn-secondary { background: transparent; border: 1px solid var(--border); color: var(--text-secondary); }
+        .btn-secondary:hover { border-color: var(--accent-orange); color: var(--accent-orange); }
+
+        /* API Key Display */
+        .api-key-box {
+            background: var(--bg-secondary); border: 1px solid var(--border);
+            border-radius: var(--radius-sm); padding: var(--space-md);
+            font-family: var(--font-mono); font-size: 14px; color: var(--text-secondary);
+            display: flex; justify-content: space-between; align-items: center;
+            margin-top: var(--space-sm);
+        }
+        .key-value { user-select: all; word-break: break-all; }
+
+        /* Usage Bars */
+        .usage-item { margin-bottom: var(--space-md); }
+        .usage-header { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13px; }
+        .usage-track { height: 8px; background: var(--bg-secondary); border-radius: 4px; overflow: hidden; }
+        .usage-fill { height: 100%; border-radius: 4px; transition: width 1s ease; }
+        .fill-fable { background: var(--accent-orange); box-shadow: 0 0 10px var(--accent-orange-glow); }
+        .fill-opus { background: var(--accent-blue); box-shadow: 0 0 10px rgba(0, 212, 255, 0.3); }
+        .fill-gpt { background: #a855f7; box-shadow: 0 0 10px rgba(168, 85, 247, 0.3); }
+
+        /* IP Section */
+        .ip-display {
+            font-family: var(--font-mono); font-size: 18px; color: var(--accent-blue);
+            margin: var(--space-xs) 0;
+        }
+        .status-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 4px 10px; border-radius: var(--radius-pill);
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+        }
+        .status-active { background: rgba(0, 255, 148, 0.1); color: var(--accent-green); }
+        .status-pending { background: rgba(255, 85, 0, 0.1); color: var(--accent-orange); }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .dashboard-container { padding-top: 100px; }
+            .nav-actions span { display: none; }
+            .plan-header { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="nav-inner">
+            <a href="index-v2.html" class="logo">
+                <svg viewBox="0 0 48 48"><path d="M24 4C14 4 8 12 8 22v14c0 2 1 4 3 4h2l3-4h4l3 4h2l3-4h4l3 4h2c2 0 3-2 3-4V22C40 12 34 4 24 4zm-8 22a3 3 0 110-6 3 3 0 010 6zm16 0a3 3 0 110-6 3 3 0 010 6z"/></svg>
+                8Token
+            </a>
+            <div class="nav-actions">
+                <button class="btn-icon" aria-label="Notificações">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                </button>
+                <div class="user-pill">
+                    <div class="avatar">U</div>
+                    <span style="font-size: 14px; font-weight: 500;">usuario@email.com</span>
+                </div>
+                <button class="btn-secondary" style="padding: 8px 16px; font-size: 13px;">Sair</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="dashboard-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <a href="#" class="nav-link active">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                Dashboard
+            </a>
+            <a href="#" class="nav-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Minha Conta
+            </a>
+            <a href="#" class="nav-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+                Chaves API
+            </a>
+            <a href="#" class="nav-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                Afiliados
+            </a>
+            <div style="height: 1px; background: var(--border); margin: var(--space-sm) 0;"></div>
+            <a href="#" class="nav-link" style="color: var(--accent-red);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Sair da Conta
+            </a>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content-area">
+            <!-- Header -->
+            <header>
+                <h1 style="font-size: 32px; font-weight: 700; margin-bottom: 8px;">Visão Geral</h1>
+                <p style="color: var(--text-secondary);">Gerencie sua assinatura, chaves e acompanhe o uso em tempo real.</p>
+            </header>
+
+            <!-- KPIs -->
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-label">Plano Atual</div>
+                    <div class="kpi-value" style="color: var(--accent-orange);">Trimestral</div>
+                    <div class="kpi-sub">Renova em 12/12/2026</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Status da Conta</div>
+                    <div class="kpi-value" style="color: var(--accent-green);">Ativa</div>
+                    <div class="kpi-sub">IP Autorizado ✓</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Tokens Usados (Mês)</div>
+                    <div class="kpi-value">4.2B</div>
+                    <div class="kpi-sub">∞ Ilimitado</div>
+                </div>
+            </div>
+
+            <!-- Subscription & IP -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);">
+                <div class="card">
+                    <div class="section-title">Assinatura</div>
+                    <div class="plan-header">
+                        <div>
+                            <div style="font-size: 20px; font-weight: 700;">Plano Trimestral</div>
+                            <div style="color: var(--text-secondary); font-size: 14px; margin-top: 4px;">Acesso ilimitado a todos os modelos frontier</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div class="plan-price">R$ 399<span class="plan-period">/trim</span></div>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: var(--space-sm); margin-top: var(--space-md);">
+                        <button class="btn btn-secondary" style="flex: 1;">Gerenciar Plano</button>
+                        <button class="btn btn-secondary" style="flex: 1;">Histórico</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="section-title">IP Autorizado</div>
+                    <div style="margin-bottom: var(--space-md);">
+                        <div class="kpi-label">IP Principal</div>
+                        <div class="ip-display">189.45.12.34</div>
+                        <span class="status-badge status-active">● Liberado</span>
+                    </div>
+                    <div style="padding-top: var(--space-md); border-top: 1px solid var(--border);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <span style="font-size: 13px; color: var(--text-secondary);">IP Adicional (Casa/Trabalho)</span>
+                            <span style="font-size: 12px; color: var(--accent-orange); font-weight: 600;">R$ 74,90/mês</span>
+                        </div>
+                        <button class="btn btn-secondary" style="width: 100%; font-size: 13px;">Adicionar IP Extra</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- API Keys -->
+            <div class="card">
+                <div class="section-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-orange)" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+                    Chave API
+                </div>
+                <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: var(--space-md);">
+                    Use esta chave para autenticar suas requisições. Mantenha-a segura.
+                </p>
+                <div class="api-key-box">
+                    <span class="key-value">gcli_8tk_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6</span>
+                    <button class="btn-icon" style="width: 32px; height: 32px; border: none;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    </button>
+                </div>
+                <div style="margin-top: var(--space-md);">
+                    <div class="kpi-label">Endpoint Base</div>
+                    <div class="api-key-box" style="margin-top: 4px;">
+                        <span class="key-value" style="color: var(--accent-blue);">https://api.8token.ai/v1</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Usage Breakdown -->
+            <div class="card">
+                <div class="section-title">Uso por Modelo (Últimos 30 dias)</div>
+
+                <div class="usage-item">
+                    <div class="usage-header">
+                        <span style="font-weight: 600;">Claude Fable 5.1</span>
+                        <span style="color: var(--text-muted);">48% do total</span>
+                    </div>
+                    <div class="usage-track">
+                        <div class="usage-fill fill-fable" style="width: 48%;"></div>
+                    </div>
+                </div>
+
+                <div class="usage-item">
+                    <div class="usage-header">
+                        <span style="font-weight: 600;">GPT-6 Astra</span>
+                        <span style="color: var(--text-muted);">22% do total</span>
+                    </div>
+                    <div class="usage-track">
+                        <div class="usage-fill fill-gpt" style="width: 22%;"></div>
+                    </div>
+                </div>
+
+                <div class="usage-item">
+                    <div class="usage-header">
+                        <span style="font-weight: 600;">Claude Opus 5</span>
+                        <span style="color: var(--text-muted);">18% do total</span>
+                    </div>
+                    <div class="usage-track">
+                        <div class="usage-fill fill-opus" style="width: 18%;"></div>
+                    </div>
+                </div>
+
+                <div class="usage-item">
+                    <div class="usage-header">
+                        <span style="font-weight: 600;">Outros Modelos</span>
+                        <span style="color: var(--text-muted);">12% do total</span>
+                    </div>
+                    <div class="usage-track">
+                        <div class="usage-fill" style="width: 12%; background: var(--text-muted);"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
