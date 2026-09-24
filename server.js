@@ -726,7 +726,18 @@ app.put('/api/admin/subscriptions/:id', adminAuth, async (req, res) => {
   if (notes !== undefined) update.notes = notes;
   if (expires_at !== undefined) update.expires_at = expires_at;
   if (ip !== undefined) update.ip = ip;
-  await supabase.from('ip_subscriptions').update(update).eq('id', req.params.id);
+  // Update ip_subscriptions
+  const { data: updatedSub } = await supabase.from('ip_subscriptions').update(update).eq('id', req.params.id).select('user_id, plan, status, expires_at').single();
+  // CRITICAL: Sync users.plan and users.plan_expires_at so dashboard reflects admin changes immediately
+  if (updatedSub && updatedSub.user_id) {
+    const userUpdate = {};
+    if (plan !== undefined) userUpdate.plan = plan;
+    if (expires_at !== undefined) userUpdate.plan_expires_at = expires_at;
+    if (Object.keys(userUpdate).length > 0) {
+      userUpdate.updated_at = new Date().toISOString();
+      await supabase.from('users').update(userUpdate).eq('id', updatedSub.user_id);
+    }
+  }
   res.json({ success: true });
 });
 
@@ -739,13 +750,21 @@ app.delete('/api/admin/subscriptions/:id', adminAuth, async (req, res) => {
 app.post('/api/admin/ips/validate', adminAuth, async (req, res) => {
   const { ip, status = 'active', plan = 'mensal', expires_at } = req.body;
   if (!ip) return res.status(400).json({ error: 'IP é obrigatório' });
-  
+
   const { data: sub } = await supabase.from('ip_subscriptions').select('*').eq('ip', ip).single();
   if (sub) {
     const update = { status };
     if (plan) update.plan = plan;
     if (expires_at) update.expires_at = expires_at;
     await supabase.from('ip_subscriptions').update(update).eq('ip', ip);
+    // CRITICAL: Sync users.plan so dashboard reflects admin changes immediately
+    if (sub.user_id && (plan || expires_at)) {
+      const userUpdate = {};
+      if (plan) userUpdate.plan = plan;
+      if (expires_at) userUpdate.plan_expires_at = expires_at;
+      userUpdate.updated_at = new Date().toISOString();
+      await supabase.from('users').update(userUpdate).eq('id', sub.user_id);
+    }
   } else {
     const expiresAt = expires_at || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
     await supabase.from('ip_subscriptions').insert({ ip, status, plan, expires_at: expiresAt });
@@ -756,7 +775,12 @@ app.post('/api/admin/ips/validate', adminAuth, async (req, res) => {
 app.post('/api/admin/ips/invalidate', adminAuth, async (req, res) => {
   const { ip } = req.body;
   if (!ip) return res.status(400).json({ error: 'IP é obrigatório' });
+  const { data: sub } = await supabase.from('ip_subscriptions').select('user_id').eq('ip', ip).single();
   await supabase.from('ip_subscriptions').update({ status: 'suspended' }).eq('ip', ip);
+  // CRITICAL: Sync users table — suspended IP means user loses access
+  if (sub && sub.user_id) {
+    await supabase.from('users').update({ updated_at: new Date().toISOString() }).eq('id', sub.user_id);
+  }
   res.json({ success: true, ip, status: 'suspended' });
 });
 
