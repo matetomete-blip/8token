@@ -387,8 +387,8 @@
                 <div class="search-bar"><input type="text" id="userSearchInput" class="form-input" placeholder="Buscar por IP, email ou notas..." oninput="filterUsersTable()"></div>
                 <div class="table-wrap">
                     <table>
-                        <thead><tr><th>IP</th><th>Plano</th><th>Status</th><th>Usuário</th><th>Expira</th><th>Notas</th><th>Atualizado</th><th>Ações</th></tr></thead>
-                        <tbody id="usersTableBody"><tr><td colspan="8" class="empty-state">Carregando...</td></tr></tbody>
+                        <thead><tr><th>ID</th><th>Nome</th><th>IP</th><th>Plano</th><th>Status</th><th>Usuário</th><th>Expira</th><th>Notas</th><th>Atualizado</th><th>Ações</th></tr></thead>
+                        <tbody id="usersTableBody"><tr><td colspan="10" class="empty-state">Carregando...</td></tr></tbody>
                     </table>
                 </div>
             </div>
@@ -768,24 +768,39 @@
 
         function renderUsersTable(subs) {
             const tbody = document.getElementById('usersTableBody');
-            if (!subs.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Nenhum registro encontrado.</td></tr>'; return; }
-            tbody.innerHTML = subs.map(s => `
-                <tr data-id="${s.id}">
-                    <td class="mono">${s.ip}</td>
-                    <td>${badgeForPlan(s.plan)}</td>
-                    <td>${badgeForStatus(s.status)}</td>
-                    <td style="font-size:13px;color:var(--text-secondary);">${s.user_email || '—'}</td>
-                    <td class="mono" style="font-size:12px;">${formatDate(s.expires_at)}</td>
-                    <td style="font-size:13px;color:var(--text-muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${(s.notes||'').replace(/"/g,'&quot;')}">${s.notes || '—'}</td>
-                    <td class="mono" style="font-size:12px;color:var(--text-muted);">${formatDate(s.updated_at)}</td>
-                    <td class="actions">
-                        <button class="btn btn-success btn-sm" onclick="validateIp('${s.ip}')">Validar</button>
-                        <button class="btn btn-secondary btn-sm" onclick="invalidateIp('${s.ip}')">Desvalidar</button>
-                        <button class="btn btn-secondary btn-sm" onclick="editSub(${s.id})">Editar</button>
-                        <button class="btn btn-danger btn-sm" onclick="deleteSub(${s.id},'${s.ip}')">Remover</button>
-                    </td>
-                </tr>
-            `).join('');
+            if (!subs.length) { tbody.innerHTML = '<tr><td colspan="10" class="empty-state">Nenhum registro encontrado.</td></tr>'; return; }
+            // Group subscriptions by user_id
+            const grouped = {};
+            subs.forEach(s => {
+                const key = s.user_id || 'no-user';
+                if (!grouped[key]) grouped[key] = { user_id: s.user_id, user_name: s.users?.name || s.users?.email || s.user_email || '—', user_email: s.users?.email || s.user_email || '—', subs: [] };
+                grouped[key].subs.push(s);
+            });
+            let html = '';
+            Object.values(grouped).forEach(g => {
+                const userIdShort = g.user_id ? g.user_id.substring(0, 8) + '…' : '—';
+                g.subs.forEach((s, idx) => {
+                    const isMain = idx === 0;
+                    html += `<tr data-id="${s.id}" style="${!isMain ? 'background:rgba(255,255,255,0.02);' : ''}">
+                        <td class="mono" style="font-size:11px;color:var(--text-muted);">${isMain ? userIdShort : ''}</td>
+                        <td style="font-size:13px;color:var(--text-secondary);">${isMain ? (g.user_name !== '—' ? g.user_name : g.user_email) : ''}</td>
+                        <td class="mono" style="${!isMain ? 'padding-left:24px;color:var(--accent-blue);' : ''}">${isMain ? s.ip : '↳ ' + s.ip}</td>
+                        <td>${badgeForPlan(s.plan)}</td>
+                        <td>${badgeForStatus(s.status)}</td>
+                        <td style="font-size:13px;color:var(--text-secondary);">${isMain ? g.user_email : ''}</td>
+                        <td class="mono" style="font-size:12px;">${formatDate(s.expires_at)}</td>
+                        <td style="font-size:13px;color:var(--text-muted);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${(s.notes||'').replace(/"/g,'&quot;')}">${s.notes || '—'}</td>
+                        <td class="mono" style="font-size:12px;color:var(--text-muted);">${formatDate(s.updated_at)}</td>
+                        <td class="actions">
+                            <button class="btn btn-success btn-sm" onclick="validateIp('${s.ip}')">Validar</button>
+                            <button class="btn btn-secondary btn-sm" onclick="invalidateIp('${s.ip}')">Desvalidar</button>
+                            <button class="btn btn-secondary btn-sm" onclick="editSub('${s.id}')">Editar</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteSub('${s.id}','${s.ip}')">Remover</button>
+                        </td>
+                    </tr>`;
+                });
+            });
+            tbody.innerHTML = html;
         }
 
         async function validateIp(ip) {
