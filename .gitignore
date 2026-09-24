@@ -3,6 +3,7 @@ node_modules/
 
 # Environment (NUNCA commitar .env real)
 .env
+.env.local
 
 # OS files
 .DS_Store
@@ -12,22 +13,83 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Playwright
+# Playwright / Claude internal
 .playwright-mcp/
-
-# Claude internal
 .claude/
+.codex/
+.gstack/
+.vercel/
+.vercel-data/
+.agents/
 
-# Build artifacts
+# Build artifacts & logs
 *.log
+8token.db
 
-# Conversas extraídas e provas sociais (não fazem parte do deploy)
-CONVERSA EXTRAIDA/
+# HTMLs raiz duplicados — a fonte única é public/
+/index.html
+/account.html
+/admin.html
+/login.html
+/affiliate.html
+/checkout.html
+/checkout-ip.html
+/docs.html
+/notifications.html
+/dashboard.html
+
+# Pastas de contexto, marketing, design, scripts (não fazem parte do deploy)
+context/
+marketing/
+docs-design/
+scripts/
+COPYS/
+criativos de imagem/
 provas sociais/
-CONTEXTO-8TOKEN-IMPLEMENTACAO.md
-
-# Criativos de marketing (não fazem parte do backend)
+design paina 8token/
+LOGO/
+logo-assets/
+CONVERSA EXTRAIDA/
 criativo-*.html
+checkout-banner-*.html
+checkout-banner-preview.png
+logo-stacked.html
+logo-variants.html
 
-# Contexto anterior (arquivo de sessão)
+# Arquivos soltos de análise/contexto
+analysis_output.txt
+auth_analysis.txt
+auth_dump.txt
+auth_extract.txt
+auth_full_analysis.txt
+lines.txt
+routes_output.txt
+RESUMO-COMPLETO-SITE-MAE.txt
+RESUMO-COMPLETO-DETALHADO-SITE-MAE.txt
+CONTEXTO-8TOKEN-IMPLEMENTACAO.md
 contexto-anterior.txt
+
+# Python scripts soltos
+analyze_server.py
+dump_auth.py
+extract_auth.py
+extract_routes.py
+parse_semgrep.py
+read_server.py
+
+# JS scripts utilitários soltos
+capture-banner.mjs
+capture-banners.mjs
+capture-logos.mjs
+capture-stacked.mjs
+copy-key-to-correct-project.js
+disable-protection.js
+disable-protection-nxlf.js
+extract-key.js
+extract-key-pw.js
+find-and-fix-key.js
+fix-env-all.js
+fix-env-final.js
+fix-vercel-env.js
+setup-luca.js
+cleanup-system.js

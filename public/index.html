@@ -1875,195 +1875,246 @@
         }
 
         /* ========================================
-           CALCULATOR
+           PRICE COMPARISON
            ======================================== */
-        .calculator-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            padding: var(--space-2xl);
+        .compare-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: var(--space-md);
             margin-top: var(--space-2xl);
         }
 
-        .calc-header {
-            margin-bottom: var(--space-xl);
+        @media (min-width: 768px) {
+            .compare-grid { grid-template-columns: repeat(2, 1fr); }
         }
 
-        .calc-header h3 {
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin-bottom: var(--space-sm);
+        @media (min-width: 1024px) {
+            .compare-grid { grid-template-columns: repeat(4, 1fr); }
         }
 
-        .calc-header p {
-            font-size: 14px;
-            color: var(--text-secondary);
-            line-height: 1.6;
+        .compare-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-xl);
+            position: relative;
+            transition: transform var(--transition-base), border-color var(--transition-base);
         }
 
-        .calc-controls {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: var(--space-lg);
-            margin-bottom: var(--space-xl);
+        .compare-card:hover {
+            transform: translateY(-4px);
         }
 
-        @media (min-width: 640px) {
-            .calc-controls { grid-template-columns: 1fr 1fr; }
+        .compare-competitor {
+            opacity: 0.7;
         }
 
-        .calc-control {
-            display: flex;
-            flex-direction: column;
+        .compare-competitor:hover {
+            opacity: 1;
+            border-color: var(--accent-red);
         }
 
-        .calc-control label {
-            display: block;
-            font-size: 11px;
+        .compare-winner {
+            border: 2px solid var(--accent-orange);
+            background: linear-gradient(180deg, rgba(240, 84, 9, 0.08) 0%, var(--bg-card) 100%);
+            box-shadow: 0 0 40px rgba(240, 84, 9, 0.15), 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .compare-winner:hover {
+            border-color: var(--accent-orange);
+            box-shadow: 0 0 60px rgba(240, 84, 9, 0.25), 0 12px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .compare-badge {
+            display: inline-block;
+            font-size: 10px;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.08em;
+            letter-spacing: 0.1em;
+            padding: 4px 10px;
+            border-radius: var(--radius-pill);
+            background: var(--border);
             color: var(--text-muted);
+            margin-bottom: var(--space-md);
+        }
+
+        .compare-badge-winner {
+            background: var(--accent-orange);
+            color: white;
+        }
+
+        .compare-plan-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
             margin-bottom: var(--space-sm);
         }
 
-        .calc-slider-wrap {
-            display: flex;
-            align-items: center;
-            gap: var(--space-md);
-            width: 100%;
-        }
-
-        .calc-slider {
-            flex: 1;
-            min-width: 0;
-            -webkit-appearance: none;
-            appearance: none;
-            height: 6px;
-            background: var(--border);
-            border-radius: 3px;
-            outline: none;
-            cursor: pointer;
-        }
-
-        .calc-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 20px;
-            height: 20px;
-            background: var(--accent-orange);
-            border-radius: 50%;
-            cursor: pointer;
-            box-shadow: 0 0 10px rgba(240, 84, 9, 0.4);
-        }
-
-        .calc-slider-value {
+        .compare-price {
             font-family: var(--font-mono);
-            font-size: 16px;
+            font-size: 32px;
             font-weight: 700;
-            color: var(--accent-orange);
-            min-width: 60px;
-            text-align: right;
-        }
-
-        .calc-select {
-            width: 100%;
-            padding: 10px 14px;
-            background: var(--bg-primary);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            color: var(--text-primary);
-            font-size: 14px;
-            font-family: var(--font-mono);
-            outline: none;
-            cursor: pointer;
-        }
-
-        .calc-select:focus {
-            border-color: var(--accent-orange);
-        }
-
-        .calc-note {
-            font-size: 12px;
-            color: var(--text-muted);
+            color: var(--text-secondary);
             margin-bottom: var(--space-lg);
-            line-height: 1.5;
         }
 
-        .calc-results {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: var(--space-md);
+        .compare-price span {
+            font-size: 14px;
+            font-weight: 400;
+            color: var(--text-muted);
         }
 
-        @media (min-width: 640px) {
-            .calc-results { grid-template-columns: repeat(3, 1fr); }
+        .compare-price-winner {
+            color: var(--accent-orange);
+            font-size: 36px;
         }
 
-        .calc-result-item {
-            background: var(--bg-primary);
+        .compare-features {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 var(--space-lg) 0;
+        }
+
+        .compare-features li {
+            font-size: 13px;
+            padding: 6px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .compare-features li:last-child {
+            border-bottom: none;
+        }
+
+        .compare-limit {
+            color: var(--text-muted);
+        }
+
+        .compare-unlimited {
+            color: var(--accent-green);
+            font-weight: 600;
+        }
+
+        .compare-vs {
+            text-align: center;
+            padding-top: var(--space-md);
+            border-top: 1px solid var(--border);
+        }
+
+        .compare-save-tag {
+            display: inline-block;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--accent-green);
+            background: rgba(16, 185, 129, 0.1);
+            padding: 6px 14px;
+            border-radius: var(--radius-pill);
+        }
+
+        .compare-save-tag-sm {
+            display: inline-block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--accent-amber);
+            background: rgba(245, 158, 11, 0.1);
+            padding: 5px 12px;
+            border-radius: var(--radius-pill);
+        }
+
+        .compare-cta {
+            text-align: center;
+            padding-top: var(--space-md);
+        }
+
+        .compare-savings-banner {
+            margin-top: var(--space-2xl);
+            background: var(--bg-card);
             border: 1px solid var(--border);
-            border-radius: var(--radius-md);
-            padding: var(--space-lg);
+            border-radius: var(--radius-lg);
+            padding: var(--space-xl) var(--space-2xl);
+        }
+
+        .compare-savings-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: var(--space-xl);
+        }
+
+        .compare-savings-item {
             text-align: center;
         }
 
-        .calc-result-label {
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: var(--text-muted);
-            margin-bottom: var(--space-sm);
-        }
-
-        .calc-result-value {
+        .compare-savings-number {
             font-family: var(--font-mono);
             font-size: 28px;
+            font-weight: 700;
+            color: var(--accent-green);
+        }
+
+        .compare-savings-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .compare-savings-divider {
+            width: 1px;
+            height: 40px;
+            background: var(--border);
+        }
+
+        @media (max-width: 640px) {
+            .compare-savings-divider { display: none; }
+            .compare-savings-row { flex-direction: column; gap: var(--space-lg); }
+        }
+
+        .compare-plans-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: var(--space-md);
+            margin-top: var(--space-xl);
+        }
+
+        .compare-plan-chip {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-pill);
+            padding: 10px 20px;
+        }
+
+        .compare-plan-chip-best {
+            border-color: var(--accent-orange);
+            background: rgba(240, 84, 9, 0.08);
+        }
+
+        .chip-label {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-secondary);
+        }
+
+        .chip-price {
+            font-family: var(--font-mono);
+            font-size: 16px;
             font-weight: 700;
             color: var(--text-primary);
         }
 
-        .calc-result-value.savings {
-            color: var(--accent-green);
-        }
-
-        .calc-result-sub {
-            font-size: 12px;
-            color: var(--text-secondary);
-            margin-top: 4px;
-        }
-
-        .calc-slider-labels {
-            display: flex;
-            justify-content: space-between;
-            font-size: 10px;
-            color: var(--text-muted);
-            font-family: var(--font-mono);
-            margin-top: 6px;
-        }
-
-        .calc-assumption {
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-bottom: var(--space-lg);
-            line-height: 1.5;
-            font-style: italic;
-        }
-
-        .calc-result-plan {
+        .compare-plan-chip-best .chip-price {
             color: var(--accent-orange);
         }
 
-        .calc-result-save {
-            color: #10B981;
-        }
-
-        .calc-result-note {
+        .chip-save {
             font-size: 11px;
-            color: var(--text-muted);
-            margin-top: 4px;
+            color: var(--accent-green);
+            font-weight: 600;
         }
 
         /* ========================================
@@ -3708,55 +3759,109 @@
         </div>
     </section>
 
-    <!-- Calculator Section -->
-    <section id="calculadora" class="section">
+    <!-- Price Comparison Section -->
+    <section id="comparativo" class="section">
         <div class="container">
             <div class="text-center fade-in">
-                <div class="section-label">Calculadora</div>
-                <h2 class="section-title">Quanto você gastaria pagando por token</h2>
+                <div class="section-label">Comparativo</div>
+                <h2 class="section-title">Por que pagar mais pelo mesmo?</h2>
                 <p class="section-subtitle centered">
-                    Escolha o volume e o modelo para comparar os preços de lista dos provedores com uma assinatura 8Token. A matemática está na mesa, sem aritmética escondida.
+                    Os mesmos modelos, acesso ilimitado, sem surpresa na fatura. Veja quanto você economiza trocando para o 8Token.
                 </p>
             </div>
 
-            <div class="calculator-card card fade-in">
-                <div class="calculator-controls">
-                    <div class="calc-control">
-                        <label class="calc-label">Mensagens por Mês</label>
-                        <input type="range" id="calc-slider" class="calc-slider" min="0" max="6" value="3" step="1">
-                        <div class="calc-slider-labels">
-                            <span>100</span><span>250</span><span>500</span><span>1k</span><span>2k</span><span>4k</span><span>8k</span>
-                        </div>
-                    </div>
-                    <div class="calc-control">
-                        <label class="calc-label">Modelo de Referência</label>
-                        <select id="calc-model" class="calc-select">
-                            <option value="opus">Claude Opus 5 : Anthropic</option>
-                            <option value="sonnet">Claude Sonnet 5 : Anthropic</option>
-                            <option value="fable">Claude Fable 5.1 : Anthropic</option>
-                            <option value="glm">GLM 5.3 : Z.ai</option>
-                            <option value="gpt6">GPT-6 Astra, OpenAI</option>
-                        </select>
+            <div class="compare-grid fade-in">
+                <!-- Competitor Cards -->
+                <div class="compare-card compare-competitor">
+                    <div class="compare-badge">Concorrente</div>
+                    <div class="compare-plan-name">Max 20x</div>
+                    <div class="compare-price">R$ 1.100<span>/mês</span></div>
+                    <ul class="compare-features">
+                        <li class="compare-limit">⚠ Limite de tokens</li>
+                        <li class="compare-limit">⚠ 1 provedor</li>
+                        <li class="compare-limit">⚠ Sem API externa</li>
+                    </ul>
+                    <div class="compare-vs">
+                        <span class="compare-save-tag">Economize R$ 900/mês</span>
                     </div>
                 </div>
-                <p class="calc-assumption" id="calc-assumption">
-                    Assumindo 900 tokens de entrada e 700 de saída por mensagem, a um preço de lista de $5.00/$25.00 por 1M tokens.
-                </p>
-                <div class="calc-results">
-                    <div class="calc-result-item">
-                        <div class="calc-result-label">Pagando por Token</div>
-                        <div class="calc-result-value" id="calc-per-token">$22.00 USD</div>
+
+                <div class="compare-card compare-competitor">
+                    <div class="compare-badge">Concorrente</div>
+                    <div class="compare-plan-name">Max 5x</div>
+                    <div class="compare-price">R$ 550<span>/mês</span></div>
+                    <ul class="compare-features">
+                        <li class="compare-limit">⚠ Limite de tokens</li>
+                        <li class="compare-limit">⚠ 1 provedor</li>
+                        <li class="compare-limit">⚠ Sem API externa</li>
+                    </ul>
+                    <div class="compare-vs">
+                        <span class="compare-save-tag">Economize R$ 350/mês</span>
                     </div>
-                    <div class="calc-result-item">
-                        <div class="calc-result-label">No 8Token</div>
-                        <div class="calc-result-value calc-result-plan" id="calc-plan-price">R$ 199,70/mês</div>
-                        <div class="calc-result-note">Plano Pro, uso ilimitado</div>
+                </div>
+
+                <div class="compare-card compare-competitor">
+                    <div class="compare-badge">Concorrente</div>
+                    <div class="compare-plan-name">Pro</div>
+                    <div class="compare-price">R$ 110<span>/mês</span></div>
+                    <ul class="compare-features">
+                        <li class="compare-limit">⚠ Limite de tokens</li>
+                        <li class="compare-limit">⚠ 1 provedor</li>
+                        <li class="compare-limit">⚠ Sem API externa</li>
+                    </ul>
+                    <div class="compare-vs">
+                        <span class="compare-save-tag-sm">+R$ 90 = sem limite</span>
                     </div>
-                    <div class="calc-result-item">
-                        <div class="calc-result-label">Você Economiza</div>
-                        <div class="calc-result-value calc-result-save" id="calc-savings">$0.00 USD</div>
-                        <div class="calc-result-note" id="calc-save-note">Baixo volume, Free já cobre</div>
+                </div>
+
+                <!-- 8Token Card (highlighted) -->
+                <div class="compare-card compare-winner">
+                    <div class="compare-badge compare-badge-winner">★ Melhor escolha</div>
+                    <div class="compare-plan-name">8Token Mensal</div>
+                    <div class="compare-price compare-price-winner">R$ 199,70<span>/mês</span></div>
+                    <ul class="compare-features">
+                        <li class="compare-unlimited">∞ Tokens ilimitados</li>
+                        <li class="compare-unlimited">∞ 5 provedores (Claude, GPT, GLM...)</li>
+                        <li class="compare-unlimited">∞ API compatível com tudo</li>
+                        <li class="compare-unlimited">∞ Sem cobrança por token</li>
+                    </ul>
+                    <div class="compare-cta">
+                        <a href="#planos" class="btn btn-primary">Começar agora</a>
                     </div>
+                </div>
+            </div>
+
+            <!-- Savings Banner -->
+            <div class="compare-savings-banner fade-in">
+                <div class="compare-savings-row">
+                    <div class="compare-savings-item">
+                        <div class="compare-savings-number">R$ 10.803</div>
+                        <div class="compare-savings-label">economizados/ano vs Max 20x</div>
+                    </div>
+                    <div class="compare-savings-divider"></div>
+                    <div class="compare-savings-item">
+                        <div class="compare-savings-number">R$ 4.203</div>
+                        <div class="compare-savings-label">economizados/ano vs Max 5x</div>
+                    </div>
+                    <div class="compare-savings-divider"></div>
+                    <div class="compare-savings-item">
+                        <div class="compare-savings-number">∞</div>
+                        <div class="compare-savings-label">tokens sem teto, sempre</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trimestral/Anual highlight -->
+            <div class="compare-plans-row fade-in">
+                <div class="compare-plan-chip">
+                    <span class="chip-label">Trimestral</span>
+                    <span class="chip-price">R$ 133/mês</span>
+                    <span class="chip-save">−33% vs mensal</span>
+                </div>
+                <div class="compare-plan-chip compare-plan-chip-best">
+                    <span class="chip-label">Anual</span>
+                    <span class="chip-price">R$ 91,67/mês</span>
+                    <span class="chip-save">Mais barato que o Pro. Sem limite.</span>
                 </div>
             </div>
         </div>

@@ -1,352 +1,283 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Afiliados — 8Token</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-<style>
-/* DESIGN SYSTEM V2 — Affiliate Page */
-:root {
---bg-primary: #050505;
---bg-secondary: #0A0A0A;
---bg-card: rgba(17, 17, 17, 0.9);
---border: #222222;
---border-hover: #333333;
---text-primary: #FFFFFF;
---text-secondary: #A0A0A0;
---text-muted: #555555;
---accent-orange: #FF5500;
---accent-orange-glow: rgba(255, 85, 0, 0.25);
---accent-blue: #00D4FF;
---accent-green: #00FF94;
---accent-red: #FF3333;
---accent-purple: #a855f7;
---space-xs: 8px;
---space-sm: 16px;
---space-md: 24px;
---space-lg: 32px;
---space-xl: 48px;
---font-sans: 'Inter', sans-serif;
---font-mono: 'JetBrains Mono', monospace;
---radius-sm: 8px;
---radius-md: 12px;
---radius-lg: 16px;
---glass: blur(10px);
---transition: all 0.3s ease-in-out;
-}
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-body {
-font-family: var(--font-sans);
-background-color: var(--bg-primary);
-color: var(--text-primary);
-line-height: 1.6;
-min-height: 100vh;
-background-image: radial-gradient(circle at 50% 0%, #1a1a1a 0%, var(--bg-primary) 60%);
-background-attachment: fixed;
-}
-a { text-decoration: none; color: inherit; transition: var(--transition); }
-/* Navbar */
-.navbar {
-position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-background: rgba(5, 5, 5, 0.8); backdrop-filter: var(--glass);
-border-bottom: 1px solid var(--border); height: 80px;
-display: flex; align-items: center;
-}
-.nav-inner {
-max-width: 1400px; margin: 0 auto; width: 100%; padding: 0 var(--space-md);
-display: flex; justify-content: space-between; align-items: center;
-}
-.logo { font-size: 24px; font-weight: 800; display: flex; align-items: center; gap: var(--space-xs); }
-.logo svg { width: 32px; height: 32px; fill: var(--accent-orange); }
-.aff-badge {
-background: rgba(168, 85, 247, 0.15); color: var(--accent-purple);
-padding: 2px 10px; border-radius: 999px; font-size: 10px; font-weight: 700;
-text-transform: uppercase; letter-spacing: 0.05em; margin-left: 8px;
-}
-.nav-actions { display: flex; align-items: center; gap: var(--space-md); }
-.user-pill {
-display: flex; align-items: center; gap: var(--space-sm);
-padding: 8px 16px; background: rgba(255,255,255,0.03);
-border: 1px solid var(--border); border-radius: 999px;
-}
-.avatar {
-width: 32px; height: 32px; border-radius: 50%;
-background: var(--accent-orange); display: flex; align-items: center; justify-content: center;
-font-weight: 700; font-size: 14px; color: white;
-}
-.btn-icon {
-width: 40px; height: 40px; border-radius: var(--radius-sm);
-border: 1px solid var(--border); background: transparent;
-color: var(--text-secondary); cursor: pointer; transition: var(--transition);
-display: flex; align-items: center; justify-content: center;
-}
-.btn-icon:hover { border-color: var(--accent-orange); color: var(--accent-orange); }
-/* Layout */
-.affiliate-container {
-max-width: 1400px; margin: 0 auto; padding: 120px var(--space-md) var(--space-xl);
-display: grid; grid-template-columns: 280px 1fr; gap: var(--space-xl);
-}
-@media (max-width: 1024px) { .affiliate-container { grid-template-columns: 1fr; } }
-/* Sidebar */
-.sidebar { display: flex; flex-direction: column; gap: var(--space-xs); }
-.nav-link {
-padding: 12px 16px; border-radius: var(--radius-sm);
-color: var(--text-secondary); font-weight: 500; font-size: 14px;
-display: flex; align-items: center; gap: var(--space-sm);
-transition: var(--transition); border: 1px solid transparent;
-}
-.nav-link:hover { background: rgba(255,255,255,0.03); color: var(--text-primary); }
-.nav-link.active {
-background: rgba(255, 85, 0, 0.1); color: var(--accent-orange);
-border-color: rgba(255, 85, 0, 0.2);
-}
-.nav-link svg { width: 20px; height: 20px; opacity: 0.7; }
-.nav-link.active svg { opacity: 1; }
-/* Content Area */
-.content-area { display: flex; flex-direction: column; gap: var(--space-lg); }
-.card {
-background: var(--bg-card); backdrop-filter: var(--glass);
-border: 1px solid var(--border); border-radius: var(--radius-lg);
-padding: var(--space-lg);
-}
-.section-title { font-size: 18px; font-weight: 600; margin-bottom: var(--space-md); display: flex; align-items: center; gap: var(--space-sm); }
-/* Stats Grid */
-.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-md); }
-.stat-card {
-background: var(--bg-card); backdrop-filter: var(--glass);
-border: 1px solid var(--border); border-radius: var(--radius-md);
-padding: var(--space-lg); transition: var(--transition);
-}
-.stat-card:hover { border-color: var(--border-hover); transform: translateY(-2px); }
-.stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; }
-.stat-value { font-size: 28px; font-weight: 700; font-family: var(--font-mono); line-height: 1; }
-/* Buttons */
-.btn {
-display: inline-flex; align-items: center; justify-content: center;
-padding: 12px 24px; font-size: 14px; font-weight: 600;
-border-radius: var(--radius-sm); cursor: pointer; transition: var(--transition);
-border: none; gap: var(--space-xs);
-}
-.btn-primary { background: var(--accent-orange); color: white; box-shadow: 0 0 15px var(--accent-orange-glow); }
-.btn-primary:hover { background: #ff6b00; transform: translateY(-2px); }
-.btn-secondary { background: transparent; border: 1px solid var(--border); color: var(--text-secondary); }
-.btn-secondary:hover { border-color: var(--accent-orange); color: var(--accent-orange); }
-/* Link Box */
-.link-box {
-display: flex; align-items: center; gap: var(--space-md);
-background: var(--bg-secondary); border: 1px solid var(--border);
-border-radius: var(--radius-sm); padding: var(--space-sm) var(--space-md);
-}
-.link-box input {
-flex: 1; background: none; border: none; color: var(--text-primary);
-font-family: var(--font-mono); font-size: 13px; outline: none;
-}
-/* Table */
-.table-wrap { overflow-x: auto; border-radius: var(--radius-sm); border: 1px solid var(--border); }
-table { width: 100%; border-collapse: collapse; min-width: 600px; }
-thead { background: rgba(255,255,255,0.02); }
-th {
-font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
-color: var(--text-muted); padding: 12px 16px; text-align: left; white-space: nowrap;
-}
-td { padding: 12px 16px; font-size: 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-tr:last-child td { border-bottom: none; }
-tr:hover td { background: rgba(255,255,255,0.01); }
-td.mono { font-family: var(--font-mono); font-size: 13px; color: var(--text-secondary); }
-/* Badges */
-.badge {
-display: inline-flex; align-items: center; padding: 2px 10px;
-font-size: 10px; font-weight: 700; border-radius: 999px;
-text-transform: uppercase; letter-spacing: 0.03em;
-}
-.badge-paid { background: rgba(0, 255, 148, 0.1); color: var(--accent-green); }
-.badge-pending { background: rgba(255, 85, 0, 0.1); color: var(--accent-orange); }
-/* Not Affiliate State */
-.not-affiliate {
-text-align: center; padding: var(--space-xl);
-background: var(--bg-card); border: 1px solid var(--border);
-border-radius: var(--radius-lg);
-}
-.not-affiliate h2 { font-size: 24px; margin-bottom: var(--space-md); }
-.not-affiliate p { color: var(--text-secondary); max-width: 500px; margin: 0 auto var(--space-lg); }
-/* Responsive */
-@media (max-width: 768px) {
-.affiliate-container { padding-top: 100px; }
-.nav-actions span { display: none; }
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel do Afiliado — 8Token</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #1a1818;
+            --bg-card: #232121;
+            --bg-card-alt: #1e1c1c;
+            --border: #2d2a2a;
+            --border-hover: #3d3939;
+            --text-primary: #ffffff;
+            --text-secondary: #b0abab;
+            --text-muted: #7a7575;
+            --accent-green: #10B981;
+            --accent-red: #F43F5E;
+            --accent-amber: #F59E0B;
+            --accent-blue: #006ffe;
+            --accent-orange: #f05409;
+            --accent-purple: #a855f7;
+            --glow-orange: rgba(240, 84, 9, 0.15);
+            --space-unit: 4px;
+            --space-xs: calc(var(--space-unit) * 2);
+            --space-sm: calc(var(--space-unit) * 3);
+            --space-md: calc(var(--space-unit) * 4);
+            --space-lg: calc(var(--space-unit) * 6);
+            --space-xl: calc(var(--space-unit) * 8);
+            --space-2xl: calc(var(--space-unit) * 12);
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-pill: 999px;
+            --transition-fast: 150ms ease;
+        }
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+        body { font-family: var(--font-sans); background: var(--bg-primary); color: var(--text-primary); line-height: 1.6; min-height: 100vh; overflow-x: hidden; }
+        a { color: inherit; text-decoration: none; transition: color var(--transition-fast); }
+        a:hover { color: var(--accent-orange); }
+
+        .navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: rgba(26,24,24,0.97); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
+        .navbar-inner { max-width: 1200px; margin: 0 auto; padding: 0 var(--space-lg); display: flex; align-items: center; justify-content: space-between; height: 64px; gap: var(--space-md); }
+        .navbar-logo { display: flex; align-items: center; gap: var(--space-xs); font-weight: 700; font-size: 18px; white-space: nowrap; }
+        .navbar-logo svg { width: 28px; height: 28px; flex-shrink: 0; }
+        .navbar-badge { font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: var(--radius-pill); background: rgba(168,85,247,0.15); color: var(--accent-purple); text-transform: uppercase; letter-spacing: 0.05em; margin-left: var(--space-xs); }
+        .navbar-nav { display: flex; align-items: center; gap: var(--space-sm); flex-shrink: 0; }
+
+        .page { max-width: 1200px; margin: 0 auto; padding: 120px var(--space-lg) 64px; }
+        .page-header { margin-bottom: var(--space-xl); }
+        .page-header h1 { font-size: 28px; font-weight: 700; }
+        .page-header p { color: var(--text-secondary); font-size: 15px; margin-top: var(--space-xs); }
+
+        .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--space-md); margin-bottom: var(--space-xl); }
+        .stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-lg); }
+        .stat-label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: var(--space-xs); }
+        .stat-value { font-size: 28px; font-weight: 700; font-family: var(--font-mono); line-height: 1.2; }
+        .stat-value.green { color: var(--accent-green); }
+        .stat-value.purple { color: var(--accent-purple); }
+        .stat-value.blue { color: var(--accent-blue); }
+
+        .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-xl); margin-bottom: var(--space-lg); }
+        .card-title { font-size: 16px; font-weight: 600; margin-bottom: var(--space-md); }
+
+        .link-box { display: flex; align-items: center; gap: var(--space-md); background: var(--bg-primary); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: var(--space-sm) var(--space-md); }
+        .link-box input { flex: 1; background: none; border: none; color: var(--text-primary); font-family: var(--font-mono); font-size: 13px; outline: none; }
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-xs); height: 36px; padding: 0 var(--space-md); font-size: 13px; font-weight: 600; border-radius: var(--radius-sm); border: none; cursor: pointer; transition: all var(--transition-fast); white-space: nowrap; font-family: var(--font-sans); }
+        .btn-primary { background: var(--accent-orange); color: white; }
+        .btn-primary:hover { background: #d44a08; }
+        .btn-secondary { background: transparent; border: 1px solid var(--border); color: var(--text-secondary); }
+        .btn-secondary:hover { border-color: var(--accent-orange); color: var(--accent-orange); }
+
+        .table-wrap { overflow-x: auto; border-radius: var(--radius-md); border: 1px solid var(--border); }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        thead { background: #0f172a; }
+        th { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); padding: var(--space-sm) var(--space-md); text-align: left; white-space: nowrap; }
+        td { padding: var(--space-sm) var(--space-md); font-size: 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        tr:last-child td { border-bottom: none; }
+        tr:nth-child(even) td { background: var(--bg-card-alt); }
+        tr:hover td { background: var(--border); }
+        td.mono { font-family: var(--font-mono); font-size: 13px; color: var(--text-secondary); }
+
+        .badge { display: inline-flex; align-items: center; padding: 2px 10px; font-size: 11px; font-weight: 600; border-radius: var(--radius-pill); text-transform: uppercase; }
+        .badge-paid { background: rgba(16,185,129,0.12); color: var(--accent-green); }
+        .badge-pending { background: rgba(245,158,11,0.12); color: var(--accent-amber); }
+
+        .empty-state { text-align: center; padding: var(--space-2xl); color: var(--text-muted); font-size: 14px; }
+        .not-affiliate { text-align: center; padding: 64px; }
+        .not-affiliate h2 { font-size: 24px; margin-bottom: var(--space-md); }
+        .not-affiliate p { color: var(--text-secondary); max-width: 500px; margin: 0 auto; }
+
+        @media (max-width: 768px) {
+            .navbar-inner { padding: 0 var(--space-md); height: 56px; }
+            .page { padding: 72px var(--space-md) 48px; }
+            .stats-row { grid-template-columns: repeat(2, 1fr); gap: var(--space-sm); }
+            .stat-card { padding: var(--space-md); }
+            .stat-value { font-size: 22px; }
+            .card { padding: var(--space-md); }
+            .link-box { flex-direction: column; align-items: stretch; }
+        }
+        @media (max-width: 480px) {
+            .navbar-inner { height: auto; padding: var(--space-sm); flex-wrap: wrap; }
+            .navbar-nav { width: 100%; justify-content: flex-end; }
+            .page { padding: 100px var(--space-sm) 32px; }
+            .stats-row { grid-template-columns: 1fr 1fr; gap: var(--space-xs); }
+            .stat-value { font-size: 20px; }
+        }
+    </style>
 </head>
 <body>
-<!-- Navbar -->
-<nav class="navbar">
-<div class="nav-inner">
-<a href="/" class="logo">
-<svg viewBox="0 0 48 48"><path d="M24 4C14 4 8 12 8 22v14c0 2 1 4 3 4h2l3-4h4l3 4h2l3-4h4l3 4h2c2 0 3-2 3-4V22C40 12 34 4 24 4zm-8 22a3 3 0 110-6 3 3 0 010 6zm16 0a3 3 0 110-6 3 3 0 010 6z"/></svg>
-8Token
-<span class="aff-badge">Afiliado</span>
-</a>
-<div class="nav-actions">
-<div class="user-pill">
-<div class="avatar" id="userAvatar">U</div>
-<span id="userEmail" style="font-size: 14px; font-weight: 500;">usuario@email.com</span>
-</div>
-<button class="btn-secondary" style="padding: 8px 16px; font-size: 13px;" onclick="handleLogout()">Sair</button>
-</div>
-</div>
-</nav>
-<div class="affiliate-container">
-<!-- Sidebar Navigation -->
-<aside class="sidebar">
-<a href="/dashboard" class="nav-link">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-Dashboard
-</a>
-<a href="/account" class="nav-link">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-Minha Conta
-</a>
-<a href="#" class="nav-link">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
-Chaves API
-</a>
-<a href="/affiliate" class="nav-link active">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-Afiliados
-</a>
-<div style="height: 1px; background: var(--border); margin: var(--space-sm) 0;"></div>
-<a href="#" class="nav-link" style="color: var(--accent-red);" onclick="handleLogout()">
-<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-Sair da Conta
-</a>
-</aside>
-<!-- Main Content -->
-<main class="content-area" id="mainContent">
-<div style="text-align:center;padding:var(--space-xl);color:var(--text-muted);">Carregando...</div>
-</main>
-</div>
-<script>
-const API_BASE = '';
-const token = localStorage.getItem('8token_token');
-if (!token) { window.location.href = '/login'; }
-function handleLogout() {
-localStorage.removeItem('8token_token');
-localStorage.removeItem('8token_user');
-localStorage.removeItem('8token_has_plan');
-window.location.href = '/login';
-}
-// Load user data for navbar
-async function loadUserData() {
-try {
-const res = await fetch(API_BASE + '/api/user/profile', {
-headers: { 'Authorization': 'Bearer ' + token }
-});
-if (res.status === 401 || res.status === 403) { handleLogout(); return; }
-if (res.ok) {
-const user = await res.json();
-document.getElementById('userEmail').textContent = user.email;
-document.getElementById('userAvatar').textContent = (user.email || 'U').charAt(0).toUpperCase();
-}
-} catch (e) { console.error('Load user error:', e); }
-}
-loadUserData();
-// Load affiliate panel
-async function loadAffiliatePanel() {
-const main = document.getElementById('mainContent');
-try {
-const res = await fetch(API_BASE + '/api/affiliate/me', {
-headers: { 'Authorization': 'Bearer ' + token }
-});
-if (res.status === 401 || res.status === 403) { handleLogout(); return; }
-if (!res.ok) {
-const err = await res.json().catch(() => ({}));
-throw new Error(err.error || 'Erro ao carregar dados de afiliado');
-}
-const data = await res.json();
-const aff = data.affiliate;
-const stats = data.stats;
-const referrals = data.referrals || [];
-const baseUrl = window.location.origin;
-const affiliateLink = `${baseUrl}/?ref=${aff.code}`;
-main.innerHTML = `
-<header>
-<h1 style="font-size: 32px; font-weight: 700; margin-bottom: 8px;">Painel do Afiliado</h1>
-<p style="color: var(--text-secondary);">Comissão: <strong style="color:var(--accent-purple);">${aff.commission_pct}%</strong> por venda · Código: <code style="font-family:var(--font-mono);color:var(--accent-orange);">${aff.code}</code></p>
-</header>
-<div class="stats-grid">
-<div class="stat-card">
-<div class="stat-label">Total de Indicações</div>
-<div class="stat-value">${stats.total_referrals}</div>
-</div>
-<div class="stat-card">
-<div class="stat-label">Usuários Pagantes</div>
-<div class="stat-value" style="color: var(--accent-green);">${stats.paid_referrals}</div>
-</div>
-<div class="stat-card">
-<div class="stat-label">Volume Gerado</div>
-<div class="stat-value" style="color: var(--accent-blue);">R$ ${stats.total_volume.toFixed(2)}</div>
-</div>
-<div class="stat-card">
-<div class="stat-label">Comissão Acumulada</div>
-<div class="stat-value" style="color: var(--accent-purple);">R$ ${stats.commissionEarned.toFixed(2)}</div>
-</div>
-</div>
-<div class="card">
-<div class="section-title">Seu Link de Afiliado</div>
-<div class="link-box">
-<input type="text" id="affLinkInput" value="${affiliateLink}" readonly onclick="this.select()">
-<button class="btn btn-primary" style="padding: 8px 16px; font-size: 13px;" onclick="copyLink()">Copiar</button>
-</div>
-<p style="font-size:12px;color:var(--text-muted);margin-top:var(--space-sm);">Compartilhe este link. Quando alguém se cadastrar e comprar através dele, você recebe ${aff.commission_pct}% da venda.</p>
-</div>
-<div class="card">
-<div class="section-title">Histórico de Indicações</div>
-<div class="table-wrap">
-<table>
-<thead><tr><th>Data</th><th>Usuário</th><th>Plano</th><th>Valor</th><th>Status</th></tr></thead>
-<tbody>
-${referrals.length ? referrals.map(r => `
-<tr>
-<td class="mono" style="font-size:12px;">${new Date(r.created_at).toLocaleString('pt-BR')}</td>
-<td style="font-size:13px;">${r.referred_email || '—'}</td>
-<td style="font-size:13px;">${r.plan || '—'}</td>
-<td class="mono">R$ ${(r.amount || 0).toFixed(2)}</td>
-<td>${r.paid_at ? '<span class="badge badge-paid">Pago</span>' : '<span class="badge badge-pending">Pendente</span>'}</td>
-</tr>
-`).join('') : '<tr><td colspan="5" style="text-align:center;padding:var(--space-lg);color:var(--text-muted);">Nenhuma indicação ainda. Compartilhe seu link!</td></tr>'}
-</tbody>
-</table>
-</div>
-</div>
-`;
-} catch (e) {
-if (e.message.includes('não é afiliado') || e.message.includes('Não autenticado') || e.message.includes('Afiliado não encontrado')) {
-main.innerHTML = `
-<div class="not-affiliate">
-<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5" style="margin-bottom:var(--space-md);"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-<h2>Acesso Restrito</h2>
-<p>Esta página é exclusiva para afiliados 8Token. Se você acredita que deveria ter acesso, entre em contato com o suporte.</p>
-<a href="/dashboard" class="btn btn-secondary">Voltar ao Dashboard</a>
-</div>
-`;
-} else {
-main.innerHTML = `<div style="text-align:center;padding:var(--space-xl);color:var(--accent-red);">${e.message}</div>`;
-}
-}
-}
-function copyLink() {
-const input = document.getElementById('affLinkInput');
-input.select();
-navigator.clipboard.writeText(input.value).then(() => {
-const btn = event.currentTarget;
-const original = btn.textContent;
-btn.textContent = 'Copiado!';
-setTimeout(() => { btn.textContent = original; }, 2000);
-});
-}
-loadAffiliatePanel();
-</script>
+    <nav class="navbar">
+        <div class="navbar-inner">
+            <a href="index.html" class="navbar-logo">
+                <svg viewBox="0 0 48 48" fill="var(--accent-orange)" width="28" height="28">
+                    <path d="M24 4C14 4 8 12 8 22v14c0 2 1 4 3 4h2l3-4h4l3 4h2l3-4h4l3 4h2c2 0 3-2 3-4V22C40 12 34 4 24 4zm-8 22a3 3 0 110-6 3 3 0 010 6zm16 0a3 3 0 110-6 3 3 0 010 6z"/>
+                </svg>
+                8Token
+                <span class="navbar-badge">Afiliado</span>
+            </a>
+            <div class="navbar-nav">
+                <a href="dashboard.html" class="btn btn-secondary">Dashboard</a>
+                <a href="index.html" class="btn btn-secondary">Site</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Expiration Banner -->
+    <div id="expiryBanner" style="display:none;position:fixed;top:64px;left:0;right:0;z-index:99;background:linear-gradient(90deg,#f05409,#d44a08);color:white;padding:10px 24px;font-size:13px;font-weight:600;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.3);">
+        <span id="expiryBannerText"></span>
+        <a href="account.html" style="color:white;text-decoration:underline;margin-left:12px;font-weight:700;">Renovar agora →</a>
+        <button onclick="document.getElementById('expiryBanner').style.display='none'" style="background:none;border:none;color:rgba(255,255,255,0.7);cursor:pointer;margin-left:12px;font-size:16px;">✕</button>
+    </div>
+
+    <main class="page" id="mainContent">
+        <div class="empty-state">Carregando...</div>
+    </main>
+
+    <script>
+        const API_BASE = window.location.origin;
+
+        function getToken() {
+            return localStorage.getItem('8token_token');
+        }
+
+        async function apiFetch(url, options = {}) {
+            const token = getToken();
+            if (!token) throw new Error('Não autenticado');
+            const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, ...options.headers };
+            const res = await fetch(API_BASE + url, { ...options, headers });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Erro');
+            return data;
+        }
+
+        function formatDate(d) {
+            if (!d) return '—';
+            return new Date(d).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        }
+
+        async function loadAffiliatePanel() {
+            const main = document.getElementById('mainContent');
+            try {
+                const data = await apiFetch('/api/affiliate/me');
+                const aff = data.affiliate;
+                const stats = data.stats;
+                const referrals = data.referrals || [];
+                const baseUrl = window.location.origin;
+                const affiliateLink = `${baseUrl}/?ref=${aff.code}`;
+
+                main.innerHTML = `
+                    <div class="page-header">
+                        <h1>Painel do Afiliado</h1>
+                        <p>Comissão: <strong style="color:var(--accent-purple);">${aff.commission_pct}%</strong> por venda &middot; Código: <code style="font-family:var(--font-mono);color:var(--accent-orange);">${aff.code}</code></p>
+                    </div>
+
+                    <div class="stats-row">
+                        <div class="stat-card">
+                            <div class="stat-label">Total de Indicações</div>
+                            <div class="stat-value">${stats.total_referrals}</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Usuários Pagantes</div>
+                            <div class="stat-value green">${stats.paid_referrals}</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Volume Gerado</div>
+                            <div class="stat-value blue">R$ ${stats.total_volume.toFixed(2)}</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Comissão Acumulada</div>
+                            <div class="stat-value purple">R$ ${stats.commissionEarned.toFixed(2)}</div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">Seu Link de Afiliado</div>
+                        <div class="link-box">
+                            <input type="text" id="affLinkInput" value="${affiliateLink}" readonly onclick="this.select()">
+                            <button class="btn btn-primary" onclick="copyLink()">Copiar</button>
+                        </div>
+                        <p style="font-size:12px;color:var(--text-muted);margin-top:var(--space-sm);">Compartilhe este link. Quando alguém se cadastrar e comprar através dele, você recebe ${aff.commission_pct}% da venda.</p>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title">Histórico de Indicações</div>
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Data</th><th>Usuário</th><th>Plano</th><th>Valor</th><th>Status</th></tr></thead>
+                                <tbody>
+                                    ${referrals.length ? referrals.map(r => `
+                                        <tr>
+                                            <td class="mono" style="font-size:12px;">${formatDate(r.created_at)}</td>
+                                            <td style="font-size:13px;">${r.referred_email || '—'}</td>
+                                            <td style="font-size:13px;">${r.plan || '—'}</td>
+                                            <td class="mono">R$ ${(r.amount || 0).toFixed(2)}</td>
+                                            <td>${r.paid_at ? '<span class="badge badge-paid">Pago</span>' : '<span class="badge badge-pending">Pendente</span>'}</td>
+                                        </tr>
+                                    `).join('') : '<tr><td colspan="5" class="empty-state">Nenhuma indicação ainda. Compartilhe seu link!</td></tr>'}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            } catch (e) {
+                if (e.message.includes('não é afiliado') || e.message.includes('Não autenticado')) {
+                    main.innerHTML = `
+                        <div class="not-affiliate">
+                            <h2>Acesso Restrito</h2>
+                            <p>Esta página é exclusiva para afiliados 8Token. Se você acredita que deveria ter acesso, entre em contato com o suporte.</p>
+                            <a href="dashboard.html" class="btn btn-secondary" style="margin-top:var(--space-lg);">Voltar ao Dashboard</a>
+                        </div>
+                    `;
+                } else {
+                    main.innerHTML = `<div class="empty-state" style="color:var(--accent-red);">${e.message}</div>`;
+                }
+            }
+        }
+
+        function copyLink() {
+            const input = document.getElementById('affLinkInput');
+            input.select();
+            navigator.clipboard.writeText(input.value).then(() => {
+                const btn = event.currentTarget;
+                btn.textContent = 'Copiado!';
+                setTimeout(() => { btn.textContent = 'Copiar'; }, 2000);
+            });
+        }
+
+        // Check auth
+        if (!getToken()) {
+            window.location.href = 'login.html';
+        } else {
+            loadAffiliatePanel();
+            // Check expiry warning
+            fetch('/api/ip/status').then(r => r.json()).then(data => {
+                const banner = document.getElementById('expiryBanner');
+                const text = document.getElementById('expiryBannerText');
+                const planNames = { mensal: 'Mensal', trimestral: 'Trimestral', anual: 'Anual' };
+                const suggestedNames = { trimestral: 'Trimestral', anual: 'Anual' };
+                if (data.needsWarning && data.daysRemaining !== null && banner) {
+                    const days = data.daysRemaining;
+                    const dayLabel = days === 1 ? '1 dia' : days + ' dias';
+                    text.textContent = `Seu plano ${planNames[data.plan] || data.plan} expira em ${dayLabel}. Upgrade para ${suggestedNames[data.suggestedPlan] || 'Trimestral'} e economize!`;
+                    banner.style.display = 'block';
+                    const main = document.getElementById('mainContent');
+                    if (main) main.style.paddingTop = '152px';
+                } else if (data.expired && banner) {
+                    text.textContent = `Seu plano ${planNames[data.plan] || data.plan} expirou! Renove agora com o plano ${suggestedNames[data.suggestedPlan] || 'Trimestral'}.`;
+                    banner.style.display = 'block';
+                    banner.style.background = 'linear-gradient(90deg,#F43F5E,#e11d48)';
+                    const main = document.getElementById('mainContent');
+                    if (main) main.style.paddingTop = '152px';
+                }
+            }).catch(() => {});
+        }
+    </script>
 </body>
 </html>
