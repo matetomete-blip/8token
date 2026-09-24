@@ -759,12 +759,15 @@
             try {
                 const token = localStorage.getItem('8token_token');
                 const headers = { 'Authorization': 'Bearer ' + token };
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 8000);
 
-                // Fetch IP info and current network IP in parallel
+                // Fetch IP info and current network IP in parallel with timeout
                 const [ipRes, currentIpRes] = await Promise.all([
-                    fetch(API_BASE + '/api/user/ip-info', { headers }),
-                    fetch(API_BASE + '/api/user/current-ip', { headers })
+                    fetch(API_BASE + '/api/user/ip-info', { headers, signal: controller.signal }),
+                    fetch(API_BASE + '/api/user/current-ip', { headers, signal: controller.signal })
                 ]);
+                clearTimeout(timeout);
 
                 const data = ipRes.ok ? await ipRes.json() : {};
                 const currentIpData = currentIpRes.ok ? await currentIpRes.json() : {};
@@ -862,9 +865,12 @@
                 const token = localStorage.getItem('8token_token');
                 if (!token) return;
                 const headers = { 'Authorization': 'Bearer ' + token };
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 8000);
 
-                // Fetch profile
-                const profileRes = await fetch(API_BASE + '/api/user/profile', { headers });
+                // Fetch profile — this is the source of truth for plan/admin
+                const profileRes = await fetch(API_BASE + '/api/user/profile', { headers, signal: controller.signal });
+                clearTimeout(timeout);
                 if (profileRes.ok) {
                     const profile = await profileRes.json();
                     // Update plan display
@@ -873,13 +879,8 @@
                         const planNames = { mensal: 'Mensal', trimestral: 'Trimestral', anual: 'Anual', admin: 'Admin', free: 'Free' };
                         planEl.textContent = planNames[profile.plan] || profile.plan;
                     }
-                }
-
-                // Check admin access via /api/ip/status
-                const ipStatusRes = await fetch(API_BASE + '/api/ip/status', { headers });
-                if (ipStatusRes.ok) {
-                    const ipData = await ipStatusRes.json();
-                    if (ipData.plan === 'admin') {
+                    // Show admin links if user plan is admin (from users table, not ip_subscriptions)
+                    if (profile.plan === 'admin') {
                         const adminLink = document.getElementById('adminLink');
                         const sidebarAdminLink = document.getElementById('sidebarAdminLink');
                         if (adminLink) adminLink.style.display = 'inline-flex';
