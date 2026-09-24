@@ -453,22 +453,32 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);">
                 <div class="dash-section" style="margin-bottom: 0;">
                     <div class="dash-section-title">Assinatura</div>
-                    <div class="card plan-card">
-                        <div class="plan-info">
-                            <div class="plan-name">
-                                <span id="planCardName">Trimestral</span>
-                                <span class="plan-badge" id="planCardBadge">Mais Escolhido</span>
-                            </div>
-                            <div class="plan-details">
-                                Claude Opus 5, Sonnet 5, Fable 5.1 e GLM 5.3 · Uso ilimitado
-                            </div>
+                    <div class="card plan-card" id="planCardContainer">
+                        <!-- Estado: Sem plano -->
+                        <div id="planCardEmpty" style="text-align:center;padding:var(--space-xl) 0;">
+                            <div style="font-size:40px;margin-bottom:var(--space-sm);">📋</div>
+                            <div style="font-size:16px;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-xs);">Nenhum plano ativo</div>
+                            <div style="font-size:13px;color:var(--text-muted);margin-bottom:var(--space-lg);">Assine um plano para acessar todos os modelos de IA</div>
+                            <a href="index.html#pricing" class="btn-upgrade" style="display:inline-flex;height:40px;padding:0 var(--space-lg);font-size:14px;">Ver planos e assinar</a>
                         </div>
-                        <div class="plan-price">
-                            <div class="plan-price-value" id="planCardPrice">R$ 399</div>
-                            <div class="plan-price-period" id="planCardPeriod">/trimestre</div>
-                            <div class="plan-renewal" id="planCardRenewal">Próxima cobrança: 12/12/2026</div>
+                        <!-- Estado: Com plano -->
+                        <div id="planCardActive" style="display:none;">
+                            <div class="plan-info">
+                                <div class="plan-name">
+                                    <span id="planCardName">—</span>
+                                    <span class="plan-badge" id="planCardBadge" style="display:none;"></span>
+                                </div>
+                                <div class="plan-details">
+                                    Claude Opus 5, Sonnet 5, Fable 5.1 e GLM 5.3 · Uso ilimitado
+                                </div>
+                            </div>
+                            <div class="plan-price">
+                                <div class="plan-price-value" id="planCardPrice">—</div>
+                                <div class="plan-price-period" id="planCardPeriod"></div>
+                                <div class="plan-renewal" id="planCardRenewal"></div>
+                            </div>
+                            <a href="account.html" class="btn-upgrade btn-secondary" style="display:inline-flex;height:36px;padding:0 var(--space-md);font-size:13px;text-align:center;">Gerenciar Plano</a>
                         </div>
-                        <button class="btn-upgrade btn-secondary">Gerenciar Plano</button>
                     </div>
                 </div>
 
@@ -873,12 +883,67 @@
                 clearTimeout(timeout);
                 if (profileRes.ok) {
                     const profile = await profileRes.json();
-                    // Update plan display
-                    const planEl = document.getElementById('planName');
-                    if (planEl && profile.plan) {
-                        const planNames = { mensal: 'Mensal', trimestral: 'Trimestral', anual: 'Anual', admin: 'Admin', free: 'Free' };
-                        planEl.textContent = planNames[profile.plan] || profile.plan;
+                    const planNames = { mensal: 'Mensal', trimestral: 'Trimestral', anual: 'Anual', free: 'Free' };
+                    const planPrices = { mensal: 'R$ 199,70', trimestral: 'R$ 399', anual: 'R$ 1.100' };
+                    const planPeriods = { mensal: '/mês', trimestral: '/trimestre', anual: '/ano' };
+                    const hasPlan = profile.plan && profile.plan !== 'free';
+
+                    // Update KPI "Plano Atual"
+                    const kpiPlan = document.getElementById('kpiPlan');
+                    const kpiPlanExpiry = document.getElementById('kpiPlanExpiry');
+                    if (kpiPlan) {
+                        if (hasPlan) {
+                            kpiPlan.textContent = planNames[profile.plan] || profile.plan;
+                            kpiPlan.style.color = '';
+                        } else {
+                            kpiPlan.textContent = 'Sem plano';
+                            kpiPlan.style.color = 'var(--text-muted)';
+                        }
                     }
+                    if (kpiPlanExpiry) {
+                        if (hasPlan && profile.plan_expires_at) {
+                            const expDate = new Date(profile.plan_expires_at);
+                            kpiPlanExpiry.textContent = 'Expira em ' + expDate.toLocaleDateString('pt-BR');
+                        } else {
+                            kpiPlanExpiry.textContent = hasPlan ? '—' : 'Assine um plano para começar';
+                        }
+                    }
+
+                    // Update subscription card
+                    const planCardEmpty = document.getElementById('planCardEmpty');
+                    const planCardActive = document.getElementById('planCardActive');
+                    if (hasPlan) {
+                        if (planCardEmpty) planCardEmpty.style.display = 'none';
+                        if (planCardActive) planCardActive.style.display = 'block';
+                        const planCardName = document.getElementById('planCardName');
+                        const planCardPrice = document.getElementById('planCardPrice');
+                        const planCardPeriod = document.getElementById('planCardPeriod');
+                        const planCardRenewal = document.getElementById('planCardRenewal');
+                        const planCardBadge = document.getElementById('planCardBadge');
+                        if (planCardName) planCardName.textContent = planNames[profile.plan] || profile.plan;
+                        if (planCardPrice) planCardPrice.textContent = planPrices[profile.plan] || '—';
+                        if (planCardPeriod) planCardPeriod.textContent = planPeriods[profile.plan] || '';
+                        if (planCardRenewal) {
+                            if (profile.plan_expires_at) {
+                                const expDate = new Date(profile.plan_expires_at);
+                                planCardRenewal.textContent = 'Expira em ' + expDate.toLocaleDateString('pt-BR');
+                            } else {
+                                planCardRenewal.textContent = '';
+                            }
+                        }
+                        if (planCardBadge) {
+                            if (profile.plan === 'trimestral') {
+                                planCardBadge.style.display = 'inline';
+                                planCardBadge.textContent = 'Mais Escolhido';
+                            } else {
+                                planCardBadge.style.display = 'none';
+                            }
+                        }
+                    } else {
+                        if (planCardEmpty) planCardEmpty.style.display = 'block';
+                        if (planCardActive) planCardActive.style.display = 'none';
+                    }
+
                     // Show admin links if user role is admin (cargo separado do plano)
                     if (profile.role === 'admin') {
                         const adminLink = document.getElementById('adminLink');
