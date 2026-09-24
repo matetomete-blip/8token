@@ -1300,6 +1300,16 @@ app.post('/api/admin/webhook-test', adminAuth, async (req, res) => {
   }
 });
 
+// Remote deploy endpoint — runs git pull + pm2 restart on the VPS
+app.post('/api/admin/deploy', adminAuth, async (req, res) => {
+  const { exec } = require('child_process');
+  const cmd = 'cd /opt/8token && git pull && pm2 restart 8token';
+  exec(cmd, { timeout: 30000 }, (err, stdout, stderr) => {
+    if (err) return res.status(500).json({ error: err.message, stderr });
+    res.json({ success: true, output: stdout, stderr });
+  });
+});
+
 app.get('/api/admin/webhook-logs', adminAuth, async (req, res) => {
   try {
     const { data } = await supabase.from('webhook_logs').select('*').order('created_at', { ascending: false }).limit(50);
