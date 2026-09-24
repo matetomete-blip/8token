@@ -856,6 +856,40 @@
         }
         loadIpInfo();
 
+        // ---- PROFILE & ADMIN LOGIC ----
+        async function loadProfileAndAdmin() {
+            try {
+                const token = localStorage.getItem('8token_token');
+                if (!token) return;
+                const headers = { 'Authorization': 'Bearer ' + token };
+
+                // Fetch profile
+                const profileRes = await fetch(API_BASE + '/api/user/profile', { headers });
+                if (profileRes.ok) {
+                    const profile = await profileRes.json();
+                    // Update plan display
+                    const planEl = document.getElementById('planName');
+                    if (planEl && profile.plan) {
+                        const planNames = { mensal: 'Mensal', trimestral: 'Trimestral', anual: 'Anual', admin: 'Admin', free: 'Free' };
+                        planEl.textContent = planNames[profile.plan] || profile.plan;
+                    }
+                }
+
+                // Check admin access via /api/ip/status
+                const ipStatusRes = await fetch(API_BASE + '/api/ip/status', { headers });
+                if (ipStatusRes.ok) {
+                    const ipData = await ipStatusRes.json();
+                    if (ipData.plan === 'admin') {
+                        const adminLink = document.getElementById('adminLink');
+                        const sidebarAdminLink = document.getElementById('sidebarAdminLink');
+                        if (adminLink) adminLink.style.display = 'inline-flex';
+                        if (sidebarAdminLink) sidebarAdminLink.style.display = 'flex';
+                    }
+                }
+            } catch (e) { console.error('Profile/Admin load error:', e); }
+        }
+        loadProfileAndAdmin();
+
         // Authorize current network IP as main IP
         async function authorizeCurrentIp() {
             const btn = document.getElementById('btnAuthorizeCurrentIp');
