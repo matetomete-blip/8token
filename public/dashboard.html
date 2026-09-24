@@ -4,11 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard 8Token</title>
+    <meta name="description" content="Área do usuário 8Token, gerencie sua assinatura, chaves API e uso.">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
     <style>
-        /* DESIGN SYSTEM V2 — Dashboard */
+        /* ========================================
+           DESIGN SYSTEM V2 — Dashboard Production
+           ======================================== */
         :root {
             --bg-primary: #050505;
             --bg-secondary: #0A0A0A;
@@ -24,21 +29,25 @@
             --accent-blue: #00D4FF;
             --accent-green: #00FF94;
             --accent-red: #FF3333;
+            --accent-amber: #F59E0B;
             --space-xs: 8px;
             --space-sm: 16px;
             --space-md: 24px;
             --space-lg: 32px;
             --space-xl: 48px;
+            --space-2xl: 64px;
             --font-sans: 'Inter', sans-serif;
             --font-mono: 'JetBrains Mono', monospace;
             --radius-sm: 8px;
             --radius-md: 12px;
             --radius-lg: 16px;
+            --radius-pill: 999px;
             --glass: blur(10px);
             --transition: all 0.3s ease-in-out;
         }
 
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
         body {
             font-family: var(--font-sans);
             background-color: var(--bg-primary);
@@ -49,6 +58,7 @@
             background-attachment: fixed;
         }
         a { text-decoration: none; color: inherit; transition: var(--transition); }
+        a:hover { color: var(--accent-orange); }
 
         /* Navbar */
         .navbar {
@@ -57,60 +67,124 @@
             border-bottom: 1px solid var(--border); height: 80px;
             display: flex; align-items: center;
         }
-        .nav-inner {
+        .navbar-inner {
             max-width: 1400px; margin: 0 auto; width: 100%; padding: 0 var(--space-md);
             display: flex; justify-content: space-between; align-items: center;
         }
-        .logo { font-size: 24px; font-weight: 800; display: flex; align-items: center; gap: var(--space-xs); }
-        .logo svg { width: 32px; height: 32px; fill: var(--accent-orange); }
-        .nav-actions { display: flex; align-items: center; gap: var(--space-md); }
+        .navbar-logo {
+            font-size: 24px; font-weight: 800; display: flex; align-items: center; gap: var(--space-xs);
+        }
+        .navbar-logo svg { width: 32px; height: 32px; fill: var(--accent-orange); }
+        .navbar-right { display: flex; align-items: center; gap: var(--space-md); }
 
         .user-pill {
             display: flex; align-items: center; gap: var(--space-sm);
             padding: 8px 16px; background: rgba(255,255,255,0.03);
-            border: 1px solid var(--border); border-radius: 999px;
+            border: 1px solid var(--border); border-radius: var(--radius-pill);
         }
-        .avatar {
+        .navbar-avatar {
             width: 32px; height: 32px; border-radius: 50%;
             background: var(--accent-orange); display: flex; align-items: center; justify-content: center;
             font-weight: 700; font-size: 14px; color: white;
         }
-        .btn-icon {
+        .btn-logout {
+            font-size: 13px; color: var(--text-muted); padding: 8px 16px;
+            border: 1px solid var(--border); border-radius: var(--radius-sm);
+            background: transparent; cursor: pointer; transition: var(--transition);
+        }
+        .btn-logout:hover { border-color: var(--accent-red); color: var(--accent-red); }
+
+        /* Notification Bell */
+        .notif-bell-wrap { position: relative; }
+        .notif-bell-btn {
             width: 40px; height: 40px; border-radius: var(--radius-sm);
             border: 1px solid var(--border); background: transparent;
             color: var(--text-secondary); cursor: pointer; transition: var(--transition);
-            display: flex; align-items: center; justify-content: center;
+            display: flex; align-items: center; justify-content: center; position: relative;
         }
-        .btn-icon:hover { border-color: var(--accent-orange); color: var(--accent-orange); }
+        .notif-bell-btn:hover { border-color: var(--accent-orange); color: var(--accent-orange); }
+        .notif-bell-btn svg { width: 20px; height: 20px; }
+        .notif-badge {
+            position: absolute; top: -4px; right: -4px; min-width: 16px; height: 16px;
+            border-radius: 50%; background: var(--accent-orange); color: white;
+            font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+            padding: 0 4px; box-shadow: 0 0 6px rgba(255,85,0,0.5); line-height: 1;
+        }
+        .notif-badge.hidden { display: none; }
+        .notif-dropdown {
+            position: absolute; top: calc(100% + 8px); right: 0; width: 340px; max-height: 420px;
+            background: var(--bg-card-solid); border: 1px solid var(--border); border-radius: var(--radius-md);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4); overflow: hidden; z-index: 200; display: none;
+        }
+        .notif-dropdown.open { display: block; }
+        .notif-dropdown-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: var(--space-md) var(--space-lg); border-bottom: 1px solid var(--border);
+        }
+        .notif-dropdown-title { font-size: 14px; font-weight: 700; }
+        .notif-dropdown-link {
+            font-size: 12px; color: var(--accent-orange); font-weight: 600;
+            cursor: pointer; background: none; border: none; transition: opacity var(--transition);
+        }
+        .notif-dropdown-link:hover { opacity: 0.8; }
+        .notif-dropdown-list { max-height: 320px; overflow-y: auto; }
+        .notif-dropdown-item {
+            padding: var(--space-md) var(--space-lg); border-bottom: 1px solid var(--border);
+            cursor: pointer; transition: background var(--transition); position: relative;
+        }
+        .notif-dropdown-item:last-child { border-bottom: none; }
+        .notif-dropdown-item:hover { background: rgba(255,255,255,0.03); }
+        .notif-dropdown-item.unread { background: rgba(255,85,0,0.04); }
+        .notif-dropdown-item.unread::before {
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent-orange);
+        }
+        .notif-dropdown-item-title { font-size: 13px; font-weight: 600; margin-bottom: 2px; color: var(--text-primary); }
+        .notif-dropdown-item-msg {
+            font-size: 12px; color: var(--text-secondary); line-height: 1.4;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+        }
+        .notif-dropdown-item-time { font-size: 10px; color: var(--text-muted); margin-top: 4px; font-family: var(--font-mono); }
+        .notif-dropdown-empty { padding: var(--space-xl); text-align: center; color: var(--text-muted); font-size: 13px; }
+        .notif-dropdown-footer { padding: var(--space-sm) var(--space-lg); border-top: 1px solid var(--border); text-align: center; }
+        .notif-dropdown-footer a { font-size: 12px; color: var(--accent-orange); font-weight: 600; }
 
-        /* Layout */
-        .dashboard-container {
+        @media (max-width: 768px) {
+            .notif-dropdown { width: 280px; right: -60px; }
+            .navbar-right span { display: none; }
+        }
+
+        /* Dashboard Layout */
+        .dashboard {
             max-width: 1400px; margin: 0 auto; padding: 120px var(--space-md) var(--space-xl);
             display: grid; grid-template-columns: 280px 1fr; gap: var(--space-xl);
         }
-        @media (max-width: 1024px) { .dashboard-container { grid-template-columns: 1fr; } }
+        @media (max-width: 1024px) { .dashboard { grid-template-columns: 1fr; } }
 
         /* Sidebar */
         .sidebar { display: flex; flex-direction: column; gap: var(--space-xs); }
-        .nav-link {
+        .sidebar-link {
             padding: 12px 16px; border-radius: var(--radius-sm);
             color: var(--text-secondary); font-weight: 500; font-size: 14px;
             display: flex; align-items: center; gap: var(--space-sm);
-            transition: var(--transition); border: 1px solid transparent;
+            transition: var(--transition); border: 1px solid transparent; cursor: pointer;
+            background: none; width: 100%; text-align: left;
         }
-        .nav-link:hover { background: rgba(255,255,255,0.03); color: var(--text-primary); }
-        .nav-link.active {
+        .sidebar-link:hover { background: rgba(255,255,255,0.03); color: var(--text-primary); }
+        .sidebar-link.active {
             background: rgba(255, 85, 0, 0.1); color: var(--accent-orange);
             border-color: rgba(255, 85, 0, 0.2);
         }
-        .nav-link svg { width: 20px; height: 20px; opacity: 0.7; }
-        .nav-link.active svg { opacity: 1; }
+        .sidebar-link svg { width: 20px; height: 20px; opacity: 0.7; }
+        .sidebar-link.active svg { opacity: 1; }
+        .sidebar-divider { height: 1px; background: var(--border); margin: var(--space-sm) 0; }
 
         /* Content Area */
         .content-area { display: flex; flex-direction: column; gap: var(--space-lg); }
+        .dashboard-header h1 { font-size: 32px; font-weight: 700; margin-bottom: 8px; }
+        .dashboard-header p { color: var(--text-secondary); }
 
         /* KPI Grid */
-        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--space-md); }
+        .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--space-md); }
         .kpi-card {
             background: var(--bg-card); backdrop-filter: var(--glass);
             border: 1px solid var(--border); border-radius: var(--radius-md);
@@ -120,953 +194,793 @@
         .kpi-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: var(--space-xs); }
         .kpi-value { font-size: 32px; font-weight: 700; font-family: var(--font-mono); line-height: 1; }
         .kpi-sub { font-size: 13px; color: var(--text-secondary); margin-top: var(--space-xs); }
+        .kpi-value.green { color: var(--accent-green); }
+        .kpi-value.orange { color: var(--accent-orange); }
+        .kpi-value.blue { color: var(--accent-blue); }
 
         /* Cards & Sections */
+        .dash-section { margin-bottom: var(--space-lg); }
+        .dash-section-title {
+            font-size: 18px; font-weight: 600; margin-bottom: var(--space-md);
+            display: flex; align-items: center; gap: var(--space-sm);
+        }
         .card {
             background: var(--bg-card); backdrop-filter: var(--glass);
             border: 1px solid var(--border); border-radius: var(--radius-lg);
-            padding: var(--space-lg);
+            padding: var(--space-lg); transition: var(--transition);
         }
-        .section-title { font-size: 18px; font-weight: 600; margin-bottom: var(--space-md); display: flex; align-items: center; gap: var(--space-sm); }
+        .card:hover { border-color: var(--border-hover); }
 
-        /* Plan Card Specifics */
-        .plan-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--space-md); flex-wrap: wrap; gap: var(--space-md); }
+        /* Plan Card */
+        .plan-card {
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: var(--space-lg);
+        }
+        .plan-info { flex: 1; min-width: 200px; }
+        .plan-name { font-size: 20px; font-weight: 700; margin-bottom: var(--space-xs); display: flex; align-items: center; gap: var(--space-sm); }
         .plan-badge {
             background: rgba(255, 85, 0, 0.15); color: var(--accent-orange);
-            padding: 4px 12px; border-radius: 999px;
+            padding: 4px 12px; border-radius: var(--radius-pill);
             font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
         }
-        .plan-price { font-family: var(--font-mono); font-size: 24px; font-weight: 700; color: var(--text-primary); }
-        .plan-period { font-size: 14px; color: var(--text-muted); font-weight: 400; }
+        .plan-details { font-size: 14px; color: var(--text-secondary); margin-top: var(--space-xs); }
+        .plan-price { text-align: right; }
+        .plan-price-value { font-size: 24px; font-weight: 700; font-family: var(--font-mono); }
+        .plan-price-period { font-size: 13px; color: var(--text-muted); }
+        .plan-renewal { font-size: 12px; color: var(--text-muted); margin-top: var(--space-xs); }
 
         /* Buttons */
-        .btn {
+        .btn-upgrade {
             display: inline-flex; align-items: center; justify-content: center;
-            padding: 12px 24px; font-size: 14px; font-weight: 600;
-            border-radius: var(--radius-sm); cursor: pointer; transition: var(--transition);
-            border: none; gap: var(--space-xs);
+            height: 40px; padding: 0 var(--space-lg);
+            background: var(--accent-orange); border: none; border-radius: var(--radius-sm);
+            color: white; font-size: 14px; font-weight: 600; cursor: pointer; transition: var(--transition);
         }
-        .btn-primary { background: var(--accent-orange); color: white; box-shadow: 0 0 15px var(--accent-orange-glow); }
-        .btn-primary:hover { background: #ff6b00; transform: translateY(-2px); }
-        .btn-secondary { background: transparent; border: 1px solid var(--border); color: var(--text-secondary); }
-        .btn-secondary:hover { border-color: var(--accent-orange); color: var(--accent-orange); }
+        .btn-upgrade:hover { background: #ff6b00; transform: translateY(-2px); box-shadow: 0 0 15px var(--accent-orange-glow); }
+        .btn-secondary {
+            background: transparent; border: 1px solid var(--border); color: var(--text-secondary);
+        }
+        .btn-secondary:hover { border-color: var(--accent-orange); color: var(--accent-orange); background: transparent; transform: none; box-shadow: none; }
 
-        /* API Key Display */
-        .api-key-box {
+        /* API Keys */
+        .api-keys-list { display: flex; flex-direction: column; gap: var(--space-sm); }
+        .api-key-item {
             background: var(--bg-secondary); border: 1px solid var(--border);
-            border-radius: var(--radius-sm); padding: var(--space-md);
-            font-family: var(--font-mono); font-size: 14px; color: var(--text-secondary);
-            display: flex; justify-content: space-between; align-items: center;
-            margin-top: var(--space-sm);
+            border-radius: var(--radius-md); padding: var(--space-md) var(--space-lg);
+            display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); flex-wrap: wrap;
         }
-        .key-value { user-select: all; word-break: break-all; }
+        .api-key-info { flex: 1; min-width: 200px; }
+        .api-key-name { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+        .api-key-value { font-family: var(--font-mono); font-size: 13px; color: var(--text-muted); user-select: all; }
+        .api-key-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+        .api-key-actions { display: flex; gap: var(--space-sm); }
+        .btn-icon {
+            width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+            background: transparent; border: 1px solid var(--border); border-radius: var(--radius-sm);
+            color: var(--text-secondary); cursor: pointer; transition: var(--transition);
+        }
+        .btn-icon:hover { border-color: var(--border-hover); color: var(--text-primary); }
+        .btn-icon.danger:hover { border-color: var(--accent-red); color: var(--accent-red); }
+        .btn-icon svg { width: 16px; height: 16px; }
+        .btn-generate {
+            display: inline-flex; align-items: center; gap: var(--space-xs);
+            height: 40px; padding: 0 var(--space-lg);
+            background: transparent; border: 1px solid var(--border); border-radius: var(--radius-sm);
+            color: var(--text-secondary); font-size: 14px; font-weight: 500; cursor: pointer; transition: var(--transition);
+            margin-top: var(--space-md);
+        }
+        .btn-generate:hover { border-color: var(--accent-orange); color: var(--accent-orange); }
 
-        /* Usage Bars */
-        .usage-item { margin-bottom: var(--space-md); }
-        .usage-header { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13px; }
-        .usage-track { height: 8px; background: var(--bg-secondary); border-radius: 4px; overflow: hidden; }
-        .usage-fill { height: 100%; border-radius: 4px; transition: width 1s ease; }
-        .fill-fable { background: var(--accent-orange); box-shadow: 0 0 10px var(--accent-orange-glow); }
-        .fill-opus { background: var(--accent-blue); box-shadow: 0 0 10px rgba(0, 212, 255, 0.3); }
-        .fill-gpt { background: #a855f7; box-shadow: 0 0 10px rgba(168, 85, 247, 0.3); }
+        /* Tokens Chart */
+        .tokens-chart-card { position: relative; overflow: hidden; }
+        .tokens-chart-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent-orange), transparent); opacity: 0.4;
+        }
+        .tokens-chart-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: var(--space-xl); flex-wrap: wrap; gap: var(--space-md); }
+        .tokens-chart-title { font-size: 16px; font-weight: 600; margin-bottom: var(--space-xs); }
+        .tokens-chart-subtitle { font-size: 13px; color: var(--text-muted); }
+        .tokens-chart-total { text-align: right; }
+        .tokens-chart-total-value { font-size: 28px; font-weight: 700; font-family: var(--font-mono); color: var(--accent-orange); line-height: 1.1; }
+        .tokens-chart-total-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
+        .tokens-bar-list { display: flex; flex-direction: column; gap: var(--space-lg); }
+        .tokens-bar-item { display: grid; grid-template-columns: 160px 1fr auto; align-items: center; gap: var(--space-md); }
+        .tokens-bar-label { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+        .tokens-bar-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .tokens-bar-provider { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+        .tokens-bar-track { position: relative; height: 32px; background: var(--bg-secondary); border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border); }
+        .tokens-bar-fill {
+            position: absolute; top: 0; left: 0; height: 100%; border-radius: var(--radius-sm); width: 0;
+            transition: width 1.4s cubic-bezier(0.22, 1, 0.36, 1); display: flex; align-items: center; padding-left: var(--space-sm); overflow: hidden;
+        }
+        .tokens-bar-fill::after {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.08) 50%, transparent 100%);
+            animation: barShimmer 2.5s ease-in-out infinite;
+        }
+        @keyframes barShimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(200%); } }
+        .tokens-bar-fill.fable { background: linear-gradient(90deg, var(--accent-orange), #ff8c42); box-shadow: 0 0 20px rgba(255, 85, 0, 0.35); }
+        .tokens-bar-fill.opus { background: linear-gradient(90deg, var(--accent-blue), #4d9fff); box-shadow: 0 0 20px rgba(0, 212, 255, 0.3); }
+        .tokens-bar-fill.sonnet { background: linear-gradient(90deg, var(--accent-green), #34d399); box-shadow: 0 0 20px rgba(0, 255, 148, 0.3); }
+        .tokens-bar-fill.glm { background: linear-gradient(90deg, var(--accent-amber), #fbbf24); box-shadow: 0 0 20px rgba(245, 158, 11, 0.3); }
+        .tokens-bar-fill.gpt { background: linear-gradient(90deg, #a855f7, #c084fc); box-shadow: 0 0 20px rgba(168, 85, 247, 0.3); }
+        .tokens-bar-value { font-family: var(--font-mono); font-size: 14px; font-weight: 600; white-space: nowrap; min-width: 80px; text-align: right; }
+        .tokens-bar-value .unit { color: var(--text-muted); font-weight: 400; font-size: 12px; margin-left: 2px; }
+        .tokens-chart-footer { margin-top: var(--space-xl); padding-top: var(--space-md); border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-sm); }
+        .tokens-chart-note { font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+        .tokens-chart-note svg { width: 14px; height: 14px; color: var(--accent-green); }
+        .tokens-chart-period { font-size: 12px; color: var(--text-muted); font-family: var(--font-mono); }
+
+        @media (max-width: 640px) {
+            .tokens-bar-item { grid-template-columns: 1fr auto; grid-template-areas: "label value" "track track"; gap: var(--space-xs) var(--space-md); }
+            .tokens-bar-label { grid-area: label; }
+            .tokens-bar-value { grid-area: value; }
+            .tokens-bar-track { grid-area: track; }
+            .tokens-chart-total { text-align: left; }
+        }
 
         /* IP Section */
-        .ip-display {
-            font-family: var(--font-mono); font-size: 18px; color: var(--accent-blue);
-            margin: var(--space-xs) 0;
-        }
+        .ip-display { font-family: var(--font-mono); font-size: 18px; color: var(--accent-blue); margin: var(--space-xs) 0; }
         .status-badge {
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 4px 10px; border-radius: 999px;
+            display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: var(--radius-pill);
             font-size: 11px; font-weight: 700; text-transform: uppercase;
         }
         .status-active { background: rgba(0, 255, 148, 0.1); color: var(--accent-green); }
         .status-pending { background: rgba(255, 85, 0, 0.1); color: var(--accent-orange); }
 
+        /* Expiration Banner */
+        #expiryBanner {
+            display: none; position: fixed; top: 80px; left: 0; right: 0; z-index: 99;
+            background: linear-gradient(90deg, #FF5500, #cc4400); color: white;
+            padding: 12px 24px; font-size: 14px; font-weight: 600; text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        #expiryBanner a { color: white; text-decoration: underline; margin-left: 12px; font-weight: 700; }
+        #expiryBanner button { background: none; border: none; color: rgba(255,255,255,0.7); cursor: pointer; margin-left: 12px; font-size: 16px; }
+
         /* Responsive */
         @media (max-width: 768px) {
-            .dashboard-container { padding-top: 100px; }
-            .nav-actions span { display: none; }
-            .plan-header { flex-direction: column; }
+            .dashboard { padding-top: 100px; grid-template-columns: 1fr; }
+            .sidebar { display: none; } /* Hide sidebar on mobile for now, or implement drawer */
+            .plan-card { flex-direction: column; align-items: flex-start; }
+            .plan-price { text-align: left; }
         }
     </style>
 </head>
 <body>
     <!-- Navbar -->
     <nav class="navbar">
-        <div class="nav-inner">
-            <a href="/" class="logo">
+        <div class="navbar-inner">
+            <a href="index.html" class="navbar-logo">
                 <svg viewBox="0 0 48 48"><path d="M24 4C14 4 8 12 8 22v14c0 2 1 4 3 4h2l3-4h4l3 4h2l3-4h4l3 4h2c2 0 3-2 3-4V22C40 12 34 4 24 4zm-8 22a3 3 0 110-6 3 3 0 010 6zm16 0a3 3 0 110-6 3 3 0 010 6z"/></svg>
                 8Token
             </a>
-            <div class="nav-actions">
-                <button class="btn-icon" aria-label="Notificações" onclick="toggleNotifDropdown(event)">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-                    <span id="notifBadge" class="notif-badge hidden" style="position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;border-radius:50%;background:var(--accent-orange);color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px;">0</span>
-                </button>
-                <div class="user-pill">
-                    <div class="avatar" id="userAvatar">U</div>
-                    <span id="userEmail" style="font-size: 14px; font-weight: 500;">usuario@email.com</span>
+            <div class="navbar-right">
+                <a href="admin.html" id="adminLink" style="display:none;font-size:13px;font-weight:600;color:#a855f7;padding:8px 16px;border:1px solid rgba(168,85,247,0.4);border-radius:var(--radius-sm);background:rgba(168,85,247,0.1);transition:var(--transition);">⚙ Painel Admin</a>
+
+                <div class="notif-bell-wrap">
+                    <button class="notif-bell-btn" onclick="toggleNotifDropdown(event)" aria-label="Notificações">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                        <span class="notif-badge hidden" id="notifBadge">0</span>
+                    </button>
+                    <div class="notif-dropdown" id="notifDropdown">
+                        <div class="notif-dropdown-header">
+                            <span class="notif-dropdown-title">Notificações</span>
+                            <button class="notif-dropdown-link" onclick="markAllReadDash()">Marcar todas lidas</button>
+                        </div>
+                        <div class="notif-dropdown-list" id="notifDropdownList">
+                            <div class="notif-dropdown-empty">Carregando...</div>
+                        </div>
+                        <div class="notif-dropdown-footer">
+                            <a href="notifications.html">Ver todas as notificações →</a>
+                        </div>
+                    </div>
                 </div>
-                <button class="btn-secondary" style="padding: 8px 16px; font-size: 13px;" onclick="handleLogout()">Sair</button>
+
+                <a href="account.html" class="btn-secondary" style="padding: 8px 16px; font-size: 13px; border-radius: var(--radius-sm);">Minha Conta</a>
+
+                <div class="user-pill">
+                    <div class="navbar-avatar">U</div>
+                    <span style="font-size: 14px; font-weight: 500;" id="userEmailDisplay">usuario@email.com</span>
+                </div>
+
+                <button class="btn-logout" onclick="handleLogout()">Sair</button>
             </div>
         </div>
     </nav>
 
-    <!-- Notification Dropdown -->
-    <div id="notifDropdown" class="notif-dropdown" style="position:fixed;top:80px;right:24px;width:340px;max-height:420px;background:var(--bg-card-solid);border:1px solid var(--border);border-radius:var(--radius-md);box-shadow:0 8px 32px rgba(0,0,0,0.4);overflow:hidden;z-index:200;display:none;">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border);">
-            <span style="font-size:14px;font-weight:700;">Notificações</span>
-            <button onclick="markAllReadDash()" style="font-size:12px;color:var(--accent-orange);font-weight:600;cursor:pointer;background:none;border:none;">Marcar todas como lidas</button>
-        </div>
-        <div id="notifDropdownList" style="max-height:320px;overflow-y:auto;"></div>
-        <div style="padding:var(--space-sm) var(--space-lg);border-top:1px solid var(--border);text-align:center;">
-            <a href="/notifications" style="font-size:12px;color:var(--accent-orange);font-weight:600;">Ver todas</a>
-        </div>
+    <!-- Expiration Banner -->
+    <div id="expiryBanner">
+        <span id="expiryBannerText"></span>
+        <a href="account.html">Renovar agora →</a>
+        <button onclick="document.getElementById('expiryBanner').style.display='none'">✕</button>
     </div>
 
-    <div class="dashboard-container">
+    <!-- Dashboard -->
+    <main class="dashboard">
         <!-- Sidebar Navigation -->
         <aside class="sidebar">
-            <a href="#" class="nav-link" onclick="scrollToSection('apiSection')">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
-                Chaves API
-            </a>
-            <a href="#" class="nav-link" onclick="scrollToSection('overviewSection')">
+            <button class="sidebar-link active" onclick="window.location.href='dashboard.html'">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-                Visão Geral
-            </a>
-            <a href="/account" class="nav-link">
+                Dashboard
+            </button>
+            <button class="sidebar-link" onclick="window.location.href='account.html'">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 Minha Conta
-            </a>
-            <a href="/affiliate" class="nav-link">
+            </button>
+            <button class="sidebar-link" onclick="window.location.href='affiliate.html'">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                 Afiliados
-            </a>
-            <a href="/admin" class="nav-link" id="sidebarAdminLink" style="display:none;color:var(--accent-orange);">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </button>
+            <button class="sidebar-link" id="sidebarAdminLink" style="display:none;" onclick="window.location.href='admin.html'">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                 Painel Admin
-            </a>
-            <div style="height: 1px; background: var(--border); margin: var(--space-sm) 0;"></div>
-            <a href="#" class="nav-link" style="color: var(--accent-red);" onclick="handleLogout()">
+            </button>
+            <div class="sidebar-divider"></div>
+            <button class="sidebar-link" onclick="handleLogout()" style="color:var(--accent-red);">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                Sair da Conta
-            </a>
+                Sair
+            </button>
         </aside>
 
         <!-- Main Content -->
-        <main class="content-area">
-            <!-- Header -->
-            <header>
-                <h1 style="font-size: 32px; font-weight: 700; margin-bottom: 8px;">Visão Geral</h1>
-                <p style="color: var(--text-secondary);">Gerencie sua assinatura, chaves e acompanhe o uso em tempo real.</p>
-            </header>
-
-            <!-- Expiry Banner -->
-            <div id="expiryBanner" style="display:none;background:linear-gradient(90deg,var(--accent-orange),#ff6b00);padding:12px 24px;border-radius:var(--radius-sm);margin-bottom:var(--space-md);">
-                <span id="expiryBannerText" style="font-size:14px;font-weight:600;color:white;"></span>
+        <div class="content-area">
+            <div class="dashboard-header">
+                <h1>Visão Geral</h1>
+                <p>Gerencie sua assinatura, chaves e acompanhe o uso em tempo real.</p>
             </div>
 
             <!-- KPIs -->
-            <div class="kpi-grid">
+            <div class="kpi-row">
                 <div class="kpi-card">
                     <div class="kpi-label">Plano Atual</div>
-                    <div class="kpi-value" id="kpiPlan" style="color: var(--accent-orange);">—</div>
-                    <div class="kpi-sub" id="kpiPlanExpiry">Carregando...</div>
+                    <div class="kpi-value orange" id="kpiPlan">Carregando...</div>
+                    <div class="kpi-sub" id="kpiPlanExpiry">—</div>
                 </div>
                 <div class="kpi-card">
-                    <div class="kpi-label">Status da Conta</div>
-                    <div class="kpi-value" id="kpiStatus" style="color: var(--accent-green);">Ativa</div>
-                    <div class="kpi-sub" id="kpiIpStatus">IP Autorizado ✓</div>
+                    <div class="kpi-label">Chaves API</div>
+                    <div class="kpi-value green">2</div>
+                    <div class="kpi-sub">Ativas</div>
                 </div>
                 <div class="kpi-card">
                     <div class="kpi-label">Tokens Usados (Mês)</div>
-                    <div class="kpi-value" id="kpiMonthTokens">—</div>
+                    <div class="kpi-value blue">4.2B</div>
                     <div class="kpi-sub">∞ Ilimitado</div>
                 </div>
             </div>
 
             <!-- Subscription & IP -->
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);">
-                <div class="card">
-                    <div class="section-title">Assinatura</div>
-                    <div class="plan-header">
-                        <div>
-                            <div style="font-size: 20px; font-weight: 700;" id="planCardName">Carregando...</div>
-                            <div style="color: var(--text-secondary); font-size: 14px; margin-top: 4px;">Acesso ilimitado a todos os modelos frontier</div>
+                <div class="dash-section" style="margin-bottom: 0;">
+                    <div class="dash-section-title">Assinatura</div>
+                    <div class="card plan-card">
+                        <div class="plan-info">
+                            <div class="plan-name">
+                                <span id="planCardName">Trimestral</span>
+                                <span class="plan-badge" id="planCardBadge">Mais Escolhido</span>
+                            </div>
+                            <div class="plan-details">
+                                Claude Opus 5, Sonnet 5, Fable 5.1 e GLM 5.3 · Uso ilimitado
+                            </div>
                         </div>
-                        <div style="text-align: right;">
-                            <div class="plan-price"><span id="planCardPrice">—</span><span class="plan-period" id="planCardPeriod"></span></div>
-                            <div style="font-size:12px;color:var(--text-muted);margin-top:4px;" id="planCardRenewal"></div>
+                        <div class="plan-price">
+                            <div class="plan-price-value" id="planCardPrice">R$ 399</div>
+                            <div class="plan-price-period" id="planCardPeriod">/trimestre</div>
+                            <div class="plan-renewal" id="planCardRenewal">Próxima cobrança: 12/12/2026</div>
                         </div>
-                    </div>
-                    <div style="display: flex; gap: var(--space-sm); margin-top: var(--space-md);">
-                        <button class="btn btn-secondary" style="flex: 1;" onclick="window.location.href='/account'">Gerenciar Plano</button>
-                        <button class="btn btn-secondary" style="flex: 1;" onclick="window.location.href='/account'">Histórico</button>
+                        <button class="btn-upgrade btn-secondary">Gerenciar Plano</button>
                     </div>
                 </div>
 
-                <div class="card">
-                    <div class="section-title">IP Autorizado</div>
-                    <div style="margin-bottom: var(--space-md);">
-                        <div class="kpi-label">IP Principal</div>
-                        <div class="ip-display" id="ipMainValue">Carregando...</div>
-                        <span class="status-badge" id="ipStatusBadge" style="background:rgba(122,117,117,0.15);color:var(--text-muted);">Carregando...</span>
-                    </div>
-                    <div id="ipNetworkNow" style="font-size:12px;color:var(--text-muted);margin-top:8px;">IP atual da rede: carregando...</div>
-                    <div id="ipPendingChange" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(255,85,0,0.1);border:1px solid rgba(255,85,0,0.2);border-radius:var(--radius-sm);font-size:12px;color:var(--accent-orange);"></div>
-
-                    <!-- IP Change Form -->
-                    <div id="ipChangeForm" style="display:none;margin-top:var(--space-md);padding:var(--space-md);background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);">
-                        <div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">Solicitar Alteração de IP</div>
-                        <input type="text" id="ipChangeInput" placeholder="Novo IP (ex: 189.45.12.34)" style="width:100%;height:40px;padding:0 12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-family:var(--font-mono);font-size:14px;margin-bottom:8px;">
-                        <div style="display:flex;gap:8px;">
-                            <button id="ipChangeSubmitBtn" class="btn btn-primary" style="flex:1;padding:8px 16px;font-size:13px;" onclick="submitIpChange()">Enviar Solicitação</button>
-                            <button class="btn btn-secondary" style="padding:8px 16px;font-size:13px;" onclick="toggleIpChangeForm()">Cancelar</button>
+                <div class="dash-section" style="margin-bottom: 0;">
+                    <div class="dash-section-title">IP Autorizado</div>
+                    <div class="card" style="display:flex; flex-direction:column; gap:var(--space-lg);">
+                        <!-- IP Principal -->
+                        <div>
+                            <div class="kpi-label">IP Autorizado</div>
+                            <div class="ip-display" id="ipMainValue">Carregando...</div>
+                            <span class="status-badge" id="ipStatusBadge" style="background:rgba(122,117,117,0.15);color:var(--text-muted);">Carregando...</span>
+                            <div id="ipPendingChange" style="display:none;font-size:12px;color:var(--accent-amber);margin-top:4px;"></div>
                         </div>
-                        <div id="ipChangeFeedback" style="display:none;margin-top:8px;font-size:12px;"></div>
-                    </div>
 
-                    <div style="padding-top: var(--space-md); border-top: 1px solid var(--border); margin-top: var(--space-md);">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <span style="font-size: 13px; color: var(--text-secondary);">IP Adicional (Casa/Trabalho)</span>
-                            <span style="font-size: 12px; color: var(--accent-orange); font-weight: 600;">R$ 74,90/mês</span>
+                        <!-- IP Atual da Rede -->
+                        <div style="border-top:1px solid var(--border);padding-top:var(--space-lg);">
+                            <div class="kpi-label">IP atual da rede</div>
+                            <div id="ipCurrentNetwork" style="font-family:var(--font-mono);font-size:16px;color:var(--accent-blue);margin:var(--space-xs) 0;">Carregando...</div>
+                            <button class="btn-upgrade" id="btnAuthorizeCurrentIp" onclick="authorizeCurrentIp()" style="height:36px;padding:0 var(--space-md);font-size:13px;display:none;">Liberar este IP</button>
+                            <div id="ipAuthorizeFeedback" style="display:none;font-size:13px;margin-top:var(--space-sm);line-height:1.5;"></div>
                         </div>
-                        <div id="ipAdditionalStatus" style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Carregando...</div>
-                        <div id="ipAdditionalValue" style="display:none;font-family:var(--font-mono);font-size:14px;color:var(--accent-blue);margin-bottom:8px;"></div>
-                        <div id="ipAdditionalActions"></div>
+
+                        <!-- IP Adicional (Casa/Trabalho) -->
+                        <div style="border-top:1px solid var(--border);padding-top:var(--space-lg);">
+                            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-sm);margin-bottom:var(--space-sm);">
+                                <div class="kpi-label" style="margin-bottom:0;">IP Adicional (Casa/Trabalho)</div>
+                                <div id="ipAdditionalExpires" style="display:none;font-size:11px;color:var(--accent-amber);font-family:var(--font-mono);"></div>
+                            </div>
+
+                            <!-- Estado: Não comprado -->
+                            <div id="ipAdditionalNotPurchased">
+                                <button class="btn-upgrade" onclick="buyAdditionalIp()" style="font-size:13px;height:40px;padding:0 var(--space-lg);width:100%;">
+                                    Comprar IP Adicional — R$ 74,90/mês
+                                </button>
+                                <div style="font-size:12px;color:var(--text-muted);margin-top:var(--space-sm);text-align:center;">
+                                    +1 IP extra para alternar entre casa e trabalho
+                                </div>
+                            </div>
+
+                            <!-- Estado: Comprado, gerenciável -->
+                            <div id="ipAdditionalPurchased" style="display:none;">
+                                <div id="ipAdditionalContainer" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:var(--space-md);">
+                                    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-sm);">
+                                        <div>
+                                            <div style="font-size:12px;color:var(--text-muted);margin-bottom:2px;">IP Liberado</div>
+                                            <div id="ipAdditionalValue" style="font-family:var(--font-mono);font-size:15px;font-weight:600;color:var(--accent-green);">Carregando...</div>
+                                        </div>
+                                        <div id="ipAdditionalActions" style="display:flex;gap:var(--space-sm);"></div>
+                                    </div>
+                                </div>
+                                <!-- Formulário inline para definir/trocar IP adicional -->
+                                <div id="ipAdditionalForm" style="display:none;margin-top:var(--space-md);">
+                                    <div style="display:flex;align-items:stretch;gap:var(--space-sm);flex-wrap:wrap;">
+                                        <input type="text" id="ipAdditionalInput" placeholder="Ex.: 189.45.12.34" autocomplete="off" spellcheck="false"
+                                            style="flex:1;min-width:180px;height:36px;padding:0 var(--space-md);font-family:var(--font-mono);font-size:13px;color:var(--text-primary);background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);outline:none;transition:border-color var(--transition);"
+                                            onfocus="this.style.borderColor='var(--accent-orange)'" onblur="this.style.borderColor='var(--border)'">
+                                        <button class="btn-upgrade" id="ipAdditionalSaveBtn" onclick="saveAdditionalIp()" style="height:36px;padding:0 var(--space-md);font-size:12px;">Salvar</button>
+                                        <button class="btn-upgrade btn-secondary" onclick="toggleAdditionalIpForm()" style="height:36px;padding:0 var(--space-md);font-size:12px;">Cancelar</button>
+                                    </div>
+                                    <div id="ipAdditionalFeedback" style="display:none;font-size:12px;margin-top:var(--space-xs);"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Solicitar Alteração (IP Principal) -->
+                        <div style="border-top:1px solid var(--border);padding-top:var(--space-lg);">
+                            <button class="btn-upgrade btn-secondary" id="ipChangeToggleBtn" onclick="toggleIpChangeForm()" style="height:36px;padding:0 var(--space-md);font-size:13px;width:100%;">Solicitar Alteração</button>
+                            <div id="ipChangeForm" style="display:none;margin-top:var(--space-md);">
+                                <div style="font-size:13px;color:var(--text-secondary);margin-bottom:var(--space-sm);line-height:1.5;">
+                                    Digite o novo IP que deseja autorizar. A alteração entra em fila para aprovação do admin.
+                                </div>
+                                <div style="display:flex;align-items:stretch;gap:var(--space-sm);flex-wrap:wrap;">
+                                    <input type="text" id="ipChangeInput" placeholder="Ex.: 189.45.12.34" autocomplete="off" spellcheck="false"
+                                        style="flex:1;min-width:200px;height:40px;padding:0 var(--space-md);font-family:var(--font-mono);font-size:14px;color:var(--text-primary);background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);outline:none;transition:border-color var(--transition);"
+                                        onfocus="this.style.borderColor='var(--accent-orange)'" onblur="this.style.borderColor='var(--border)'">
+                                    <button class="btn-upgrade" id="ipChangeSubmitBtn" onclick="submitIpChange()" style="height:40px;padding:0 var(--space-lg);font-size:13px;">Enviar Solicitação</button>
+                                    <button class="btn-upgrade btn-secondary" onclick="toggleIpChangeForm()" style="height:40px;padding:0 var(--space-md);font-size:13px;">Cancelar</button>
+                                </div>
+                                <div id="ipChangeFeedback" style="display:none;font-size:13px;margin-top:var(--space-sm);line-height:1.5;"></div>
+                            </div>
+                        </div>
                     </div>
-                    <button id="ipChangeToggleBtn" class="btn btn-secondary" style="width: 100%; font-size: 13px; margin-top: var(--space-sm);" onclick="toggleIpChangeForm()">Solicitar Alteração</button>
                 </div>
             </div>
 
             <!-- API Keys Section -->
-            <div id="apiLocked" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:var(--space-xl);background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);text-align:center;">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5" style="margin-bottom:var(--space-md);"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                <h3 style="font-size:18px;font-weight:600;margin-bottom:8px;">Acesso exclusivo para assinantes</h3>
-                <p style="color:var(--text-secondary);font-size:14px;max-width:400px;">Faça upgrade para um plano pago e desbloqueie acesso ilimitado a todos os modelos de IA com sua própria chave API.</p>
-                <button class="btn btn-primary" style="margin-top:var(--space-md);" onclick="window.location.href='/account'">Ver Planos</button>
-            </div>
+            <div class="dash-section" id="apiKeysSection">
+                <div class="dash-section-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-orange)" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+                    Chave API
+                </div>
 
-            <div id="apiUnlocked" style="display:none;">
-                <div class="card">
-                    <div class="section-title">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-orange)" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
-                        Chaves API
+                <div class="card api-locked" id="apiLocked" style="flex-direction:column;align-items:flex-start;gap:var(--space-md);">
+                    <div style="display:flex;align-items:center;gap:var(--space-sm);color:var(--accent-amber);">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        <strong style="font-size:15px;color:var(--text-primary);">Acesso exclusivo para assinantes</strong>
                     </div>
-                    <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: var(--space-md);">
-                        Use estas chaves para autenticar suas requisições. Cada chave é vinculada ao seu IP autorizado.
+                    <p style="font-size:14px;color:var(--text-secondary);line-height:1.55;margin:0;">
+                        A chave API e a URL do gateway só ficam disponíveis depois que você assina um plano.
                     </p>
+                    <a href="index.html#precos" class="btn-upgrade" style="height:40px;padding:0 var(--space-lg);font-size:14px;">Ver planos e assinar</a>
+                </div>
 
-                    <!-- Gateway URL -->
-                    <div style="margin-bottom:var(--space-md);">
-                        <div class="kpi-label">Endpoint Base (Gateway URL)</div>
-                        <div class="api-key-box" style="margin-top: 4px;">
-                            <span class="key-value" id="gatewayUrl" style="color: var(--accent-blue);">Carregando...</span>
-                            <button class="btn-icon" style="width: 32px; height: 32px; border: none;" onclick="copyText(GATEWAY_URL, this)">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                            </button>
+                <div id="apiUnlocked" style="display:none;">
+                    <div class="api-keys-list">
+                        <div class="api-key-item">
+                            <div class="api-key-info">
+                                <div class="api-key-name">Chave de acesso (Bearer)</div>
+                                <div class="api-key-value" id="apiKeyValue" style="user-select:all;">gcli_••••••••••••••••••••••••••••</div>
+                            </div>
+                            <div class="api-key-actions">
+                                <button class="btn-icon" onclick="copyApiKey()" title="Copiar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                            </div>
+                        </div>
+                        <div class="api-key-item">
+                            <div class="api-key-info">
+                                <div class="api-key-name">Endpoint Base (Gateway URL)</div>
+                                <div class="api-key-value" id="gatewayUrlValue" style="user-select:all;color:var(--accent-blue);">https://api.8token.ai/v1</div>
+                            </div>
+                            <div class="api-key-actions">
+                                <button class="btn-icon" onclick="copyGatewayUrl()" title="Copiar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                            </div>
                         </div>
                     </div>
-
-                    <!-- API Keys List -->
-                    <div id="apiKeysList" style="margin-bottom:var(--space-md);">
-                        <div style="text-align:center;padding:var(--space-lg);color:var(--text-muted);font-size:14px;">Carregando chaves...</div>
-                    </div>
-
-                    <button class="btn btn-secondary" style="width:100%;" onclick="createNewApiKey()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                        Gerar Nova Chave API
+                    <button class="btn-generate" onclick="regenerateApiKey()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                        Gerar Nova Chave
                     </button>
-
-                    <!-- Usage Instructions -->
-                    <div style="margin-top:var(--space-lg);padding-top:var(--space-md);border-top:1px solid var(--border);">
-                        <div class="kpi-label" style="margin-bottom:8px;">Como usar</div>
-                        <div style="font-size:13px;color:var(--text-secondary);line-height:1.7;font-family:var(--font-mono);background:var(--bg-secondary);padding:var(--space-md);border-radius:var(--radius-sm);overflow-x:auto;">
-                            <div style="color:var(--text-muted);"># Claude Code / Cursor / Continue</div>
-                            <div>export ANTHROPIC_BASE_URL="<span id="exampleGwUrl1" style="color:var(--accent-blue);">...</span>"</div>
-                            <div>export ANTHROPIC_API_KEY="8tk_sua_chave_aqui"</div>
-                            <div style="margin-top:var(--space-sm);color:var(--text-muted);"># curl</div>
-                            <div>curl <span id="exampleGwUrl2" style="color:var(--accent-blue);">...</span>/chat/completions \</div>
-                            <div>&nbsp;&nbsp;-H "Authorization: Bearer 8tk_sua_chave" \</div>
-                            <div>&nbsp;&nbsp;-d '{"model":"auto","messages":[{"role":"user","content":"hi"}]}'</div>
-                        </div>
-                    </div>
                 </div>
             </div>
 
             <!-- Usage Breakdown -->
-            <div class="card" id="usageSection" style="display:none;">
-                <div class="section-title">Uso por Modelo (Últimos 30 dias)</div>
-
-                <!-- KPIs de uso -->
-                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:var(--space-md);margin-bottom:var(--space-lg);">
-                    <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:var(--space-md);">
-                        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;font-weight:600;margin-bottom:4px;">Total Mensagens</div>
-                        <div style="font-size:24px;font-weight:700;font-family:var(--font-mono);color:var(--accent-blue);" id="kpiTotalMessages">—</div>
+            <div class="dash-section">
+                <div class="card tokens-chart-card">
+                    <div class="tokens-chart-header">
+                        <div>
+                            <div class="tokens-chart-title">Uso por Modelo (Últimos 30 dias)</div>
+                            <div class="tokens-chart-subtitle">Distribuição do consumo de tokens</div>
+                        </div>
+                        <div class="tokens-chart-total">
+                            <div class="tokens-chart-total-value">4.2B</div>
+                            <div class="tokens-chart-total-label">Total Tokens</div>
+                        </div>
                     </div>
-                    <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:var(--space-md);">
-                        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;font-weight:600;margin-bottom:4px;">Total Tokens</div>
-                        <div style="font-size:24px;font-weight:700;font-family:var(--font-mono);color:var(--accent-orange);" id="kpiTotalTokens">—</div>
+                    <div class="tokens-bar-list">
+                        <div class="tokens-bar-item">
+                            <div class="tokens-bar-label">
+                                <div class="tokens-bar-name">Claude Fable 5.1</div>
+                                <div class="tokens-bar-provider">Anthropic</div>
+                            </div>
+                            <div class="tokens-bar-track"><div class="tokens-bar-fill fable" style="width: 48%;"></div></div>
+                            <div class="tokens-bar-value">2.01B <span class="unit">tokens</span></div>
+                        </div>
+                        <div class="tokens-bar-item">
+                            <div class="tokens-bar-label">
+                                <div class="tokens-bar-name">GPT-6 Astra</div>
+                                <div class="tokens-bar-provider">OpenAI</div>
+                            </div>
+                            <div class="tokens-bar-track"><div class="tokens-bar-fill gpt" style="width: 22%;"></div></div>
+                            <div class="tokens-bar-value">924M <span class="unit">tokens</span></div>
+                        </div>
+                        <div class="tokens-bar-item">
+                            <div class="tokens-bar-label">
+                                <div class="tokens-bar-name">Claude Opus 5</div>
+                                <div class="tokens-bar-provider">Anthropic</div>
+                            </div>
+                            <div class="tokens-bar-track"><div class="tokens-bar-fill opus" style="width: 18%;"></div></div>
+                            <div class="tokens-bar-value">756M <span class="unit">tokens</span></div>
+                        </div>
+                        <div class="tokens-bar-item">
+                            <div class="tokens-bar-label">
+                                <div class="tokens-bar-name">Outros Modelos</div>
+                                <div class="tokens-bar-provider">Mixed</div>
+                            </div>
+                            <div class="tokens-bar-track"><div class="tokens-bar-fill glm" style="width: 12%;"></div></div>
+                            <div class="tokens-bar-value">504M <span class="unit">tokens</span></div>
+                        </div>
                     </div>
-                    <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:var(--space-md);">
-                        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;font-weight:600;margin-bottom:4px;">Hoje (msgs)</div>
-                        <div style="font-size:24px;font-weight:700;font-family:var(--font-mono);color:var(--accent-green);" id="kpiTodayMessages">—</div>
+                    <div class="tokens-chart-footer">
+                        <div class="tokens-chart-note">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                            Uso ilimitado incluso no plano
+                        </div>
+                        <div class="tokens-chart-period">Atualizado em tempo real</div>
                     </div>
-                    <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:var(--space-md);">
-                        <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;font-weight:600;margin-bottom:4px;">Latência Média</div>
-                        <div style="font-size:24px;font-weight:700;font-family:var(--font-mono);" id="kpiAvgLatency">—</div>
-                    </div>
-                </div>
-
-                <div id="tokensBarList">
-                    <div style="text-align:center;padding:var(--space-lg);color:var(--text-muted);font-size:13px;">Carregando...</div>
                 </div>
             </div>
-        </main>
-    </div>
+        </div>
+    </main>
 
     <script>
         const API_BASE = '';
 
-        // Auth check
-        const token = localStorage.getItem('8token_token');
-        if (!token) { window.location.href = '/login'; }
+        function handleUserClick() {
+            const isLoggedIn = localStorage.getItem('8token_logged_in') === 'true';
+            window.location.href = isLoggedIn ? 'dashboard.html' : 'login.html';
+        }
+
+        function updateUserBtn() {
+            const emailDisplay = document.getElementById('userEmailDisplay');
+            const avatar = document.querySelector('.navbar-avatar');
+            if (!emailDisplay) return;
+            const isLoggedIn = localStorage.getItem('8token_logged_in') === 'true';
+            if (isLoggedIn) {
+                const email = localStorage.getItem('8token_email') || 'U';
+                const initial = email.charAt(0).toUpperCase();
+                avatar.textContent = initial;
+                emailDisplay.textContent = email;
+            }
+        }
+        updateUserBtn();
 
         function handleLogout() {
+            localStorage.removeItem('8token_logged_in');
             localStorage.removeItem('8token_token');
-            localStorage.removeItem('8token_user');
-            localStorage.removeItem('8token_has_plan');
-            window.location.href = '/login';
+            localStorage.removeItem('8token_email');
+            window.location.href = 'index.html';
         }
 
-        // Load user data
-        async function loadUserData() {
+        // ---- NOTIFICATIONS ----
+        let dashNotifications = [];
+        function timeAgoDash(dateStr) {
+            const now = new Date(); const date = new Date(dateStr); const diffMs = now - date;
+            const diffMin = Math.floor(diffMs / 60000); const diffHr = Math.floor(diffMs / 3600000); const diffDay = Math.floor(diffMs / 86400000);
+            if (diffMin < 1) return 'agora'; if (diffMin < 60) return diffMin + ' min'; if (diffHr < 24) return diffHr + 'h'; if (diffDay < 7) return diffDay + 'd';
+            return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+        }
+        function escHtmlDash(str) { const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML; }
+        function toggleNotifDropdown(e) {
+            if (e) e.stopPropagation();
+            const dd = document.getElementById('notifDropdown');
+            dd.classList.toggle('open');
+            if (dd.classList.contains('open')) loadDashNotifications();
+        }
+        document.addEventListener('click', function(e) {
+            const dd = document.getElementById('notifDropdown'); const wrap = document.querySelector('.notif-bell-wrap');
+            if (dd && wrap && !wrap.contains(e.target)) dd.classList.remove('open');
+        });
+        async function loadDashNotifications() {
             try {
-                const res = await fetch(API_BASE + '/api/user/profile', {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (res.status === 401 || res.status === 403) { handleLogout(); return; }
-                if (res.ok) {
-                    const user = await res.json();
-                    const emailSpan = document.getElementById('userEmail');
-                    const avatarEl = document.getElementById('userAvatar');
-                    if (emailSpan) emailSpan.textContent = user.email;
-                    if (avatarEl) avatarEl.textContent = (user.email || 'U').charAt(0).toUpperCase();
-
-                    // Check admin access
-                    if (user.plan === 'admin') {
-                        const sidebarAdminLink = document.getElementById('sidebarAdminLink');
-                        if (sidebarAdminLink) sidebarAdminLink.style.display = 'flex';
-                    }
-                }
-            } catch (e) { console.error('Load user error:', e); }
-        }
-        loadUserData();
-
-        // Load profile for KPI plan display
-        fetch(API_BASE + '/api/user/profile', { headers: { 'Authorization': 'Bearer ' + token } })
-        .then(r => {
-            if (r.status === 401 || r.status === 403) { handleLogout(); throw new Error('auth'); }
-            if (!r.ok) throw new Error('API error ' + r.status);
-            return r.json();
-        }).then(profile => {
-            const kpiPlan = document.getElementById('kpiPlan');
-            const kpiExpiry = document.getElementById('kpiPlanExpiry');
-            const displayPlan = profile.plan === 'admin' ? 'anual' : profile.plan;
-            const planNames = { mensal: 'Mensal', trimestral: 'Trimestral', anual: 'Anual', admin: 'Admin', free: 'Grátis' };
-            if (kpiPlan) kpiPlan.textContent = planNames[displayPlan] || displayPlan || '—';
-            if (kpiExpiry && profile.plan_expires_at) {
-                kpiExpiry.textContent = 'Renova em ' + new Date(profile.plan_expires_at).toLocaleDateString('pt-BR');
-            } else if (kpiExpiry) {
-                kpiExpiry.textContent = profile.plan === 'admin' ? 'Acesso permanente' : 'Sem data de renovação';
-            }
-
-            // CRITICAL: Set localStorage flag for hasActivePlan() check
-            const activePlans = ['mensal', 'trimestral', 'anual', 'admin'];
-            if (activePlans.includes(profile.plan)) {
-                localStorage.setItem('8token_has_plan', 'true');
-            } else {
-                localStorage.setItem('8token_has_plan', 'false');
-            }
-
-            // Expiry banner check
-            if (profile.plan_expires_at && profile.plan !== 'admin') {
-                const daysLeft = Math.ceil((new Date(profile.plan_expires_at) - new Date()) / (1000*60*60*24));
-                const banner = document.getElementById('expiryBanner');
-                const text = document.getElementById('expiryBannerText');
-                if (daysLeft <= 7 && daysLeft > 0 && banner) {
-                    text.textContent = `Seu plano ${planNames[displayPlan] || displayPlan} expira em ${daysLeft} dia(s). Renove agora!`;
-                    banner.style.display = 'block';
-                } else if (daysLeft <= 0 && banner) {
-                    text.textContent = `Seu plano ${planNames[displayPlan] || displayPlan} expirou! Renove agora.`;
-                    banner.style.display = 'block';
-                }
-            }
-
-            // Update plan card dynamically
-            const planCardName = document.getElementById('planCardName');
-            const planCardPrice = document.getElementById('planCardPrice');
-            const planCardPeriod = document.getElementById('planCardPeriod');
-            const planCardRenewal = document.getElementById('planCardRenewal');
-            if (planCardName) planCardName.textContent = planNames[displayPlan] || displayPlan;
-            if (profile.plan === 'admin') {
-                if (planCardPrice) planCardPrice.textContent = 'R$ 1.100';
-                if (planCardPeriod) planCardPeriod.textContent = '/ano';
-                if (planCardRenewal) planCardRenewal.textContent = 'Acesso permanente';
-            } else if (profile.plan === 'anual') {
-                if (planCardPrice) planCardPrice.textContent = 'R$ 1.100';
-                if (planCardPeriod) planCardPeriod.textContent = '/ano';
-            } else if (profile.plan === 'trimestral') {
-                if (planCardPrice) planCardPrice.textContent = 'R$ 399';
-                if (planCardPeriod) planCardPeriod.textContent = '/trim';
-            } else if (profile.plan === 'mensal') {
-                if (planCardPrice) planCardPrice.textContent = 'R$ 199,70';
-                if (planCardPeriod) planCardPeriod.textContent = '/mês';
-            }
-        }).catch(() => {});
-
-        // ── Chave API (acesso restrito: só assinantes) ──────────────────────
-        let GATEWAY_URL = '';
-        let userApiKeys = [];
-        let newlyCreatedKey = null;
-
-        async function fetchGatewayUrl() {
-            try {
-                const res = await fetch(API_BASE + '/api/user/gateway-url', {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    GATEWAY_URL = data.gateway_url || '';
-                    return true;
-                }
-                return false;
-            } catch {
-                return false;
-            }
-        }
-
-        function hasActivePlan() {
-            return localStorage.getItem('8token_has_plan') === 'true';
-        }
-
-        // ── CRUD de Chaves API ──
-        async function loadUserApiKeys() {
-            try {
-                const res = await fetch(API_BASE + '/api/keys', {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (res.ok) {
-                    userApiKeys = await res.json();
-                    renderApiKeysList();
-                }
-            } catch (e) { console.error('Load API keys error:', e); }
-        }
-
-        async function createNewApiKey() {
-            const name = prompt('Nome para esta chave (ex: "Cursor", "Claude Code"):');
-            if (!name) return;
-            try {
-                const res = await fetch(API_BASE + '/api/keys', {
-                    method: 'POST',
-                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: name.trim() })
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    newlyCreatedKey = data.key;
-                    alert('Chave criada! Copie agora — ela não será mostrada novamente:\n' + data.key);
-                    await loadUserApiKeys();
-                } else {
-                    alert(data.error || 'Erro ao criar chave.');
-                }
-            } catch (e) { alert('Erro de conexão.'); }
-        }
-
-        async function revokeApiKey(id) {
-            if (!confirm('Revogar esta chave? Ela parará de funcionar imediatamente.')) return;
-            try {
-                const res = await fetch(API_BASE + '/api/keys/' + id, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (res.ok) {
-                    await loadUserApiKeys();
-                } else {
-                    const data = await res.json();
-                    alert(data.error || 'Erro ao revogar chave.');
-                }
-            } catch (e) { alert('Erro de conexão.'); }
-        }
-
-        function renderApiKeysList() {
-            const container = document.getElementById('apiKeysList');
-            if (!container) return;
-            // Filter out revoked keys — they disappear from the list
-            const activeKeys = userApiKeys.filter(k => !k.revoked);
-            if (!activeKeys.length) {
-                container.innerHTML = '<div style="text-align:center;padding:var(--space-xl);color:var(--text-muted);font-size:14px;">Nenhuma chave API ativa. Gere sua primeira chave abaixo.</div>';
-                return;
-            }
-            container.innerHTML = activeKeys.map(k => {
-                // Show full key if it was just created (newlyCreatedKey), otherwise show masked with reveal button
-                const isRevealed = k._revealed || (newlyCreatedKey && k.key_prefix && newlyCreatedKey.startsWith(k.key_prefix));
-                const displayKey = isRevealed && k.full_key ? k.full_key : `${k.key_prefix || '8tk_'}••••••••${k.key_suffix || '••••'}`;
-                return `
-                <div class="api-key-box" style="flex-direction:column;align-items:stretch;gap:8px;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;">
-                        <div style="font-size:14px;font-weight:600;">${escHtmlDash(k.name || 'Sem nome')} <span style="color:var(--accent-green);font-size:11px;font-weight:700;">ATIVA</span></div>
-                        <div style="display:flex;gap:6px;">
-                            <button class="btn-icon" style="width:32px;height:32px;" onclick="toggleKeyReveal('${k.id}')" title="${isRevealed ? 'Ocultar' : 'Mostrar'} chave">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${isRevealed ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>' : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>'}</svg>
-                            </button>
-                            <button class="btn-icon" style="width:32px;height:32px;" onclick="copyApiKeyValue('${k.id}')" title="Copiar chave">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                            </button>
-                            <button class="btn-icon" style="width:32px;height:32px;border-color:var(--accent-red);color:var(--accent-red);" onclick="revokeApiKey('${k.id}')" title="Revogar chave">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-                            </button>
-                        </div>
-                    </div>
-                    <div style="font-family:var(--font-mono);font-size:13px;color:${isRevealed ? 'var(--accent-blue)' : 'var(--text-muted)'};user-select:all;word-break:break-all;" id="keyDisplay_${k.id}">${displayKey}</div>
-                    <div style="font-size:12px;color:var(--text-muted);">${k.last_used_at ? 'Último uso: ' + new Date(k.last_used_at).toLocaleString('pt-BR') : 'Nunca usada'} · Criada em ${new Date(k.created_at).toLocaleDateString('pt-BR')}</div>
-                    ${isRevealed && k.full_key ? '<div style="font-size:11px;color:var(--accent-orange);">⚠️ Chave visível — copie e guarde em local seguro. Ela não será mostrada novamente após recarregar.</div>' : ''}
-                </div>
-            `}).join('');
-        }
-
-        function toggleKeyReveal(id) {
-            const key = userApiKeys.find(k => k.id === id);
-            if (!key) return;
-            key._revealed = !key._revealed;
-            renderApiKeysList();
-        }
-
-        function copyApiKeyValue(id) {
-            const key = userApiKeys.find(k => k.id === id);
-            if (!key) return;
-            // If we have the full key (just created or revealed), copy it; otherwise copy masked
-            const valueToCopy = key.full_key || newlyCreatedKey || `${key.key_prefix || '8tk_'}...${key.key_suffix || ''}`;
-            navigator.clipboard.writeText(valueToCopy).then(() => {
-                // Brief visual feedback
-                const el = document.getElementById('keyDisplay_' + id);
-                if (el) { el.style.color = 'var(--accent-green)'; setTimeout(() => { el.style.color = ''; }, 1000); }
-            }).catch(() => {});
-        }
-
-        async function renderApiAccess() {
-            const locked = document.getElementById('apiLocked');
-            const unlocked = document.getElementById('apiUnlocked');
-            if (!locked || !unlocked) return;
-            if (hasActivePlan()) {
-                const hasAccess = await fetchGatewayUrl();
-                if (hasAccess && GATEWAY_URL) {
-                    locked.style.display = 'none';
-                    unlocked.style.display = 'block';
-                    const gwEl = document.getElementById('gatewayUrl');
-                    if (gwEl) gwEl.textContent = GATEWAY_URL;
-                    await loadUserApiKeys();
-                } else {
-                    locked.style.display = 'flex';
-                    unlocked.style.display = 'none';
-                }
-            } else {
-                locked.style.display = 'flex';
-                unlocked.style.display = 'none';
-            }
-        }
-
-        function flashCopied(btn) {
-            const original = btn.innerHTML;
-            btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>';
-            setTimeout(() => { btn.innerHTML = original; }, 1500);
-        }
-
-        function copyText(text, btn) {
-            navigator.clipboard.writeText(text).then(() => flashCopied(btn)).catch(() => {});
-        }
-
-        // ── Métricas de Uso ──
-        async function loadUsageStats() {
-            try {
-                const res = await fetch(API_BASE + '/api/user/usage-stats', {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
+                const token = localStorage.getItem('8token_token');
+                const res = await fetch(API_BASE + '/api/notifications', { headers: { 'Authorization': 'Bearer ' + token } });
                 if (!res.ok) return;
-                const stats = await res.json();
-                renderUsageKPIs(stats);
-                renderUsageByModel(stats.usage_by_model || []);
-            } catch (e) { console.error('Load usage stats error:', e); }
+                dashNotifications = await res.json();
+                renderNotifDropdown(); updateNotifBadge();
+            } catch (e) { console.error('Notif load error:', e); }
         }
-
-        function formatNumber(n) {
-            if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
-            if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
-            return n.toString();
+        function renderNotifDropdown() {
+            const list = document.getElementById('notifDropdownList'); if (!list) return;
+            const recent = dashNotifications.slice(0, 5);
+            if (!recent.length) { list.innerHTML = '<div class="notif-dropdown-empty">Nenhuma notificação ainda</div>'; return; }
+            list.innerHTML = recent.map(n => `
+                <div class="notif-dropdown-item ${n.read ? '' : 'unread'}" onclick="markReadDash(${n.id})">
+                    <div class="notif-dropdown-item-title">${escHtmlDash(n.title)}</div>
+                    <div class="notif-dropdown-item-msg">${escHtmlDash(n.message)}</div>
+                    <div class="notif-dropdown-item-time">${timeAgoDash(n.created_at)}</div>
+                </div>
+            `).join('');
         }
-
-        function renderUsageKPIs(stats) {
-            const el = (id) => document.getElementById(id);
-            if (el('kpiTotalMessages')) el('kpiTotalMessages').textContent = formatNumber(stats.total_messages || 0);
-            if (el('kpiTotalTokens')) el('kpiTotalTokens').textContent = formatNumber(stats.total_tokens || 0);
-            if (el('kpiTodayMessages')) el('kpiTodayMessages').textContent = formatNumber(stats.today_messages || 0);
-            if (el('kpiAvgLatency')) el('kpiAvgLatency').textContent = (stats.avg_latency_ms || 0) + 'ms';
-            if (el('kpiMonthTokens')) el('kpiMonthTokens').textContent = formatNumber(stats.usage_last_30d_tokens || 0);
+        function updateNotifBadge() {
+            const badge = document.getElementById('notifBadge'); if (!badge) return;
+            const unread = dashNotifications.filter(n => !n.read).length;
+            if (unread > 0) { badge.textContent = unread > 9 ? '9+' : unread; badge.classList.remove('hidden'); } else { badge.classList.add('hidden'); }
         }
-
-        function renderUsageByModel(models) {
-            const container = document.getElementById('tokensBarList');
-            if (!container) return;
-            if (!models.length) {
-                container.innerHTML = '<div style="text-align:center;padding:var(--space-lg);color:var(--text-muted);font-size:13px;">Nenhum uso registrado ainda. Faça sua primeira requisição API para ver as métricas aqui.</div>';
-                return;
-            }
-            const maxTokens = Math.max(...models.map(m => m.tokens_in + m.tokens_out), 1);
-            const modelColors = {
-                'claude-fable': 'fable', 'fable': 'fable',
-                'claude-opus': 'opus', 'opus': 'opus',
-                'claude-sonnet': 'sonnet', 'sonnet': 'sonnet',
-                'glm': 'glm', 'gpt': 'gpt'
-            };
-            function getColorClass(model) {
-                const m = (model || '').toLowerCase();
-                for (const [key, cls] of Object.entries(modelColors)) {
-                    if (m.includes(key)) return cls;
-                }
-                return 'fable';
-            }
-            container.innerHTML = models.map(m => {
-                const total = m.tokens_in + m.tokens_out;
-                const pct = Math.max((total / maxTokens) * 100, 2);
-                const colorClass = getColorClass(m.model);
-                return `
-                    <div class="usage-item">
-                        <div class="usage-header">
-                            <span style="font-weight: 600;">${escHtmlDash(m.model)}</span>
-                            <span style="color: var(--text-muted);">${m.messages} msgs · ${formatNumber(total)} tokens</span>
-                        </div>
-                        <div class="usage-track">
-                            <div class="usage-fill fill-${colorClass}" style="width:${pct}%"></div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
+        async function markReadDash(id) {
+            try {
+                const token = localStorage.getItem('8token_token');
+                await fetch(API_BASE + '/api/notifications/' + id + '/read', { method: 'PUT', headers: { 'Authorization': 'Bearer ' + token } });
+                const n = dashNotifications.find(x => x.id === id); if (n) n.read = true;
+                renderNotifDropdown(); updateNotifBadge();
+            } catch (e) { console.error(e); }
         }
-
-        (async () => {
-            await renderApiAccess();
-            if (hasActivePlan()) {
-                loadUsageStats();
-                const usageSection = document.getElementById('usageSection');
-                if (usageSection) usageSection.style.display = 'block';
-                setTimeout(() => {
-                    const gw1 = document.getElementById('exampleGwUrl1');
-                    const gw2 = document.getElementById('exampleGwUrl2');
-                    if (gw1 && GATEWAY_URL) gw1.textContent = GATEWAY_URL;
-                    if (gw2 && GATEWAY_URL) gw2.textContent = GATEWAY_URL;
-                }, 1000);
-            }
-        })();
-
-        // ── Scroll to section helper ──
-        function scrollToSection(id) {
-            const el = document.getElementById(id);
-            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        async function markAllReadDash() {
+            try {
+                const token = localStorage.getItem('8token_token');
+                await fetch(API_BASE + '/api/notifications/read-all', { method: 'PUT', headers: { 'Authorization': 'Bearer ' + token } });
+                dashNotifications.forEach(n => n.read = true); renderNotifDropdown(); updateNotifBadge();
+            } catch (e) { console.error(e); }
         }
-        // Auto-scroll to API keys section on load for standard users
-        setTimeout(() => {
-            if (hasActivePlan()) {
-                const apiSection = document.getElementById('apiUnlocked');
-                if (apiSection && apiSection.style.display !== 'none') {
-                    apiSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-            }
-        }, 1500);
+        if (localStorage.getItem('8token_token')) { loadDashNotifications(); setInterval(loadDashNotifications, 60000); }
 
-        // ── IP Authorization ──
+        // ---- IP & PLAN LOGIC (Preserved from original) ----
+        // ---- IP BLOCK LOGIC ----
+        let currentNetworkIp = null;
+        let authorizedIp = null;
+
         async function loadIpInfo() {
             try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
-                const res = await fetch(API_BASE + '/api/user/ip-info', {
-                    headers: { 'Authorization': 'Bearer ' + token },
-                    signal: controller.signal
-                });
-                clearTimeout(timeoutId);
-                if (res.status === 401 || res.status === 403) { handleLogout(); return; }
-                if (!res.ok) {
-                    // Fallback: show "Nenhum IP cadastrado" instead of stuck "Carregando..."
-                    const ipMainEl = document.getElementById('ipMainValue');
-                    const statusBadge = document.getElementById('ipStatusBadge');
-                    if (ipMainEl) ipMainEl.textContent = 'Nenhum IP cadastrado';
-                    if (statusBadge) { statusBadge.textContent = 'Sem IP'; statusBadge.style.color = 'var(--accent-orange)'; statusBadge.style.background = 'rgba(255,85,0,0.1)'; }
-                    return;
-                }
-                const data = await res.json();
+                const token = localStorage.getItem('8token_token');
+                const headers = { 'Authorization': 'Bearer ' + token };
+
+                // Fetch IP info and current network IP in parallel
+                const [ipRes, currentIpRes] = await Promise.all([
+                    fetch(API_BASE + '/api/user/ip-info', { headers }),
+                    fetch(API_BASE + '/api/user/current-ip', { headers })
+                ]);
+
+                const data = ipRes.ok ? await ipRes.json() : {};
+                const currentIpData = currentIpRes.ok ? await currentIpRes.json() : {};
+
+                currentNetworkIp = currentIpData.ip || null;
+                authorizedIp = data.ip || null;
+
+                // IP Autorizado
                 const ipMainEl = document.getElementById('ipMainValue');
                 const statusBadge = document.getElementById('ipStatusBadge');
-                const ipToggleBtn = document.getElementById('ipChangeToggleBtn');
+                if (ipMainEl) ipMainEl.textContent = authorizedIp || 'Nenhum IP cadastrado';
 
-                if (!data.ip) {
-                    if (ipMainEl) { ipMainEl.textContent = 'Nenhum IP cadastrado'; ipMainEl.dataset.hasIp = '0'; }
-                    if (ipToggleBtn) ipToggleBtn.textContent = 'Cadastrar IP';
-                    if (statusBadge) {
-                        statusBadge.textContent = 'Sem IP';
-                        statusBadge.style.color = 'var(--accent-orange)';
-                        statusBadge.style.background = 'rgba(255,85,0,0.1)';
-                    }
-                } else {
-                    if (ipMainEl) { ipMainEl.textContent = data.ip; ipMainEl.dataset.hasIp = '1'; }
-                    if (ipToggleBtn) ipToggleBtn.textContent = 'Solicitar Alteração';
+                if (statusBadge) {
+                    const status = data.status || 'unknown';
+                    let color = 'var(--text-muted)', bg = 'rgba(122,117,117,0.15)', label = status;
+                    if (status === 'active') { color = 'var(--accent-green)'; bg = 'rgba(0,255,148,0.1)'; label = 'Ativo'; }
+                    else if (status === 'expired') { color = 'var(--accent-red)'; bg = 'rgba(255,51,51,0.1)'; label = 'Expirado'; }
+                    else if (status === 'suspended') { color = 'var(--accent-amber)'; bg = 'rgba(245,158,11,0.1)'; label = 'Suspenso'; }
+                    statusBadge.style.color = color; statusBadge.style.background = bg; statusBadge.textContent = label;
                 }
 
-                // IP atual da rede do usuário
-                let netIp = null, netActive = false;
-                try {
-                    const netRes = await fetch(API_BASE + '/api/ip/status');
-                    if (netRes.ok) {
-                        const net = await netRes.json();
-                        netIp = net.ip || null;
-                        netActive = !!net.active;
-                    }
-                } catch (e) { /* ignora */ }
-                const netEl = document.getElementById('ipNetworkNow');
-                if (netEl) {
-                    const regIp = data.ip || null;
-                    if (netIp && regIp && netIp === regIp) {
-                        netEl.innerHTML = 'IP atual da rede: <span style="font-family:var(--font-mono);color:var(--text-secondary);">' + netIp + '</span> · esta rede <span style="color:var(--accent-green);">já está liberada</span>';
-                    } else if (netIp) {
-                        netEl.innerHTML = 'IP atual da rede: <span style="font-family:var(--font-mono);color:var(--text-secondary);">' + netIp + '</span>' + (netActive ? ' · <span style="color:var(--accent-green);">rede liberada</span>' : ' · <span style="color:var(--accent-orange);">rede ainda não liberada</span>');
-                    } else {
-                        netEl.textContent = 'IP atual da rede: não foi possível detectar';
-                    }
-                }
-
-                if (statusBadge && data.status) {
-                    let status = data.status;
-                    let color = 'var(--text-muted)';
-                    let bg = 'rgba(122,117,117,0.15)';
-                    let label = status;
-                    if (status === 'active') { color = 'var(--accent-green)'; bg = 'rgba(0,255,148,0.1)'; label = '● Liberado'; }
-                    else if (status === 'expired') { color = 'var(--accent-red)'; bg = 'rgba(255,51,51,0.1)'; label = '● Expirado'; }
-                    else if (status === 'suspended') { color = 'var(--accent-orange)'; bg = 'rgba(255,85,0,0.1)'; label = '● Suspenso'; }
-                    statusBadge.style.color = color;
-                    statusBadge.style.background = bg;
-                    statusBadge.textContent = label;
-                }
-
+                // Pending change
                 const pendingEl = document.getElementById('ipPendingChange');
                 if (pendingEl && data.pending_ip_change) {
                     pendingEl.style.display = 'block';
-                    pendingEl.textContent = '⏳ Alteração pendente para ' + data.pending_ip_change.new_ip + ' (solicitado em ' + new Date(data.pending_ip_change.requested_at).toLocaleDateString('pt-BR') + ')';
+                    pendingEl.textContent = '⏳ Alteração pendente para ' + data.pending_ip_change.new_ip;
+                } else if (pendingEl) {
+                    pendingEl.style.display = 'none';
                 }
 
-                const statusEl = document.getElementById('ipAdditionalStatus');
-                const valueEl = document.getElementById('ipAdditionalValue');
-                const actionsEl = document.getElementById('ipAdditionalActions');
+                // IP Atual da Rede
+                const currentIpEl = document.getElementById('ipCurrentNetwork');
+                const authorizeBtn = document.getElementById('btnAuthorizeCurrentIp');
+                const authorizeFeedback = document.getElementById('ipAuthorizeFeedback');
+                if (currentIpEl) currentIpEl.textContent = currentNetworkIp || 'Não detectado';
+                if (authorizeBtn && authorizeFeedback) {
+                    authorizeFeedback.style.display = 'none';
+                    if (currentNetworkIp && authorizedIp && currentNetworkIp === authorizedIp) {
+                        authorizeBtn.style.display = 'inline-flex';
+                        authorizeBtn.textContent = 'IP da rede liberado!';
+                        authorizeBtn.disabled = true;
+                        authorizeBtn.style.background = 'var(--accent-green)';
+                        authorizeBtn.style.borderColor = 'var(--accent-green)';
+                    } else if (currentNetworkIp) {
+                        authorizeBtn.style.display = 'inline-flex';
+                        authorizeBtn.textContent = 'Liberar este IP';
+                        authorizeBtn.disabled = false;
+                        authorizeBtn.style.background = '';
+                        authorizeBtn.style.borderColor = '';
+                    } else {
+                        authorizeBtn.style.display = 'none';
+                    }
+                }
+
+                // IP Adicional
+                const notPurchasedEl = document.getElementById('ipAdditionalNotPurchased');
+                const purchasedEl = document.getElementById('ipAdditionalPurchased');
+                const additionalValueEl = document.getElementById('ipAdditionalValue');
+                const additionalActionsEl = document.getElementById('ipAdditionalActions');
+                const additionalExpiresEl = document.getElementById('ipAdditionalExpires');
+
                 if (data.has_additional_ip) {
-                    if (statusEl) statusEl.textContent = data.additional_ip ? 'Ativo' : 'Comprado — defina o IP';
-                    if (valueEl && data.additional_ip) { valueEl.style.display = 'block'; valueEl.textContent = data.additional_ip; }
-                    if (actionsEl) {
-                        actionsEl.innerHTML = '<button class="btn btn-secondary" style="font-size:12px;padding:6px 12px;margin-right:8px;" onclick="setAdditionalIp()">Definir IP</button>' +
-                            '<button class="btn btn-secondary" style="font-size:12px;padding:6px 12px;border-color:var(--accent-red);color:var(--accent-red);" onclick="removeAdditionalIp()">Remover</button>';
+                    if (notPurchasedEl) notPurchasedEl.style.display = 'none';
+                    if (purchasedEl) purchasedEl.style.display = 'block';
+                    if (additionalValueEl) {
+                        additionalValueEl.textContent = data.additional_ip || 'Não definido';
+                        additionalValueEl.style.color = data.additional_ip ? 'var(--accent-green)' : 'var(--text-muted)';
+                    }
+                    if (additionalExpiresEl) {
+                        if (data.additional_ip_expires_at) {
+                            const expDate = new Date(data.additional_ip_expires_at);
+                            additionalExpiresEl.textContent = 'Vence em ' + expDate.toLocaleDateString('pt-BR');
+                            additionalExpiresEl.style.display = 'block';
+                        } else {
+                            additionalExpiresEl.style.display = 'none';
+                        }
+                    }
+                    if (additionalActionsEl) {
+                        additionalActionsEl.innerHTML =
+                            '<button class="btn-upgrade btn-secondary" onclick="toggleAdditionalIpForm()" style="height:30px;padding:0 10px;font-size:11px;">Editar</button>' +
+                            '<button class="btn-upgrade btn-secondary" onclick="removeAdditionalIp()" style="height:30px;padding:0 10px;font-size:11px;border-color:var(--accent-red);color:var(--accent-red);">Excluir</button>';
                     }
                 } else {
-                    if (statusEl) statusEl.textContent = 'Não contratado';
-                    if (actionsEl) {
-                        actionsEl.innerHTML = '<button class="btn btn-primary" style="font-size:13px;padding:8px 16px;" onclick="buyAdditionalIp()">Comprar IP Adicional — R$ 74,90/mês</button>';
-                    }
+                    if (notPurchasedEl) notPurchasedEl.style.display = 'block';
+                    if (purchasedEl) purchasedEl.style.display = 'none';
+                    if (additionalExpiresEl) additionalExpiresEl.style.display = 'none';
                 }
             } catch (e) { console.error('Load IP info error:', e); }
         }
         loadIpInfo();
 
-        // ── IP Adicional: compra via checkout-ip.html + gestão no painel ──
-        function buyAdditionalIp() {
-            window.location.href = '/checkout-ip';
-        }
-        async function setAdditionalIp() {
-            const ip = prompt('Digite o IP adicional que deseja autorizar:');
-            if (!ip) return;
-            if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(ip.trim())) { alert('Formato inválido. Use algo como 189.45.12.34'); return; }
+        // Authorize current network IP as main IP
+        async function authorizeCurrentIp() {
+            const btn = document.getElementById('btnAuthorizeCurrentIp');
+            const feedback = document.getElementById('ipAuthorizeFeedback');
+            if (btn) { btn.disabled = true; btn.textContent = 'Liberando...'; }
             try {
-                const res = await fetch(API_BASE + '/api/user/additional-ip', {
-                    method: 'PUT',
-                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ip: ip.trim() })
+                const token = localStorage.getItem('8token_token');
+                const res = await fetch(API_BASE + '/api/user/authorize-current-ip', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
                 });
                 const data = await res.json();
-                if (res.ok) { loadIpInfo(); } else { alert(data.error || 'Erro ao definir IP adicional.'); }
-            } catch (e) { alert('Erro de conexão. Tente novamente.'); }
-        }
-        async function removeAdditionalIp() {
-            if (!confirm('Remover o IP adicional da sua conta?')) return;
-            try {
-                const res = await fetch(API_BASE + '/api/user/additional-ip', {
-                    method: 'DELETE',
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                const data = await res.json();
-                if (res.ok) { loadIpInfo(); } else { alert(data.error || 'Erro ao remover IP adicional.'); }
-            } catch (e) { alert('Erro de conexão. Tente novamente.'); }
+                if (res.ok) {
+                    if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-green)'; feedback.textContent = data.message || 'IP liberado com sucesso!'; }
+                    loadIpInfo();
+                } else {
+                    if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-red)'; feedback.textContent = data.error || 'Erro ao liberar IP.'; }
+                }
+            } catch (e) {
+                if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-red)'; feedback.textContent = 'Erro de conexão.'; }
+            } finally {
+                if (btn) { btn.disabled = false; btn.textContent = 'Liberar este IP'; }
+            }
         }
 
-        // ── Troca de IP via formulário inline ──
-        function toggleIpChangeForm() {
-            const form = document.getElementById('ipChangeForm');
-            const btn = document.getElementById('ipChangeToggleBtn');
-            const feedback = document.getElementById('ipChangeFeedback');
+        // Buy additional IP — redirect to checkout
+        function buyAdditionalIp() { window.location.href = 'checkout-ip.html'; }
+
+        // Toggle additional IP edit form
+        function toggleAdditionalIpForm() {
+            const form = document.getElementById('ipAdditionalForm');
+            const feedback = document.getElementById('ipAdditionalFeedback');
             if (!form) return;
             const willShow = form.style.display === 'none';
             form.style.display = willShow ? 'block' : 'none';
-            if (btn) btn.textContent = willShow ? 'Cancelar' : (document.getElementById('ipMainValue')?.dataset.hasIp === '1' ? 'Solicitar Alteração' : 'Cadastrar IP');
             if (willShow) {
-                const input = document.getElementById('ipChangeInput');
+                const input = document.getElementById('ipAdditionalInput');
                 if (input) { input.value = ''; setTimeout(() => input.focus(), 50); }
                 if (feedback) feedback.style.display = 'none';
             }
         }
-        function showIpFeedback(msg, ok) {
-            const feedback = document.getElementById('ipChangeFeedback');
-            if (!feedback) return;
-            feedback.style.display = 'block';
-            feedback.style.color = ok ? 'var(--accent-green)' : 'var(--accent-red)';
-            feedback.textContent = msg;
-        }
-        async function submitIpChange() {
-            const input = document.getElementById('ipChangeInput');
-            const submitBtn = document.getElementById('ipChangeSubmitBtn');
-            const newIp = input ? input.value.trim() : '';
-            if (!newIp) { showIpFeedback('Digite um IP válido antes de enviar.', false); return; }
-            if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(newIp)) { showIpFeedback('Formato inválido. Use algo como 189.45.12.34', false); return; }
-            if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Enviando...'; }
+
+        // Save additional IP
+        async function saveAdditionalIp() {
+            const input = document.getElementById('ipAdditionalInput');
+            const saveBtn = document.getElementById('ipAdditionalSaveBtn');
+            const feedback = document.getElementById('ipAdditionalFeedback');
+            const ip = input ? input.value.trim() : '';
+            if (!ip) { if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-red)'; feedback.textContent = 'Digite um IP válido.'; } return; }
+            if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(ip)) { if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-red)'; feedback.textContent = 'Formato de IP inválido.'; } return; }
+            if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Salvando...'; }
             try {
-                const res = await fetch(API_BASE + '/api/user/change-ip', {
-                    method: 'POST',
+                const token = localStorage.getItem('8token_token');
+                const res = await fetch(API_BASE + '/api/user/additional-ip', {
+                    method: 'PUT',
                     headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ new_ip: newIp.trim() })
+                    body: JSON.stringify({ ip })
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    showIpFeedback(data.message || 'Solicitação enviada. Aguarde a aprovação do admin.', true);
-                    if (input) input.value = '';
+                    if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-green)'; feedback.textContent = 'IP adicional salvo!'; }
                     loadIpInfo();
-                    setTimeout(toggleIpChangeForm, 1800);
+                    setTimeout(toggleAdditionalIpForm, 1200);
                 } else {
-                    showIpFeedback(data.error || 'Erro ao solicitar alteração.', false);
+                    if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-red)'; feedback.textContent = data.error || 'Erro ao salvar IP.'; }
                 }
-            } catch (e) { showIpFeedback('Erro de conexão. Tente novamente.', false); }
+            } catch (e) {
+                if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-red)'; feedback.textContent = 'Erro de conexão.'; }
+            } finally {
+                if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Salvar'; }
+            }
+        }
+
+        // Remove additional IP
+        async function removeAdditionalIp() {
+            if (!confirm('Excluir o IP adicional?')) return;
+            try {
+                const token = localStorage.getItem('8token_token');
+                const res = await fetch(API_BASE + '/api/user/additional-ip', {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) { loadIpInfo(); } else { alert('Erro ao remover IP adicional.'); }
+            } catch (e) { alert('Erro de conexão.'); }
+        }
+
+        function toggleIpChangeForm() {
+            const form = document.getElementById('ipChangeForm'); const btn = document.getElementById('ipChangeToggleBtn'); const feedback = document.getElementById('ipChangeFeedback');
+            if (!form) return;
+            const willShow = form.style.display === 'none';
+            form.style.display = willShow ? 'block' : 'none';
+            if (btn) btn.textContent = willShow ? 'Cancelar' : 'Solicitar Alteração';
+            if (willShow) { const input = document.getElementById('ipChangeInput'); if (input) { input.value = ''; setTimeout(() => input.focus(), 50); } if (feedback) feedback.style.display = 'none'; }
+        }
+        function showIpFeedback(msg, ok) {
+            const feedback = document.getElementById('ipChangeFeedback'); if (!feedback) return;
+            feedback.style.display = 'block'; feedback.style.color = ok ? 'var(--accent-green)' : 'var(--accent-red)'; feedback.textContent = msg;
+        }
+        async function submitIpChange() {
+            const input = document.getElementById('ipChangeInput'); const submitBtn = document.getElementById('ipChangeSubmitBtn'); const newIp = input ? input.value.trim() : '';
+            if (!newIp) { showIpFeedback('Digite um IP válido.', false); return; }
+            if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(newIp)) { showIpFeedback('Formato inválido.', false); return; }
+            if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Enviando...'; }
+            try {
+                const token = localStorage.getItem('8token_token');
+                const res = await fetch(API_BASE + '/api/user/change-ip', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ new_ip: newIp.trim() }) });
+                const data = await res.json();
+                if (res.ok) { showIpFeedback(data.message || 'Solicitação enviada.', true); if (input) input.value = ''; loadIpInfo(); setTimeout(toggleIpChangeForm, 1800); } else { showIpFeedback(data.error || 'Erro.', false); }
+            } catch (e) { showIpFeedback('Erro de conexão.', false); }
             finally { if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Enviar Solicitação'; } }
         }
 
-        // ---- NOTIFICATIONS ----
-        let dashNotifications = [];
-
-        function timeAgoDash(dateStr) {
-            const now = new Date();
-            const date = new Date(dateStr);
-            const diffMs = now - date;
-            const diffMin = Math.floor(diffMs / 60000);
-            const diffHr = Math.floor(diffMs / 3600000);
-            const diffDay = Math.floor(diffMs / 86400000);
-            if (diffMin < 1) return 'agora';
-            if (diffMin < 60) return diffMin + ' min';
-            if (diffHr < 24) return diffHr + 'h';
-            if (diffDay < 7) return diffDay + 'd';
-            return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+        // ---- API KEY LOGIC ----
+        function copyApiKey() {
+            const val = document.getElementById('apiKeyValue').textContent;
+            navigator.clipboard.writeText(val).then(() => alert('Chave copiada!'));
         }
-
-        function escHtmlDash(str) {
-            const d = document.createElement('div');
-            d.textContent = str || '';
-            return d.innerHTML;
+        function copyGatewayUrl() {
+            const val = document.getElementById('gatewayUrlValue').textContent;
+            navigator.clipboard.writeText(val).then(() => alert('URL copiada!'));
         }
-
-        function toggleNotifDropdown(e) {
-            if (e) e.stopPropagation();
-            const dd = document.getElementById('notifDropdown');
-            dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
-            if (dd.style.display === 'block') loadDashNotifications();
-        }
-
-        document.addEventListener('click', function(e) {
-            const dd = document.getElementById('notifDropdown');
-            const wrap = document.querySelector('.btn-icon[aria-label="Notificações"]');
-            if (dd && wrap && !wrap.contains(e.target) && !dd.contains(e.target)) dd.style.display = 'none';
-        });
-
-        async function loadDashNotifications() {
-            try {
-                const res = await fetch(API_BASE + '/api/notifications', {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (!res.ok) return;
-                dashNotifications = await res.json();
-                renderNotifDropdown();
-                updateNotifBadge();
-            } catch (e) { console.error('Notif load error:', e); }
-        }
-
-        function renderNotifDropdown() {
-            const list = document.getElementById('notifDropdownList');
-            if (!list) return;
-            const recent = dashNotifications.slice(0, 5);
-            if (!recent.length) {
-                list.innerHTML = '<div style="padding:var(--space-xl);text-align:center;color:var(--text-muted);font-size:13px;">Nenhuma notificação ainda</div>';
-                return;
+        function regenerateApiKey() {
+            if(confirm('Gerar nova chave? A antiga será invalidada.')) {
+                alert('Funcionalidade de regeneração requer backend integration.');
             }
-            list.innerHTML = recent.map(n => `
-                <div style="padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.2s;${n.read ? '' : 'background:rgba(255,85,0,0.04);'}" onclick="markReadDash(${n.id})">
-                    <div style="font-size:13px;font-weight:600;margin-bottom:2px;color:var(--text-primary);">${escHtmlDash(n.title)}</div>
-                    <div style="font-size:12px;color:var(--text-secondary);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${escHtmlDash(n.message)}</div>
-                    <div style="font-size:10px;color:var(--text-muted);margin-top:4px;font-family:var(--font-mono);">${timeAgoDash(n.created_at)}</div>
-                </div>
-            `).join('');
-        }
-
-        function updateNotifBadge() {
-            const badge = document.getElementById('notifBadge');
-            if (!badge) return;
-            const unread = dashNotifications.filter(n => !n.read).length;
-            if (unread > 0) {
-                badge.textContent = unread > 9 ? '9+' : unread;
-                badge.classList.remove('hidden');
-            } else {
-                badge.classList.add('hidden');
-            }
-        }
-
-        async function markReadDash(id) {
-            try {
-                await fetch(API_BASE + '/api/notifications/' + id + '/read', {
-                    method: 'PUT',
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                const n = dashNotifications.find(x => x.id === id);
-                if (n) n.read = true;
-                renderNotifDropdown();
-                updateNotifBadge();
-            } catch (e) { console.error(e); }
-        }
-
-        async function markAllReadDash() {
-            try {
-                await fetch(API_BASE + '/api/notifications/read-all', {
-                    method: 'PUT',
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                dashNotifications.forEach(n => n.read = true);
-                renderNotifDropdown();
-                updateNotifBadge();
-            } catch (e) { console.error(e); }
-        }
-
-        // Load notifications on page init
-        if (token) {
-            loadDashNotifications();
-            setInterval(loadDashNotifications, 60000);
         }
     </script>
 </body>
