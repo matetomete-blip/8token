@@ -642,13 +642,13 @@ app.get('/api/user/ip-info', authenticateToken, async (req, res) => {
   // Get ALL active subscriptions for this user (supports multiple IPs)
   // Try with additional_ip_expires_at first, fallback without it if column doesn't exist
   let subs;
-  try {
-    const result = await supabase.from('ip_subscriptions').select('id, ip, additional_ip, has_additional_ip, additional_ip_expires_at, plan, status, expires_at, created_at').eq('user_id', req.user.id).eq('status', 'active').order('created_at', { ascending: false });
-    subs = result.data;
-  } catch (e) {
+  const result1 = await supabase.from('ip_subscriptions').select('id, ip, additional_ip, has_additional_ip, additional_ip_expires_at, plan, status, expires_at, created_at').eq('user_id', req.user.id).eq('status', 'active').order('created_at', { ascending: false });
+  if (result1.error) {
     // Fallback: query without additional_ip_expires_at if column doesn't exist
-    const result = await supabase.from('ip_subscriptions').select('id, ip, additional_ip, has_additional_ip, plan, status, expires_at, created_at').eq('user_id', req.user.id).eq('status', 'active').order('created_at', { ascending: false });
-    subs = result.data;
+    const result2 = await supabase.from('ip_subscriptions').select('id, ip, additional_ip, has_additional_ip, plan, status, expires_at, created_at').eq('user_id', req.user.id).eq('status', 'active').order('created_at', { ascending: false });
+    subs = result2.data;
+  } else {
+    subs = result1.data;
   }
   if (!subs || !subs.length) return res.json({ ip: null, additional_ip: null, has_additional_ip: false, additional_ip_expires_at: null, plan: null, all_ips: [] });
   // Primary = most recent subscription
