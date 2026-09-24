@@ -719,23 +719,36 @@ app.post('/api/admin/subscriptions', adminAuth, async (req, res) => {
 });
 
 app.put('/api/admin/subscriptions/:id', adminAuth, async (req, res) => {
-  const { plan, status, notes, expires_at, ip } = req.body;
+  const { plan, status, notes, expires_at, ip, user_data } = req.body;
   const update = {};
   if (plan !== undefined) update.plan = plan;
   if (status !== undefined) update.status = status;
   if (notes !== undefined) update.notes = notes;
   if (expires_at !== undefined) update.expires_at = expires_at;
   if (ip !== undefined) update.ip = ip;
+
   // Update ip_subscriptions
-  const { data: updatedSub } = await supabase.from('ip_subscriptions').update(update).eq('id', req.params.id).select('user_id, plan, status, expires_at').single();
-  // CRITICAL: Sync users.plan and users.plan_expires_at so dashboard reflects admin changes immediately
+  const { data: updatedSub, error: subError } = await supabase.from('ip_subscriptions').update(update).eq('id', req.params.id).select('user_id, plan, status, expires_at').single();
+
+  if (subError) return res.status(500).json({ error: subError.message });
+
+  // CRITICAL: Sync users table (plan, expiry, AND user_data like name/email/role)
   if (updatedSub && updatedSub.user_id) {
     const userUpdate = {};
     if (plan !== undefined) userUpdate.plan = plan;
     if (expires_at !== undefined) userUpdate.plan_expires_at = expires_at;
+
+    // Handle user_data fields from the new modal
+    if (user_data) {
+      if (user_data.name !== undefined) userUpdate.name = user_data.name;
+      if (user_data.email !== undefined) userUpdate.email = user_data.email;
+      if (user_data.role !== undefined) userUpdate.role = user_data.role;
+    }
+
     if (Object.keys(userUpdate).length > 0) {
       userUpdate.updated_at = new Date().toISOString();
-      await supabase.from('users').update(userUpdate).eq('id', updatedSub.user_id);
+      const { error: userError } = await supabase.from('users').update(userUpdate).eq('id', updatedSub.user_id);
+      if (userError) console.error('Failed to sync user data:', userError);
     }
   }
   res.json({ success: true });

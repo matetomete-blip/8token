@@ -368,28 +368,76 @@
 
             <!-- TAB: USERS / IPS -->
             <div class="tab-panel" id="tab-users">
-                <div class="card">
-                    <div class="card-title" id="userFormTitle">Adicionar IP</div>
-                    <div id="userFormAlert" class="alert"></div>
-                    <input type="hidden" id="editId" value="">
-                    <div class="form-row">
-                        <div class="form-group"><label class="form-label">Endereço IP *</label><input type="text" id="fieldIp" class="form-input" placeholder="Ex: 203.0.113.42"></div>
-                        <div class="form-group"><label class="form-label">Plano *</label><select id="fieldPlan" class="form-select"><option value="free">Free</option><option value="mensal">Mensal</option><option value="trimestral">Trimestral</option><option value="anual">Anual</option></select></div>
-                        <div class="form-group"><label class="form-label">Status</label><select id="fieldStatus" class="form-select"><option value="active">IP Ativo</option><option value="pending">Não Programado</option><option value="suspended">Desativado</option></select></div>
-                        <div class="form-group"><label class="form-label">Expira em</label><input type="datetime-local" id="fieldExpires" class="form-input"></div>
+                <!-- Toolbar: Actions + Search -->
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-lg);flex-wrap:wrap;gap:var(--space-md);">
+                    <div style="display:flex;gap:var(--space-sm);">
+                        <button class="btn btn-primary" onclick="openUserModal()">+ Adicionar Usuário</button>
+                        <button class="btn btn-secondary" onclick="bulkValidate()">Validar Selecionados</button>
+                        <button class="btn btn-danger" onclick="bulkDelete()">Excluir Selecionados</button>
                     </div>
-                    <div class="form-row"><div class="form-group" style="grid-column: 1 / -1;"><label class="form-label">Notas</label><input type="text" id="fieldNotes" class="form-input" placeholder="Observações internas (opcional)"></div></div>
-                    <div style="display:flex;gap:var(--space-md);margin-top:var(--space-md);">
-                        <button class="btn btn-primary" onclick="saveSubscription()">Salvar</button>
-                        <button class="btn btn-secondary" onclick="resetUserForm()">Limpar</button>
+                    <div style="flex:1;max-width:400px;min-width:200px;">
+                        <input type="text" id="userSearchInput" class="form-input" placeholder="Buscar por nome, email, IP..." oninput="filterUsersTable()" style="width:100%;">
                     </div>
                 </div>
-                <div class="search-bar"><input type="text" id="userSearchInput" class="form-input" placeholder="Buscar por IP, email ou notas..." oninput="filterUsersTable()"></div>
-                <div class="table-wrap">
-                    <table>
-                        <thead><tr><th>ID</th><th>Nome</th><th>Cargo</th><th>IP</th><th>Plano</th><th>Status</th><th>Usuário</th><th>Expira</th><th>Notas</th><th>Atualizado</th><th>Ações</th></tr></thead>
-                        <tbody id="usersTableBody"><tr><td colspan="11" class="empty-state">Carregando...</td></tr></tbody>
+
+                <!-- Full-width Table -->
+                <div class="table-wrap" style="border:none;background:transparent;">
+                    <table style="min-width:1000px;">
+                        <thead>
+                            <tr>
+                                <th style="width:40px;"><input type="checkbox" id="selectAllUsers" onchange="toggleSelectAll(this)"></th>
+                                <th>ID</th>
+                                <th>Nome</th>
+                                <th>Cargo</th>
+                                <th>IP</th>
+                                <th>Plano</th>
+                                <th>Status</th>
+                                <th>Email</th>
+                                <th>Expira</th>
+                                <th>Notas</th>
+                                <th>Atualizado</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <tr><td colspan="12" class="empty-state">Carregando...</td></tr>
+                        </tbody>
                     </table>
+                </div>
+            </div>
+
+            <!-- User Edit Modal (Hidden by default) -->
+            <div id="userModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:1000;backdrop-filter:blur(5px);overflow-y:auto;">
+                <div style="max-width:600px;margin:50px auto;background:var(--bg-card-solid);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-xl);position:relative;">
+                    <button onclick="closeUserModal()" style="position:absolute;top:20px;right:20px;background:none;border:none;color:var(--text-muted);font-size:24px;cursor:pointer;">&times;</button>
+                    <h2 id="userModalTitle" style="margin-bottom:var(--space-lg);font-size:20px;">Editar Usuário</h2>
+                    <div id="userFormAlert" class="alert"></div>
+                    <input type="hidden" id="editId" value="">
+
+                    <div class="form-row">
+                        <div class="form-group"><label class="form-label">Nome</label><input type="text" id="fieldName" class="form-input" placeholder="Nome do usuário"></div>
+                        <div class="form-group"><label class="form-label">Email</label><input type="email" id="fieldEmail" class="form-input" placeholder="email@exemplo.com"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label class="form-label">Endereço IP</label><input type="text" id="fieldIp" class="form-input" placeholder="Ex: 203.0.113.42"></div>
+                        <div class="form-group"><label class="form-label">Cargo</label><select id="fieldRole" class="form-select"><option value="user">Usuário</option><option value="admin">Admin</option><option value="affiliate">Afiliado</option></select></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label class="form-label">Plano</label><select id="fieldPlan" class="form-select"><option value="free">Free</option><option value="mensal">Mensal</option><option value="trimestral">Trimestral</option><option value="anual">Anual</option></select></div>
+                        <div class="form-group"><label class="form-label">Status</label><select id="fieldStatus" class="form-select"><option value="active">Ativo</option><option value="pending">Pendente</option><option value="suspended">Suspenso</option><option value="expired">Expirado</option></select></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label class="form-label">Expira em</label><input type="datetime-local" id="fieldExpires" class="form-input"></div>
+                        <div class="form-group"><label class="form-label">Chave API</label><input type="text" id="fieldApiKey" class="form-input" placeholder="Gerada automaticamente" readonly style="opacity:0.7;"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group" style="grid-column: 1 / -1;"><label class="form-label">Notas</label><textarea id="fieldNotes" class="form-input" placeholder="Observações internas..."></textarea></div>
+                    </div>
+
+                    <div style="display:flex;gap:var(--space-md);margin-top:var(--space-lg);justify-content:flex-end;">
+                        <button class="btn btn-secondary" onclick="closeUserModal()">Cancelar</button>
+                        <button class="btn btn-primary" onclick="saveSubscription()">Salvar Alterações</button>
+                    </div>
                 </div>
             </div>
 
@@ -774,8 +822,9 @@
         }
 
         function renderUsersTable(subs) {
+            window.allSubscriptions = subs; // Store for modal access
             const tbody = document.getElementById('usersTableBody');
-            if (!subs.length) { tbody.innerHTML = '<tr><td colspan="11" class="empty-state">Nenhum registro encontrado.</td></tr>'; return; }
+            if (!subs.length) { tbody.innerHTML = '<tr><td colspan="12" class="empty-state">Nenhum registro encontrado.</td></tr>'; return; }
             // Group subscriptions by user_id
             const grouped = {};
             subs.forEach(s => {
@@ -789,6 +838,7 @@
                 g.subs.forEach((s, idx) => {
                     const isMain = idx === 0;
                     html += `<tr data-id="${s.id}" style="${!isMain ? 'background:rgba(255,255,255,0.02);' : ''}">
+                        <td style="text-align:center;"><input type="checkbox" class="user-select-cb" value="${s.id}"></td>
                         <td class="mono" style="font-size:11px;color:var(--text-muted);">${isMain ? userIdShort : ''}</td>
                         <td style="font-size:13px;color:var(--text-secondary);">${isMain ? (g.user_name !== '—' ? g.user_name : g.user_email) : ''}</td>
                         <td>${isMain ? badgeForRole(g.user_role) : ''}</td>
@@ -802,13 +852,98 @@
                         <td class="actions">
                             <button class="btn btn-success btn-sm" onclick="validateIp('${s.ip}')">Validar</button>
                             <button class="btn btn-secondary btn-sm" onclick="invalidateIp('${s.ip}')">Desvalidar</button>
-                            <button class="btn btn-secondary btn-sm" onclick="editSub('${s.id}')">Editar</button>
+                            <button class="btn btn-primary btn-sm" onclick="openUserModal('${s.id}')">Editar</button>
                             <button class="btn btn-danger btn-sm" onclick="deleteSub('${s.id}','${s.ip}')">Remover</button>
                         </td>
                     </tr>`;
                 });
             });
             tbody.innerHTML = html;
+        }
+
+        // --- MODAL & BULK ACTIONS ---
+        function openUserModal(id = null) {
+            const modal = document.getElementById('userModal');
+            const title = document.getElementById('userModalTitle');
+            const alert = document.getElementById('userFormAlert');
+            if (alert) alert.style.display = 'none';
+
+            // Reset fields
+            document.getElementById('editId').value = id || '';
+            document.getElementById('fieldName').value = '';
+            document.getElementById('fieldEmail').value = '';
+            document.getElementById('fieldIp').value = '';
+            document.getElementById('fieldRole').value = 'user';
+            document.getElementById('fieldPlan').value = 'free';
+            document.getElementById('fieldStatus').value = 'active';
+            document.getElementById('fieldExpires').value = '';
+            document.getElementById('fieldNotes').value = '';
+            document.getElementById('fieldApiKey').value = '';
+
+            if (id) {
+                title.textContent = 'Editar Usuário / IP';
+                if (window.allSubscriptions) {
+                    const sub = window.allSubscriptions.find(s => s.id === id);
+                    if (sub) {
+                        document.getElementById('fieldName').value = sub.users?.name || '';
+                        document.getElementById('fieldEmail').value = sub.users?.email || '';
+                        document.getElementById('fieldIp').value = sub.ip || '';
+                        document.getElementById('fieldRole').value = sub.users?.role || 'user';
+                        document.getElementById('fieldPlan').value = sub.plan || 'free';
+                        document.getElementById('fieldStatus').value = sub.status || 'active';
+                        document.getElementById('fieldExpires').value = sub.expires_at ? new Date(sub.expires_at).toISOString().slice(0, 16) : '';
+                        document.getElementById('fieldNotes').value = sub.notes || '';
+                    }
+                }
+            } else {
+                title.textContent = 'Adicionar Usuário / IP';
+            }
+            modal.style.display = 'block';
+        }
+
+        function closeUserModal() {
+            document.getElementById('userModal').style.display = 'none';
+        }
+
+        function toggleSelectAll(source) {
+            const checkboxes = document.querySelectorAll('.user-select-cb');
+            checkboxes.forEach(cb => cb.checked = source.checked);
+        }
+
+        function getSelectedIds() {
+            return Array.from(document.querySelectorAll('.user-select-cb:checked')).map(cb => cb.value);
+        }
+
+        async function bulkValidate() {
+            const ids = getSelectedIds();
+            if (!ids.length) return alert('Selecione pelo menos um usuário.');
+            if (!confirm(`Validar ${ids.length} IPs selecionados?`)) return;
+            if (window.allSubscriptions) {
+                for (const id of ids) {
+                    const sub = window.allSubscriptions.find(s => s.id === id);
+                    if (sub && sub.ip) await validateIp(sub.ip);
+                }
+                loadSubscriptions();
+            }
+        }
+
+        async function bulkDelete() {
+            const ids = getSelectedIds();
+            if (!ids.length) return alert('Selecione pelo menos um usuário.');
+            if (!confirm(`EXCLUIR ${ids.length} registros selecionados? Esta ação é irreversível.`)) return;
+            for (const id of ids) {
+                try { await apiFetch(`/api/admin/subscriptions/${id}`, { method: 'DELETE' }); } catch(e) { console.error(e); }
+            }
+            loadSubscriptions();
+        }
+
+        function filterUsersTable() {
+            const term = document.getElementById('userSearchInput').value.toLowerCase();
+            const rows = document.querySelectorAll('#usersTableBody tr');
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(term) ? '' : 'none';
+            });
         }
 
         async function validateIp(ip) {
@@ -888,21 +1023,52 @@
 
         async function saveSubscription() {
             const editId = document.getElementById('editId').value;
+            const name = document.getElementById('fieldName').value.trim();
+            const email = document.getElementById('fieldEmail').value.trim();
             const ip = document.getElementById('fieldIp').value.trim();
+            const role = document.getElementById('fieldRole').value;
             const plan = document.getElementById('fieldPlan').value;
             const status = document.getElementById('fieldStatus').value;
             const expires = document.getElementById('fieldExpires').value || null;
             const notes = document.getElementById('fieldNotes').value.trim() || null;
-            if (!editId && !ip) { showAlert('userFormAlert', 'O endereço IP é obrigatório.', 'error'); return; }
+
+            if (!editId && !ip && !email) {
+                showAlert('userFormAlert', 'IP ou Email é obrigatório para novo registro.', 'error');
+                return;
+            }
+
             try {
                 if (editId) {
-                    await apiFetch(`/api/admin/subscriptions/${editId}`, { method: 'PUT', body: JSON.stringify({ plan, status, expires_at: expires, notes }) });
-                    showAlert('userFormAlert', 'Assinatura atualizada com sucesso!', 'success');
+                    // Update subscription AND user data
+                    await apiFetch(`/api/admin/subscriptions/${editId}`, {
+                        method: 'PUT',
+                        body: JSON.stringify({
+                            plan,
+                            status,
+                            expires_at: expires,
+                            notes,
+                            ip,
+                            user_data: { name, email, role } // Backend needs to handle this
+                        })
+                    });
+                    showAlert('userFormAlert', 'Usuário e assinatura atualizados com sucesso!', 'success');
                 } else {
-                    await apiFetch('/api/admin/subscriptions', { method: 'POST', body: JSON.stringify({ ip, plan, status, expires_at: expires, notes }) });
-                    showAlert('userFormAlert', `IP ${ip} adicionado com sucesso!`, 'success');
+                    // Create new - backend should handle user creation if email provided
+                    await apiFetch('/api/admin/subscriptions', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            ip,
+                            plan,
+                            status,
+                            expires_at: expires,
+                            notes,
+                            user_data: { name, email, role }
+                        })
+                    });
+                    showAlert('userFormAlert', `Registro adicionado com sucesso!`, 'success');
                 }
-                resetUserForm(); loadSubscriptions();
+                closeUserModal();
+                loadSubscriptions();
             } catch (e) { showAlert('userFormAlert', e.message, 'error'); }
         }
 
