@@ -1,7 +1,0 @@
-[mcp_servers.obsidian]
-command = "npx"
-args = [
-    "-y",
-    "@bitbonsai/mcpvault",
-    'F:\agentes ia\OBYSIDIAN BOB',
-]

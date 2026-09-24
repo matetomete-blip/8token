@@ -1,31 +1,25 @@
 # Dependencies
 node_modules/
-
 # Environment (NUNCA commitar .env real)
 .env
 .env.local
-
 # OS files
 .DS_Store
 Thumbs.db
-
 # IDE
 .vscode/
 .idea/
-
-# Playwright / Claude internal
-.playwright-mcp/
+# Internal tools (never deploy)
 .claude/
+.agents/
 .codex/
 .gstack/
 .vercel/
 .vercel-data/
-.agents/
-
-# Build artifacts & logs
-*.log
+.playwright-mcp/
+# Database
 8token.db
-
+*.db
 # HTMLs raiz duplicados — a fonte única é public/
 /index.html
 /account.html
@@ -37,8 +31,8 @@ Thumbs.db
 /docs.html
 /notifications.html
 /dashboard.html
-
 # Pastas de contexto, marketing, design, scripts (não fazem parte do deploy)
+contexto/
 context/
 marketing/
 docs-design/
@@ -50,12 +44,12 @@ design paina 8token/
 LOGO/
 logo-assets/
 CONVERSA EXTRAIDA/
+# Marketing/design HTMLs soltos
 criativo-*.html
 checkout-banner-*.html
 checkout-banner-preview.png
 logo-stacked.html
 logo-variants.html
-
 # Arquivos soltos de análise/contexto
 analysis_output.txt
 auth_analysis.txt
@@ -68,7 +62,6 @@ RESUMO-COMPLETO-SITE-MAE.txt
 RESUMO-COMPLETO-DETALHADO-SITE-MAE.txt
 CONTEXTO-8TOKEN-IMPLEMENTACAO.md
 contexto-anterior.txt
-
 # Python scripts soltos
 analyze_server.py
 dump_auth.py
@@ -76,7 +69,6 @@ extract_auth.py
 extract_routes.py
 parse_semgrep.py
 read_server.py
-
 # JS scripts utilitários soltos
 capture-banner.mjs
 capture-banners.mjs
@@ -93,3 +85,7 @@ fix-env-final.js
 fix-vercel-env.js
 setup-luca.js
 cleanup-system.js
+# Build artifacts & logs
+*.log
+dist/
+build/
