@@ -612,10 +612,36 @@ app.post('/api/user/change-ip', authenticateToken, async (req, res) => {
   res.json({ success: true, message: 'Solicitação enviada. Aguarde aprovação.' });
 });
 
+// Retorna o IP real da rede do usuário (detectado pelo middleware)
+app.get('/api/user/current-ip', authenticateToken, (req, res) => {
+  res.json({ ip: req.clientIp || null });
+});
+
+// Libera o IP atual da rede como IP principal (auto-aprovação imediata)
+app.post('/api/user/authorize-current-ip', authenticateToken, async (req, res) => {
+  const currentIp = req.clientIp;
+  if (!currentIp) return res.status(400).json({ error: 'Não foi possível detectar seu IP.' });
+  const { data: sub } = await supabase.from('ip_subscriptions')
+    .select('*').eq('user_id', req.user.id).eq('status', 'active')
+    .order('created_at', { ascending: false }).limit(1).single();
+  if (!sub) return res.status(400).json({ error: 'Nenhum plano ativo encontrado.' });
+  if (sub.ip === currentIp) return res.json({ success: true, message: 'IP da rede já está liberado!', ip: currentIp });
+  // Atualiza o IP principal imediatamente
+  await supabase.from('ip_subscriptions').update({ ip: currentIp }).eq('id', sub.id);
+  // Cancela qualquer solicitação pendente anterior
+  await supabase.from('ip_change_requests').update({ status: 'cancelled' })
+    .eq('user_id', req.user.id).eq('status', 'pending');
+  await supabase.from('notifications').insert({
+    user_id: req.user.id, title: 'IP Autorizado Automaticamente',
+    message: `Seu IP ${currentIp} foi liberado com sucesso.`, type: 'success'
+  });
+  res.json({ success: true, message: 'IP da rede liberado com sucesso!', ip: currentIp });
+});
+
 app.get('/api/user/ip-info', authenticateToken, async (req, res) => {
   // Get ALL active subscriptions for this user (supports multiple IPs)
-  const { data: subs } = await supabase.from('ip_subscriptions').select('id, ip, additional_ip, has_additional_ip, plan, status, expires_at, created_at').eq('user_id', req.user.id).eq('status', 'active').order('created_at', { ascending: false });
-  if (!subs || !subs.length) return res.json({ ip: null, additional_ip: null, has_additional_ip: false, plan: null, all_ips: [] });
+  const { data: subs } = await supabase.from('ip_subscriptions').select('id, ip, additional_ip, has_additional_ip, additional_ip_expires_at, plan, status, expires_at, created_at').eq('user_id', req.user.id).eq('status', 'active').order('created_at', { ascending: false });
+  if (!subs || !subs.length) return res.json({ ip: null, additional_ip: null, has_additional_ip: false, additional_ip_expires_at: null, plan: null, all_ips: [] });
   // Primary = most recent subscription
   const primary = subs[0];
   // Collect all unique IPs
@@ -625,6 +651,7 @@ app.get('/api/user/ip-info', authenticateToken, async (req, res) => {
     ip: primary.ip,
     additional_ip: primary.additional_ip,
     has_additional_ip: !!primary.has_additional_ip,
+    additional_ip_expires_at: primary.additional_ip_expires_at || null,
     plan: primary.plan,
     status: primary.status,
     expires_at: primary.expires_at,
