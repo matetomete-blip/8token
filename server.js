@@ -516,7 +516,7 @@ app.post('/api/webhooks/kirvano', async (req, res) => {
   // Read webhook token from DB settings (admin-configurable) — fall back to env var
   let dbWebhookToken = '';
   try {
-    const { data: cfgRow } = await supabase.from('settings').select('value').eq('key', 'kirvano_config').single();
+    const { data: cfgRow } = await supabase.from('site_settings').select('value').eq('key', 'kirvano_config').single();
     if (cfgRow) {
       const cfg = JSON.parse(cfgRow.value);
       dbWebhookToken = cfg.webhook_token || '';
@@ -1511,22 +1511,14 @@ app.post('/api/admin/webhook-config', adminAuth, async (req, res) => {
       checkout_anual_url: checkout_anual_url || '',
       checkout_ip_adicional_url: checkout_ip_adicional_url || ''
     });
-    // Use upsert — works whether the row exists or not, and whether PK is 'key' or 'id'
-    const { error: upsertErr } = await supabase.from('settings').upsert(
+    // Use site_settings table (confirmed to exist in Supabase)
+    const { error: upsertErr } = await supabase.from('site_settings').upsert(
       { key: 'kirvano_config', value: configValue, updated_at: new Date().toISOString() },
       { onConflict: 'key' }
     );
     if (upsertErr) {
-      // Fallback: try site_settings table instead
-      console.error('[Webhook Config] settings upsert failed, trying site_settings:', upsertErr.message);
-      const { error: fallbackErr } = await supabase.from('site_settings').upsert(
-        { key: 'kirvano_config', value: configValue, updated_at: new Date().toISOString() },
-        { onConflict: 'key' }
-      );
-      if (fallbackErr) {
-        console.error('[Webhook Config] site_settings upsert also failed:', fallbackErr.message);
-        return res.status(500).json({ error: 'Erro ao salvar: ' + upsertErr.message + ' / ' + fallbackErr.message });
-      }
+      console.error('[Webhook Config] site_settings upsert failed:', upsertErr.message);
+      return res.status(500).json({ error: 'Erro ao salvar: ' + upsertErr.message });
     }
     res.json({ success: true, message: 'Configuração do webhook salva' });
   } catch (err) {
@@ -1537,15 +1529,8 @@ app.post('/api/admin/webhook-config', adminAuth, async (req, res) => {
 
 app.get('/api/admin/webhook-config', adminAuth, async (req, res) => {
   try {
-    // Try settings table first
-    let { data, error } = await supabase.from('settings').select('value').eq('key', 'kirvano_config').single();
-    if (!data || error) {
-      // Fallback: try site_settings table
-      const fallback = await supabase.from('site_settings').select('value').eq('key', 'kirvano_config').single();
-      data = fallback.data;
-      error = fallback.error;
-    }
-    if (!data) return res.json({ configured: false });
+    const { data, error } = await supabase.from('site_settings').select('value').eq('key', 'kirvano_config').single();
+    if (!data || error) return res.json({ configured: false });
     const config = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
     res.json({ configured: true, ...config });
   } catch (err) {
