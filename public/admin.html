@@ -1161,16 +1161,16 @@
         async function validateSub(subId) {
             try {
                 await apiFetch('/api/admin/ips/validate', { method: 'POST', body: JSON.stringify({ sub_id: subId, status: 'active' }) });
-                showAlert('userFormAlert', 'Subscription validada com sucesso!', 'success');
+                showAlert('userFormAlert', 'IP ativado com sucesso!', 'success');
                 loadSubscriptions(); loadDashboard();
             } catch (e) { showAlert('userFormAlert', e.message, 'error'); }
         }
 
         async function invalidateSub(subId) {
-            if (!confirm('Desvalidar esta subscription? O status será alterado para suspenso.')) return;
+            if (!confirm('Desativar este IP? O acesso ao gateway será bloqueado para este IP específico.')) return;
             try {
                 await apiFetch('/api/admin/ips/invalidate', { method: 'POST', body: JSON.stringify({ sub_id: subId }) });
-                showAlert('userFormAlert', 'Subscription desvalidada.', 'success');
+                showAlert('userFormAlert', 'IP desativado.', 'success');
                 loadSubscriptions(); loadDashboard();
             } catch (e) { showAlert('userFormAlert', e.message, 'error'); }
         }
