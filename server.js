@@ -432,7 +432,7 @@ app.post('/api/auth/google', async (req, res) => {
     let { data: user } = await supabase.from('users').select('*').or(`google_id.eq.${googleId},email.eq.${email}`).single();
 
     if (!user) {
-      // Step 1: Create in Supabase Auth first (so they appear in Authentication → Users)
+      // Step 1: Try to create in Supabase Auth, or find existing auth user
       let authUserId;
       try {
         const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
@@ -443,8 +443,20 @@ app.post('/api/auth/google', async (req, res) => {
           app_metadata: { provider: 'google', providers: ['google'] }
         });
         if (authError) {
-          console.error('[google-auth] Supabase Auth createUser error:', authError.message);
-          authUserId = crypto.randomUUID();
+          // User might already exist in Auth — try to find them
+          if (authError.message && authError.message.includes('already been registered')) {
+            const { data: authUsers } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+            const existingAuth = authUsers?.users?.find(u => u.email.toLowerCase() === email);
+            if (existingAuth) {
+              authUserId = existingAuth.id;
+              console.log('[google-auth] Found existing auth user:', authUserId);
+            } else {
+              authUserId = crypto.randomUUID();
+            }
+          } else {
+            console.error('[google-auth] Supabase Auth createUser error:', authError.message);
+            authUserId = crypto.randomUUID();
+          }
         } else {
           authUserId = authUser.user.id;
         }
@@ -454,7 +466,7 @@ app.post('/api/auth/google', async (req, res) => {
       }
 
       // Step 2: Create in custom users table with same ID
-      const { data: newUser } = await supabase.from('users').insert({
+      const { data: newUser, error: insertError } = await supabase.from('users').insert({
         id: authUserId,
         email,
         name,
@@ -463,7 +475,19 @@ app.post('/api/auth/google', async (req, res) => {
         plan: 'free',
         role: email === 'matetomete@gmail.com' ? 'admin' : 'user'
       }).select().single();
-      user = newUser;
+
+      if (insertError) {
+        console.error('[google-auth] Custom table insert error:', insertError.message);
+        // Try to find existing user by email
+        const { data: existingUser } = await supabase.from('users').select('*').eq('email', email).single();
+        if (existingUser) {
+          user = existingUser;
+        } else {
+          throw new Error('Failed to create or find user');
+        }
+      } else {
+        user = newUser;
+      }
 
       // Auto-create ip_subscriptions entry
       try {
