@@ -329,6 +329,12 @@ let filteredLogs = [];
 let currentPage = 1;
 const PAGE_SIZE = 25;
 
+// SECURITY FIX: HTML escape helper to prevent stored XSS in webhook log data
+function escHtml(str) {
+  if (str == null) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
 function getAdminSecret() {
   let secret = sessionStorage.getItem('8token_admin_secret');
   if (!secret) {
@@ -354,18 +360,21 @@ async function apiFetch(path) {
   return r.json();
 }
 
+// SECURITY FIX: escape status to prevent stored XSS via webhook log status values
 function statusBadge(status) {
   if (!status || status === '—') return '<span class="badge badge-neutral">—</span>';
   const s = status.toLowerCase();
-  if (s === 'approved' || s === 'test_ok' || s === 'success') return `<span class="badge badge-success">${status}</span>`;
-  if (s === 'pending') return `<span class="badge badge-pending">${status}</span>`;
-  if (s === 'error' || s === 'failed') return `<span class="badge badge-error">${status}</span>`;
-  return `<span class="badge badge-info">${status}</span>`;
+  const safe = escHtml(status);
+  if (s === 'approved' || s === 'test_ok' || s === 'success') return `<span class="badge badge-success">${safe}</span>`;
+  if (s === 'pending') return `<span class="badge badge-pending">${safe}</span>`;
+  if (s === 'error' || s === 'failed') return `<span class="badge badge-error">${safe}</span>`;
+  return `<span class="badge badge-info">${safe}</span>`;
 }
 
 function eventBadge(event) {
   if (!event || event === '—') return '<span class="badge badge-neutral">—</span>';
-  return `<span class="badge badge-event">${event}</span>`;
+  // SECURITY FIX: escape event type to prevent stored XSS
+  return `<span class="badge badge-event">${escHtml(event)}</span>`;
 }
 
 function formatDate(iso) {
@@ -389,10 +398,10 @@ function renderLogs() {
         <td style="white-space:nowrap">${formatDate(log.created_at || log.timestamp)}</td>
         <td>${eventBadge(log.event_type || log.event)}</td>
         <td>${statusBadge(log.status)}</td>
-        <td>${log.email || '—'}</td>
-        <td style="font-family:monospace;font-size:12px">${log.ip_address || log.ip || '—'}</td>
-        <td>${log.plan_name || log.plan || '—'}</td>
-        <td class="details-cell" title="${(log.raw_payload || log.details || '').replace(/"/g,'&quot;')}">${log.raw_payload || log.details || '—'}</td>
+        <td>${escHtml(log.email) || '—'}</td>
+        <td style="font-family:monospace;font-size:12px">${escHtml(log.ip_address || log.ip) || '—'}</td>
+        <td>${escHtml(log.plan_name || log.plan) || '—'}</td>
+        <td class="details-cell" title="${escHtml(log.raw_payload || log.details)}">${escHtml(log.raw_payload || log.details) || '—'}</td>
       </tr>
     `).join('');
   }
@@ -471,7 +480,8 @@ async function loadAll() {
     updateStats();
     renderLogs();
   } catch(e) {
-    document.getElementById('logsBody').innerHTML = `<tr><td colspan="7" class="empty-state">Erro ao carregar: ${e.message}</td></tr>`;
+    // SECURITY FIX: escape e.message to prevent stored XSS via error messages
+    document.getElementById('logsBody').innerHTML = `<tr><td colspan="7" class="empty-state">Erro ao carregar: ${escHtml(e.message)}</td></tr>`;
   }
 }
 
