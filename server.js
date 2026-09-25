@@ -127,10 +127,20 @@ if (process.env.KIRVANO_PRODUCT_IP_ADICIONAL_ID) KIRVANO_PRODUCT_MAP[process.env
 
 function resolvePlanFromKirvano(products) {
   if (!products || !products.length) return null;
+  // 1) Match by configured product/offer IDs (most reliable)
   for (const p of products) {
     if (p.id && KIRVANO_PRODUCT_MAP[p.id]) return KIRVANO_PRODUCT_MAP[p.id];
     if (p.offer_id && KIRVANO_PRODUCT_MAP[p.offer_id]) return KIRVANO_PRODUCT_MAP[p.offer_id];
   }
+  // 2) Fallback: match by offer_name (Kirvano sends "Mensal", "Trimestral", "Anual")
+  for (const p of products) {
+    const offerName = (p.offer_name || '').toLowerCase().trim();
+    if (offerName === 'mensal' || offerName === 'monthly') return 'mensal';
+    if (offerName === 'trimestral' || offerName === 'quarterly') return 'trimestral';
+    if (offerName === 'anual' || offerName === 'annual' || offerName === 'yearly') return 'anual';
+    if (offerName.includes('ip adicional') || offerName.includes('additional ip')) return 'ip_adicional';
+  }
+  // 3) Last resort: match by product name
   for (const p of products) {
     const name = (p.name || '').toLowerCase();
     if (name.includes('ip adicional') || name.includes('additional ip') || name.includes('+1 ip') || name.includes('ip_adicional')) return 'ip_adicional';
