@@ -1298,51 +1298,7 @@
             try { await apiFetch(`/api/admin/subscriptions/${id}`, { method: 'DELETE' }); loadSubscriptions(); } catch (e) { alert(e.message); }
         }
 
-        // ---- ACTIVATIONS ----
-        async function loadActivations() {
-            try {
-                allActivations = await apiFetch('/api/admin/activations');
-                const tbody = document.getElementById('activationsTableBody');
-                if (!allActivations.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Nenhum pedido de ativação pendente.</td></tr>'; return; }
-                tbody.innerHTML = allActivations.map(a => `
-                    <tr>
-                        <td class="mono">#${a.id}</td>
-                        <td class="mono">${a.ip}</td>
-                        <td style="font-size:13px;">${a.user_email || '—'}</td>
-                        <td>${badgeForPlan(a.plan)}</td>
-                        <td>${badgeForStatus(a.status)}</td>
-                        <td class="mono" style="font-size:12px;">${formatDate(a.created_at)}</td>
-                        <td class="mono" style="font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;">${a.api_key ? a.api_key.slice(0,16)+'...' : '—'}</td>
-                        <td class="actions">
-                            ${a.status === 'pending' ? `
-                                <button class="btn btn-success btn-sm" onclick="approveActivation(${a.id})">Aprovar</button>
-                                <button class="btn btn-danger btn-sm" onclick="rejectActivation(${a.id})">Recusar</button>
-                            ` : '<span style="color:var(--text-muted);font-size:12px;">Processado</span>'}
-                        </td>
-                    </tr>
-                `).join('');
-            } catch (e) {
-                document.getElementById('activationsTableBody').innerHTML = `<tr><td colspan="8" class="empty-state" style="color:var(--accent-red);">${e.message}</td></tr>`;
-            }
-        }
-
-        async function approveActivation(id) {
-            if (!confirm('Aprovar esta ativação? Isso liberará a chave API e gateway para o usuário.')) return;
-            try {
-                const result = await apiFetch(`/api/admin/activations/${id}/approve`, { method: 'POST' });
-                alert(`Ativado! API Key: ${result.apiKey}\nGateway: ${result.gatewayUrl}`);
-                loadActivations(); loadDashboard();
-            } catch (e) { alert(e.message); }
-        }
-
-        async function rejectActivation(id) {
-            const notes = prompt('Motivo da recusa (opcional):');
-            try {
-                await apiFetch(`/api/admin/activations/${id}/reject`, { method: 'POST', body: JSON.stringify({ notes }) });
-                loadActivations(); loadDashboard();
-            } catch (e) { alert(e.message); }
-        }
-
+        
         // ---- AFFILIATES ----
         async function loadAffiliates() {
             try {
