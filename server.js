@@ -14,19 +14,12 @@ const { OAuth2Client } = require('google-auth-library');
 const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
 const { Agent: UndiciAgent } = require('undici');
-const { generateSecret, verify: totpVerify, generateURI } = require('otplib');
-const QRCode = require('qrcode');
 
 // Keep-alive dispatcher para fetch upstream — evita handshake TLS repetido (economiza 100-300ms/req)
 const keepAliveDispatcher = new UndiciAgent({
   keepAliveTimeout: 30000,
   keepAliveMaxTimeout: 60000,
-  connections: 100,           // pool maior absorve picos sem fila
-  pipelining: 1,              // HTTP/1.1 pipelining conservador
-  bodyTimeout: 60000,         // timeout total do body
-  headersTimeout: 10000,      // fail-fast se upstream não responder headers em 10s
-  autoSelectFamily: true,     // Happy Eyeballs: tenta IPv4+IPv6 em paralelo
-  autoSelectFamilyAttemptTimeout: 250,
+  connections: 50,
 });
 
 const app = express();
@@ -73,6 +66,9 @@ const AES_KEY = Buffer.from(AES_KEY_RAW, 'utf8').slice(0, 32);
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const ADMIN_SECRET = process.env.ADMIN_SECRET || '8token-admin-change-me';
+// TOTP secrets for destructive admin operations (replace hardcoded '0258' password)
+const ADMIN_TOTP_RESET_SECRET = process.env.ADMIN_TOTP_RESET_SECRET || '';
+const ADMIN_TOTP_DELETE_SECRET = process.env.ADMIN_TOTP_DELETE_SECRET || '';
 
 // Supabase client — realtime desativado (exige WS nativo do Node 22+)
 const supabaseUrl = process.env.SUPABASE_URL || 'https://wbkmaeqkypqrkawumdjw.supabase.co';
@@ -165,6 +161,79 @@ function adminAuth(req, res, next) {
 // Helper: ensure IP record exists for user — REMOVED: IPs should only be saved when user explicitly requests authorization
 // async function ensureIpRecord(ip, userId) { ... } — no longer auto-creates IP records on login/register
 
+// --- ADMIN 2FA (TOTP / Google Authenticator) ---
+const totpVerifyLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 10,
+  message: { error: 'Muitas tentativas de verificação TOTP. Tente novamente em 5 minutos.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Setup 2FA: generate secret + QR code for a specific operation (reset or delete)
+app.get('/api/admin/2fa/setup', adminAuth, async (req, res) => {
+  try {
+    const { operation } = req.query; // 'reset' or 'delete'
+    if (!operation || !['reset', 'delete'].includes(operation)) {
+      return res.status(400).json({ error: 'Parâmetro operation obrigatório (reset ou delete)' });
+    }
+    const secret = generateSecret();
+    const label = operation === 'reset' ? '8Token Admin Reset' : '8Token Admin Delete';
+    const otpauthUrl = generateURI({ secret, label, issuer: '8token.tech' });
+    const qrDataUrl = await QRCode.toDataURL(otpauthUrl);
+    res.json({ secret, qrDataUrl, otpauthUrl, operation });
+  } catch (e) {
+    console.error('2FA setup error:', e);
+    res.status(500).json({ error: 'Falha ao gerar 2FA: ' + e.message });
+  }
+});
+
+// Verify 2FA token and save secret to .env for the specified operation
+app.post('/api/admin/2fa/verify-setup', adminAuth, totpVerifyLimiter, async (req, res) => {
+  try {
+    const { token, secret, operation } = req.body;
+    if (!token || !secret || !operation) return res.status(400).json({ error: 'Token, secret e operation são obrigatórios' });
+    const isValid = totpVerify({ token, secret });
+    if (!isValid) return res.status(403).json({ error: 'Código TOTP inválido. Verifique o horário do seu dispositivo.' });
+    const fs = require('fs');
+    const path = require('path');
+    const envPath = path.join(__dirname, '.env');
+    let envContent = fs.existsSync(envPath) ? fs.readFileSync(envPath, 'utf8') : '';
+    const envKey = operation === 'reset' ? 'ADMIN_TOTP_RESET_SECRET' : 'ADMIN_TOTP_DELETE_SECRET';
+    if (envContent.includes(`${envKey}=`)) {
+      envContent = envContent.replace(new RegExp(`${envKey}=.*`), `${envKey}=${secret}`);
+    } else {
+      envContent += `\n${envKey}=${secret}\n`;
+    }
+    fs.writeFileSync(envPath, envContent);
+    res.json({ success: true, message: `2FA para ${operation} configurado com sucesso! Reinicie o servidor para ativar.` });
+  } catch (e) {
+    console.error('2FA verify-setup error:', e);
+    res.status(500).json({ error: 'Falha ao salvar 2FA: ' + e.message });
+  }
+});
+
+// Check 2FA status for both operations
+app.get('/api/admin/2fa/status', adminAuth, (req, res) => {
+  res.json({
+    reset: { enabled: !!ADMIN_TOTP_RESET_SECRET },
+    delete: { enabled: !!ADMIN_TOTP_DELETE_SECRET },
+  });
+});
+
+// Middleware factory: require TOTP for a specific operation
+function requireTotp(operation) {
+  return (req, res, next) => {
+    const secret = operation === 'reset' ? ADMIN_TOTP_RESET_SECRET : ADMIN_TOTP_DELETE_SECRET;
+    if (!secret) return next(); // Skip if 2FA not configured yet for this operation
+    const totpToken = req.headers['x-totp-token'] || req.body?.totpToken;
+    if (!totpToken) return res.status(403).json({ error: 'Código 2FA obrigatório. Envie x-totp-token header ou totpToken no body.' });
+    const isValid = totpVerify({ token: totpToken, secret });
+    if (!isValid) return res.status(403).json({ error: 'Código 2FA inválido ou expirado.' });
+    next();
+  };
+}
+
 // Generate API key
 function generateApiKey() {
   return '8tk_' + crypto.randomBytes(32).toString('hex');
@@ -254,6 +323,20 @@ app.post('/api/auth/register', registerLimiter, async (req, res) => {
         return res.json({ token, user: { id: found.id, email: found.email, name: found.name, plan: found.plan } });
       }
       throw error;
+    }
+
+    // Auto-create ip_subscriptions entry so the user appears in admin panel immediately
+    try {
+      await supabase.from('ip_subscriptions').insert({
+        ip: 'pending-' + userId.slice(0, 8),
+        user_id: userId,
+        plan: 'free',
+        status: 'pending',
+        notes: 'Conta criada via registro automático'
+      });
+    } catch (ipErr) {
+      console.error('Auto-create ip_subscription warning:', ipErr.message);
+      // Non-fatal — user is already created, just won't appear in admin until manually added
     }
 
     const token = jwt.sign({ id: newUser.id, email }, JWT_SECRET, { algorithm: 'HS256', expiresIn: '30d' });
@@ -460,37 +543,10 @@ async function toggleKeyIpAuthorization(keyId, ip, authorize = true) {
   if (!keyId || !ip) return;
   try {
     if (authorize) {
-      // Buscar user_id da chave para calcular max_ips do plano
-      const { data: keyRow } = await supabase.from('api_keys').select('user_id').eq('id', keyId).single();
-      let maxIps = 1;
-      if (keyRow?.user_id) {
-        const { data: subData } = await supabase.from('ip_subscriptions')
-          .select('has_additional_ip')
-          .eq('user_id', keyRow.user_id)
-          .in('status', ['active', 'pending_ip'])
-          .order('created_at', { ascending: false })
-          .limit(1).single();
-        maxIps = 1 + (subData?.has_additional_ip ? 1 : 0);
-      }
-      // Verificar se já está autorizado (idempotente)
-      const { data: existingIps } = await supabase.from('key_authorized_ips')
-        .select('id, ip, authorized_at').eq('api_key_id', keyId)
-        .order('authorized_at', { ascending: true });
-      const alreadyAuthorized = (existingIps || []).some(r => r.ip === ip);
-      if (!alreadyAuthorized) {
-        const currentCount = (existingIps || []).length;
-        if (currentCount >= maxIps) {
-          const toRemove = currentCount - maxIps + 1;
-          const oldest = (existingIps || []).slice(0, toRemove);
-          for (const old of oldest) {
-            await supabase.from('key_authorized_ips').delete().eq('id', old.id).eq('api_key_id', keyId);
-          }
-        }
-        await supabase.from('key_authorized_ips').upsert(
-          { api_key_id: keyId, ip },
-          { onConflict: 'api_key_id,ip', ignoreDuplicates: true }
-        );
-      }
+      await supabase.from('key_authorized_ips').upsert(
+        { api_key_id: keyId, ip },
+        { onConflict: 'api_key_id,ip', ignoreDuplicates: true }
+      );
     } else {
       await supabase.from('key_authorized_ips')
         .delete().eq('api_key_id', keyId).eq('ip', ip);
@@ -585,38 +641,12 @@ app.post('/api/keys/:id/authorize-ip', authenticateToken, async (req, res) => {
   const hasPlan = profile?.plan && profile.plan !== 'free';
   const planActive = hasPlan && (!profile?.plan_expires_at || new Date(profile.plan_expires_at) > new Date());
   if (!planActive) return res.status(403).json({ error: 'Plano ativo necessário para autorizar IPs.' });
-  // Calcular max_ips do plano (1 base + 1 se comprou IP adicional)
-  const { data: subData } = await supabase.from('ip_subscriptions')
-    .select('has_additional_ip')
-    .eq('user_id', req.user.id)
-    .in('status', ['active', 'pending_ip'])
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single();
-  const maxIps = 1 + (subData?.has_additional_ip ? 1 : 0);
-  // Verificar se o IP já está autorizado (se sim, não faz nada — idempotente)
-  const { data: existingIps } = await supabase.from('key_authorized_ips')
-    .select('id, ip, authorized_at')
-    .eq('api_key_id', id)
-    .order('authorized_at', { ascending: true });
-  const alreadyAuthorized = (existingIps || []).some(r => r.ip === targetIp);
-  if (!alreadyAuthorized) {
-    // Se já atingiu o limite, remover os mais antigos até sobrar vaga
-    const currentCount = (existingIps || []).length;
-    if (currentCount >= maxIps) {
-      const toRemove = currentCount - maxIps + 1; // quantos remover para abrir 1 vaga
-      const oldest = (existingIps || []).slice(0, toRemove);
-      for (const old of oldest) {
-        await supabase.from('key_authorized_ips').delete().eq('id', old.id).eq('api_key_id', id);
-      }
-    }
-    // Inserir o novo IP
-    const { error } = await supabase.from('key_authorized_ips').upsert(
-      { api_key_id: id, ip: targetIp },
-      { onConflict: 'api_key_id,ip', ignoreDuplicates: true }
-    );
-    if (error) return res.status(500).json({ error: 'Erro ao autorizar IP: ' + error.message });
-  }
+  // Inserir (ignorar duplicata via ON CONFLICT)
+  const { error } = await supabase.from('key_authorized_ips').upsert(
+    { api_key_id: id, ip: targetIp },
+    { onConflict: 'api_key_id,ip', ignoreDuplicates: true }
+  );
+  if (error) return res.status(500).json({ error: 'Erro ao autorizar IP: ' + error.message });
   // Limpar cache
   try {
     const { data: kh } = await supabase.from('api_keys').select('key_hash').eq('id', id).single();
@@ -1105,31 +1135,21 @@ app.get('/api/admin/stats', adminAuth, async (req, res) => {
   const { count: totalIps } = await supabase.from('ip_subscriptions').select('*', { count: 'exact', head: true });
   const { count: activeIps } = await supabase.from('ip_subscriptions').select('*', { count: 'exact', head: true }).eq('status', 'active');
   const { count: paidPlans } = await supabase.from('ip_subscriptions').select('*', { count: 'exact', head: true }).neq('plan', 'free').eq('status', 'active');
-
-  // Fetch all active subscriptions with is_family_friend flag for accurate cost/profit calc
-  const { data: allActiveSubs } = await supabase.from('ip_subscriptions')
-    .select('plan, expires_at, is_family_friend, status')
-    .eq('status', 'active');
-
-  // paidActiveIps = active + paid plan + NOT family/friend → used for cost per IP and profit per IP
-  const paidActiveNonFamily = (allActiveSubs || []).filter(s =>
-    s.plan !== 'free' && s.plan !== 'admin' && !s.is_family_friend
-  );
-  const paidActiveIps = paidActiveNonFamily.length;
-
   let planBreakdown = [];
   try {
     const { data: rpcData } = await supabase.rpc('get_plan_breakdown');
     planBreakdown = rpcData || [];
   } catch (e) { /* rpc not available, use fallback */ }
-  // Fallback: manual breakdown (all active, for display purposes)
+  // Fallback: manual breakdown
   let breakdown = [];
   if (!planBreakdown || !planBreakdown.length) {
+    const { data: subs } = await supabase.from('ip_subscriptions').select('plan').eq('status', 'active');
     const counts = {};
-    (allActiveSubs || []).forEach(s => { counts[s.plan] = (counts[s.plan] || 0) + 1; });
+    (subs || []).forEach(s => { counts[s.plan] = (counts[s.plan] || 0) + 1; });
     breakdown = Object.entries(counts).map(([plan, count]) => ({ plan, count }));
   }
-
+  // Active subscriptions with expires_at for revenue projection
+  const { data: activeSubs } = await supabase.from('ip_subscriptions').select('plan, expires_at').eq('status', 'active');
   const { count: totalUsers } = await supabase.from('users').select('*', { count: 'exact', head: true });
   const { data: recentInvoices } = await supabase.from('invoices').select('*').eq('status', 'paid').order('paid_at', { ascending: false }).limit(10);
   const totalRevenue = (recentInvoices || []).reduce((sum, inv) => sum + (inv.amount || 0), 0);
@@ -1138,39 +1158,69 @@ app.get('/api/admin/stats', adminAuth, async (req, res) => {
     totalIps: totalIps || 0,
     activeIps: activeIps || 0,
     paidPlans: paidPlans || 0,
-    paidActiveIps,
     totalUsers: totalUsers || 0,
     planBreakdown: breakdown,
-    activeSubscriptions: (allActiveSubs || []).map(s => ({ plan: s.plan, expires_at: s.expires_at, is_family_friend: !!s.is_family_friend })),
+    activeSubscriptions: (activeSubs || []).map(s => ({ plan: s.plan, expires_at: s.expires_at })),
     totalRevenue,
     recentInvoices: recentInvoices || []
   });
 });
 
 app.get('/api/admin/subscriptions', adminAuth, async (req, res) => {
-  const { data } = await supabase.from('ip_subscriptions').select('*, users(email, name)').order('created_at', { ascending: false });
-  res.json(data || []);
+  // Get all ip_subscriptions with user data
+  const { data: subs } = await supabase.from('ip_subscriptions').select('*, users(email, name)').order('created_at', { ascending: false });
+
+  // Get ALL users from the users table
+  const { data: allUsers } = await supabase.from('users').select('id, email, name, plan, role, created_at').order('created_at', { ascending: false });
+
+  // Build a set of user_ids that already have ip_subscriptions entries
+  const usersWithSubs = new Set((subs || []).map(s => s.user_id));
+
+  // Create virtual entries for users without any ip_subscription
+  const usersWithoutSubs = (allUsers || [])
+    .filter(u => !usersWithSubs.has(u.id))
+    .map(u => ({
+      id: 'user-' + u.id.slice(0, 8),
+      ip: 'sem-ip',
+      user_id: u.id,
+      plan: u.plan || 'free',
+      status: 'pending',
+      notes: 'Usuário registrado (sem IP)',
+      expires_at: null,
+      created_at: u.created_at,
+      updated_at: u.created_at,
+      users: { email: u.email, name: u.name },
+      user_email: u.email,
+      _isUserOnly: true
+    }));
+
+  // Merge: real subscriptions first, then users without subscriptions
+  const merged = [
+    ...(subs || []).map(s => ({ ...s, user_email: s.users?.email || '' })),
+    ...usersWithoutSubs
+  ];
+
+  res.json(merged);
 });
 
 app.post('/api/admin/subscriptions', adminAuth, async (req, res) => {
-  const { ip, user_id, plan, status, notes, expires_at, is_family_friend } = req.body;
+  const { ip, user_id, plan, status, notes, expires_at } = req.body;
   if (!ip) return res.status(400).json({ error: 'IP é obrigatório' });
   // Allow multiple IPs per user — only check if this exact IP already exists
   const { data: existing } = await supabase.from('ip_subscriptions').select('id').eq('ip', ip).single();
   if (existing) return res.status(409).json({ error: 'Este IP já está cadastrado' });
-  const { data } = await supabase.from('ip_subscriptions').insert({ ip, user_id, plan: plan || 'free', status: status || 'active', notes, expires_at, is_family_friend: !!is_family_friend }).select().single();
+  const { data } = await supabase.from('ip_subscriptions').insert({ ip, user_id, plan: plan || 'free', status: status || 'active', notes, expires_at }).select().single();
   res.json(data);
 });
 
 app.put('/api/admin/subscriptions/:id', adminAuth, async (req, res) => {
-  const { plan, status, notes, expires_at, ip, user_data, is_family_friend } = req.body;
+  const { plan, status, notes, expires_at, ip, user_data } = req.body;
   const update = {};
   if (plan !== undefined) update.plan = plan;
   if (status !== undefined) update.status = status;
   if (notes !== undefined) update.notes = notes;
   if (expires_at !== undefined) update.expires_at = expires_at;
   if (ip !== undefined) update.ip = ip;
-  if (is_family_friend !== undefined) update.is_family_friend = is_family_friend;
 
   // Step 1: Get the current subscription to know its IP before updating
   const { data: currentSub } = await supabase.from('ip_subscriptions').select('id, ip, user_id').eq('id', req.params.id).single();
@@ -1220,38 +1270,10 @@ app.delete('/api/admin/subscriptions/:id', adminAuth, async (req, res) => {
   res.json({ success: true });
 });
 
-// --- ADMIN: CLEANUP FREE IP RECORDS — remove auto-created free IP records from old bug ---
-app.post('/api/admin/cleanup-free-ips', adminAuth, async (req, res) => {
-  try {
-    // Delete all ip_subscriptions with plan='free' and status='active'
-    const { data, error } = await supabase
-      .from('ip_subscriptions')
-      .delete()
-      .eq('plan', 'free')
-      .eq('status', 'active')
-      .select('id');
-
-    if (error) return res.status(500).json({ error: 'Erro ao limpar registros: ' + error.message });
-
-    const count = data?.length || 0;
-    console.log(`[ADMIN] Cleaned up ${count} free IP records`);
-    res.json({ success: true, deleted: count, message: `${count} registros FREE removidos.` });
-  } catch (err) {
-    console.error('Cleanup free IPs error:', err);
-    res.status(500).json({ error: 'Erro ao limpar registros: ' + err.message });
-  }
-});
-
 // --- ADMIN: RESET USER ACCOUNT — clears plan, IP, keys but keeps user record ---
-// Password protected (0258). Generates new user_id to isolate from old webhook logs.
-app.post('/api/admin/users/:subId/reset', adminAuth, async (req, res) => {
+// Protected by adminAuth + TOTP (requireTotp middleware). Generates new user_id to isolate from old webhook logs.
+app.post('/api/admin/users/:subId/reset', adminAuth, requireTotp('reset'), async (req, res) => {
   const { subId } = req.params;
-  const { password } = req.body;
-
-  // Verify password
-  if (password !== '0258') {
-    return res.status(403).json({ error: 'Senha incorreta' });
-  }
 
   try {
     // Step 1: Get the subscription and user_id
@@ -1353,15 +1375,9 @@ app.post('/api/admin/users/:subId/reset', adminAuth, async (req, res) => {
 });
 
 // --- ADMIN: DELETE USER COMPLETELY — removes everything including user record ---
-// Password protected (0258). Permanent deletion.
-app.delete('/api/admin/users/:subId/delete-complete', adminAuth, async (req, res) => {
+// Protected by adminAuth + TOTP (requireTotp middleware). Permanent deletion.
+app.delete('/api/admin/users/:subId/delete-complete', adminAuth, requireTotp('delete'), async (req, res) => {
   const { subId } = req.params;
-  const { password } = req.body;
-
-  // Verify password
-  if (password !== '0258') {
-    return res.status(403).json({ error: 'Senha incorreta' });
-  }
 
   try {
     // Step 1: Get the subscription and user_id
@@ -2092,37 +2108,6 @@ app.post('/api/admin/deploy', adminAuth, async (req, res) => {
   }, 2000);
 });
 
-// Auto-migrate ip_subscriptions table — ensure is_family_friend column exists
-(async function migrateIpSubscriptions() {
-  try {
-    const testRow = { ip: '0.0.0.0', plan: 'free', status: 'active', is_family_friend: false };
-    const { error } = await supabase.from('ip_subscriptions').insert(testRow);
-    if (error) {
-      if (error.message && error.message.includes('is_family_friend')) {
-        console.log('[Migration] ip_subscriptions missing is_family_friend column');
-        console.log('[Migration] Run this SQL in Supabase Dashboard → SQL Editor:');
-        console.log('[Migration] ALTER TABLE ip_subscriptions ADD COLUMN IF NOT EXISTS is_family_friend BOOLEAN DEFAULT false;');
-      } else {
-        // Column might exist but other issue — try without is_family_friend
-        const { error: minErr } = await supabase.from('ip_subscriptions').insert({ ip: '0.0.0.0', plan: 'free', status: 'active' });
-        if (!minErr) {
-          await supabase.from('ip_subscriptions').delete().eq('ip', '0.0.0.0');
-          console.log('[Migration] ip_subscriptions needs column: is_family_friend');
-          console.log('[Migration] Run this SQL in Supabase Dashboard → SQL Editor:');
-          console.log('[Migration] ALTER TABLE ip_subscriptions ADD COLUMN IF NOT EXISTS is_family_friend BOOLEAN DEFAULT false;');
-        } else {
-          console.error('[Migration] ip_subscriptions table issue:', minErr.message);
-        }
-      }
-    } else {
-      await supabase.from('ip_subscriptions').delete().eq('ip', '0.0.0.0');
-      console.log('[Migration] ip_subscriptions table OK — is_family_friend column present');
-    }
-  } catch (e) {
-    console.error('[Migration] ip_subscriptions check failed:', e.message);
-  }
-})();
-
 // Auto-migrate webhook_logs table on startup — ensure all columns exist
 (async function migrateWebhookLogs() {
   try {
@@ -2749,58 +2734,21 @@ app.get('/api/admin/crm/ip-history/:user_id', adminAuth, async (req, res) => {
 const GHOSTCLI_BASE_URL = process.env.GHOSTCLI_BASE_URL || 'https://ghostcli.dev/v1';
 const GHOSTCLI_API_KEY = process.env.GHOSTCLI_API_KEY || '';
 
-// --- Cache LRU bounded para validação de chaves (TTL 600s, max 10k entradas) ---
-// Evita crescimento ilimitado de memória sob tráfego intenso com muitas chaves únicas
+// --- Cache em memória para validação de chaves (TTL 300s) ---
+const keyCache = new Map(); // keyHash → { userId, revoked, cachedAt }
+const subCache = new Map(); // userId → { ip, additional_ip, has_additional_ip, plan, status, expires_at, cachedAt }
 const CACHE_TTL_MS = 10 * 60 * 1000; // 600s — reduz queries ao Supabase em 2× (era 300s)
-const CACHE_MAX_SIZE = 10000;
 
-class LRUCache {
-  constructor(maxSize, ttlMs) {
-    this.maxSize = maxSize;
-    this.ttlMs = ttlMs;
-    this.map = new Map();
-  }
-  get(key) {
-    const entry = this.map.get(key);
-    if (!entry) return null;
-    if (Date.now() - entry.cachedAt > this.ttlMs) { this.map.delete(key); return null; }
-    // Move to end (most recently used)
-    this.map.delete(key);
-    this.map.set(key, entry);
-    return entry;
-  }
-  set(key, value) {
-    // Evict oldest if at capacity
-    if (this.map.size >= this.maxSize && !this.map.has(key)) {
-      const firstKey = this.map.keys().next().value;
-      this.map.delete(firstKey);
-    }
-    this.map.set(key, { ...value, cachedAt: Date.now() });
-  }
-  delete(key) { this.map.delete(key); }
-  clear() { this.map.clear(); }
-  // Cleanup periódico: remove entradas expiradas (chamado via setInterval)
-  cleanup() {
-    const now = Date.now();
-    for (const [key, entry] of this.map) {
-      if (now - entry.cachedAt > this.ttlMs) this.map.delete(key);
-    }
-  }
+function getCached(map, key) {
+  const entry = map.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.cachedAt > CACHE_TTL_MS) { map.delete(key); return null; }
+  return entry;
 }
 
-const keyCache = new LRUCache(CACHE_MAX_SIZE, CACHE_TTL_MS);
-const subCache = new LRUCache(CACHE_MAX_SIZE, CACHE_TTL_MS);
-
-// Cleanup periódico a cada 60s — remove entradas stale sem esperar acesso
-const cacheCleanupInterval = setInterval(() => {
-  keyCache.cleanup();
-  subCache.cleanup();
-}, 60000);
-// Não impedir graceful shutdown
-if (cacheCleanupInterval.unref) cacheCleanupInterval.unref();
-
-function getCached(cache, key) { return cache.get(key); }
-function setCached(cache, key, value) { cache.set(key, value); }
+function setCached(map, key, value) {
+  map.set(key, { ...value, cachedAt: Date.now() });
+}
 
 // Invalidar cache (chamado quando admin revoga chave ou muda IP)
 function invalidateKeyCache(keyHash) { keyCache.delete(keyHash); }
@@ -2881,16 +2829,8 @@ async function validateApiKey(req, res, next) {
 }
 
 // --- Tracking de uso ---
-// Apenas endpoints de chat real contam como "mensagem" — /models e /embeddings são ignorados
-const CHAT_ENDPOINTS = ['/chat/completions', '/messages', '/completions'];
-
 async function trackUsage(req, data, latencyMs) {
   try {
-    // Filtrar: só registrar requests de chat real, não /models ou /embeddings
-    const reqPath = req.originalUrl || req.url || '';
-    const isChatRequest = CHAT_ENDPOINTS.some(ep => reqPath.includes(ep));
-    if (!isChatRequest) return; // Ignora /v1/models, /v1/embeddings etc.
-
     const usage = data.usage || {};
     await supabase.from('usage_logs').insert({
       user_id: req.apiKeyUser.user_id,
@@ -2954,11 +2894,8 @@ async function proxyRequest(req, res, path) {
     });
 
     if (req.body?.stream && upstream.ok) {
-      // Streaming SSE: pipe chunks com backpressure + tail buffer para usage parsing
-      // Evita concatenação O(n²) de strings — mantém apenas últimos 2KB para parseSseUsage
-      const TAIL_SIZE = 2048;
-      const tailChunks = [];
-      let tailLen = 0;
+      // Streaming SSE: pipe chunks and capture usage from final chunk
+      let fullResponse = '';
       const reader = upstream.body.getReader();
       const decoder = new TextDecoder();
 
@@ -2966,41 +2903,24 @@ async function proxyRequest(req, res, path) {
         const { done, value } = await reader.read();
         if (done) break;
         const chunk = decoder.decode(value, { stream: true });
-
-        // Backpressure: espera drain se buffer do socket estiver cheio
-        if (!res.write(chunk)) {
-          await new Promise(resolve => res.once('drain', resolve));
-        }
-
-        // Manter apenas os últimos TAIL_SIZE bytes para parseSseUsage
-        tailChunks.push(chunk);
-        tailLen += chunk.length;
-        while (tailLen > TAIL_SIZE && tailChunks.length > 1) {
-          tailLen -= tailChunks[0].length;
-          tailChunks.shift();
-        }
+        fullResponse += chunk;
+        res.write(chunk);
       }
       res.end();
 
       // Track usage fire-and-forget (não bloqueia resposta)
-      const tailStr = tailChunks.join('');
-      const sseData = parseSseUsage(tailStr);
+      const sseData = parseSseUsage(fullResponse);
       if (sseData) trackUsage(req, sseData, ttfb).catch(() => {});
     } else {
-      // Non-streaming: lê como ArrayBuffer e envia raw buffer (evita double parse/serialize JSON)
-      const buffer = Buffer.from(await upstream.arrayBuffer());
+      // Non-streaming: read full response
       const contentType = upstream.headers.get('content-type') || '';
       if (contentType.includes('application/json')) {
-        res.set('Content-Type', contentType);
-        res.send(buffer);
-        // Parse apenas para usage tracking (não para resposta)
-        if (upstream.ok) {
-          try {
-            const data = JSON.parse(buffer.toString());
-            trackUsage(req, data, ttfb).catch(() => {});
-          } catch (_) { /* ignore parse errors for usage */ }
-        }
+        const data = await upstream.json();
+        res.json(data);
+        // Track usage fire-and-forget (não bloqueia resposta)
+        if (upstream.ok) trackUsage(req, data, ttfb).catch(() => {});
       } else {
+        const buffer = Buffer.from(await upstream.arrayBuffer());
         res.send(buffer);
       }
     }
