@@ -1703,8 +1703,8 @@
                             <td class="mono">${a.paid_referrals || 0}</td>
                             <td class="mono">R$ ${(a.total_commission_base || 0).toFixed(2)}</td>
                             <td class="actions">
-                                <button class="btn btn-secondary btn-sm" onclick='editAffiliateCommission(${idStr}, ${a.commission_pct}, ${parentIdStr})'>Editar %</button>
-                                <button class="btn btn-danger btn-sm" onclick='removeAffiliate(${idStr})'>Remover</button>
+                                <button class="btn btn-secondary btn-sm" draggable="false" onclick='editAffiliateCommission(${idStr}, ${a.commission_pct}, ${parentIdStr})'>Editar %</button>
+                                <button class="btn btn-danger btn-sm" draggable="false" onclick='removeAffiliate(${idStr})'>Remover</button>
                             </td>
                         </tr>
                     `;
