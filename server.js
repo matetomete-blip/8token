@@ -808,10 +808,31 @@ app.delete('/api/admin/subscriptions/:id', adminAuth, async (req, res) => {
 
 // --- ADMIN: IP VALIDATION (Hermes API) ---
 app.post('/api/admin/ips/validate', adminAuth, async (req, res) => {
-  const { ip, status = 'active', plan = 'mensal', expires_at } = req.body;
-  if (!ip) return res.status(400).json({ error: 'IP é obrigatório' });
+  const { sub_id, ip, status = 'active', plan = 'mensal', expires_at } = req.body;
 
-  // Find ALL subscriptions with this IP — update each individually by ID (not bulk by IP)
+  // If sub_id is provided, update ONLY that specific subscription (per-user isolation)
+  if (sub_id) {
+    const update = { status };
+    if (plan) update.plan = plan;
+    if (expires_at) update.expires_at = expires_at;
+
+    const { data: sub, error } = await supabase.from('ip_subscriptions').update(update).eq('id', sub_id).select('user_id, ip').single();
+    if (error) return res.status(500).json({ error: error.message });
+
+    // Sync users.plan for THIS specific user only
+    if (sub?.user_id && (plan || expires_at)) {
+      const userUpdate = {};
+      if (plan) userUpdate.plan = plan;
+      if (expires_at) userUpdate.plan_expires_at = expires_at;
+      await supabase.from('users').update(userUpdate).eq('id', sub.user_id);
+    }
+
+    return res.json({ success: true, sub_id, status, plan, ip: sub?.ip });
+  }
+
+  // Legacy: if only IP is provided (for bulk operations), update all subs with that IP
+  if (!ip) return res.status(400).json({ error: 'IP ou sub_id é obrigatório' });
+
   const { data: subs } = await supabase.from('ip_subscriptions').select('*').eq('ip', ip);
   if (subs && subs.length > 0) {
     for (const sub of subs) {
@@ -819,7 +840,6 @@ app.post('/api/admin/ips/validate', adminAuth, async (req, res) => {
       if (plan) update.plan = plan;
       if (expires_at) update.expires_at = expires_at;
       await supabase.from('ip_subscriptions').update(update).eq('id', sub.id);
-      // Sync users.plan for THIS specific user only
       if (sub.user_id && (plan || expires_at)) {
         const userUpdate = {};
         if (plan) userUpdate.plan = plan;
@@ -835,9 +855,18 @@ app.post('/api/admin/ips/validate', adminAuth, async (req, res) => {
 });
 
 app.post('/api/admin/ips/invalidate', adminAuth, async (req, res) => {
-  const { ip } = req.body;
-  if (!ip) return res.status(400).json({ error: 'IP é obrigatório' });
-  // Find ALL subscriptions with this IP — suspend each individually by ID (not bulk by IP)
+  const { sub_id, ip } = req.body;
+
+  // If sub_id is provided, suspend ONLY that specific subscription (per-user isolation)
+  if (sub_id) {
+    const { error } = await supabase.from('ip_subscriptions').update({ status: 'suspended' }).eq('id', sub_id);
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json({ success: true, sub_id, status: 'suspended' });
+  }
+
+  // Legacy: if only IP is provided (for bulk operations), suspend all subs with that IP
+  if (!ip) return res.status(400).json({ error: 'IP ou sub_id é obrigatório' });
+
   const { data: subs } = await supabase.from('ip_subscriptions').select('id, user_id').eq('ip', ip);
   if (subs && subs.length > 0) {
     for (const sub of subs) {
