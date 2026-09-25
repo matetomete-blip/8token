@@ -597,7 +597,7 @@
             if (name === 'notifications') loadNotifStats();
             if (name === 'plans') loadPlans();
             if (name === 'expired') loadExpired();
-            if (name === 'ipchanges') loadIpChanges();
+                        if (name === 'ipchanges') loadIpChanges();
             if (name === 'settings') loadSettings();
             if (name === 'webhook') { loadWebhookLogs(); loadWebhookConfig(); }
         }
@@ -742,8 +742,15 @@
 
         function renderUsersTable(subs) {
             const tbody = document.getElementById('usersTableBody');
-            if (!subs.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Nenhum registro encontrado.</td></tr>'; return; }
-            tbody.innerHTML = subs.map(s => `
+            // Filter: only show subscriptions with real active IPs (not pending-* without active plan)
+            const filteredSubs = subs.filter(s => {
+                const isPendingIp = s.ip && (s.ip.startsWith('pending-') || s.ip === 'pending-activation');
+                const hasActivePlan = s.plan && s.plan !== 'free' && s.status === 'active';
+                // Show if: has real IP (not pending) OR has active paid plan
+                return !isPendingIp || hasActivePlan;
+            });
+            if (!filteredSubs.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Nenhum registro encontrado.</td></tr>'; return; }
+            tbody.innerHTML = filteredSubs.map(s => `
                 <tr data-id="${s.id}">
                     <td class="mono">${s.ip}</td>
                     <td>${badgeForPlan(s.plan)}</td>
@@ -1238,6 +1245,8 @@
             }
         }
 
+        
+        
         // ---- IP CHANGE REQUESTS ----
         async function loadIpChanges() {
             try {

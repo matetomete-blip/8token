@@ -25,22 +25,6 @@ const keepAliveDispatcher = new UndiciAgent({
 
 const app = express();
 
-// SECURITY FIX: Disable X-Powered-By header to avoid disclosing server technology
-app.disable('x-powered-by');
-
-// SECURITY FIX: Global security headers middleware — protects admin panel and all routes
-// X-Frame-Options: DENY prevents clickjacking by disallowing framing entirely
-// X-Content-Type-Options: nosniff prevents MIME-type sniffing attacks
-// Referrer-Policy: strict-origin-when-cross-origin limits referrer leakage on cross-origin navigations
-// Strict-Transport-Security: enforces HTTPS for 1 year with subdomains (HSTS)
-app.use((req, res, next) => {
-  res.set('X-Frame-Options', 'DENY');
-  res.set('X-Content-Type-Options', 'nosniff');
-  res.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-  next();
-});
-
 // Rate limiters for auth endpoints
 const loginLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -62,21 +46,6 @@ if (!JWT_SECRET || JWT_SECRET === '8token-jwt-secret-stable-fallback-2026') {
   process.exit(1);
 }
 
-// SECURITY FIX: In-memory token blacklist for JWT revocation on logout
-// Tokens are stored by jti with TTL matching JWT expiry (30 days).
-// On server restart the blacklist is cleared — acceptable for in-memory approach
-// since all pre-restart tokens remain valid until their natural expiry.
-const tokenBlacklist = new Map(); // jti -> expiresAt (ms epoch)
-const BLACKLIST_TTL_MS = 30 * 24 * 60 * 60 * 1000; // matches JWT expiresIn: '30d'
-
-// Periodic cleanup of expired blacklist entries (every hour)
-setInterval(() => {
-  const now = Date.now();
-  for (const [jti, expiresAt] of tokenBlacklist) {
-    if (expiresAt <= now) tokenBlacklist.delete(jti);
-  }
-}, 60 * 60 * 1000).unref();
-
 // HTML escaping helper for email templates and user-facing output
 function escHtml(str) {
   if (!str) return '';
@@ -97,48 +66,14 @@ if (!AES_KEY_RAW || AES_KEY_RAW === 'fallback-secret-key-32chars!!') {
 const AES_KEY = Buffer.from(AES_KEY_RAW, 'utf8').slice(0, 32);
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
-// SECURITY FIX: ADMIN_SECRET must come from env only — no hardcoded fallback
-const ADMIN_SECRET = process.env.ADMIN_SECRET;
-if (!ADMIN_SECRET) {
-  console.error('ERRO FATAL: ADMIN_SECRET não configurado. Defina via variável de ambiente.');
-  process.exit(1);
-}
+const ADMIN_SECRET = process.env.ADMIN_SECRET || '8token-admin-change-me';
 // TOTP secrets for destructive admin operations (replace hardcoded '0258' password)
 const ADMIN_TOTP_RESET_SECRET = process.env.ADMIN_TOTP_RESET_SECRET || '';
 const ADMIN_TOTP_DELETE_SECRET = process.env.ADMIN_TOTP_DELETE_SECRET || '';
 
-// SECURITY FIX: Supabase service_role key exposure mitigation
-// ⚠️  SUPABASE_KEY MUST be restricted via Supabase Dashboard → Settings → API → IP Allowlist.
-//     This server uses the service_role key for admin operations (auth.admin.createUser, etc.).
-//     Without IP allowlisting, a leaked key grants FULL database access from any origin.
-//     Action required: Add your VPS IP (179.197.224.101) and localhost to the Supabase IP allowlist.
-//     NEVER log, print, or expose supabaseKey in error messages, responses, or client-side code.
-// SECURITY FIX: SUPABASE_URL and SUPABASE_KEY must come from env only — no hardcoded fallbacks
-const supabaseUrl = process.env.SUPABASE_URL;
-if (!supabaseUrl) {
-  console.error('ERRO FATAL: SUPABASE_URL não configurado. Defina via variável de ambiente.');
-  process.exit(1);
-}
-const supabaseKey = process.env.SUPABASE_KEY;
-if (!supabaseKey) {
-  console.error('ERRO FATAL: SUPABASE_KEY não configurado. Defina via variável de ambiente.');
-  process.exit(1);
-}
-
-// SECURITY FIX: Runtime warning if SUPABASE_KEY appears to be a service_role key without protection
-if (supabaseKey && (supabaseKey.startsWith('eyJ') && supabaseKey.length > 200)) {
-  // Decode JWT payload to check role claim (service_role keys are long-lived JWTs with role=service_role)
-  try {
-    const payloadB64 = supabaseKey.split('.')[1];
-    if (payloadB64) {
-      const payload = JSON.parse(Buffer.from(payloadB64, 'base64').toString('utf8'));
-      if (payload.role === 'service_role') {
-        console.warn('[SECURITY WARNING] SUPABASE_KEY is a service_role key. Ensure IP allowlist is configured in Supabase Dashboard → Settings → API.');
-      }
-    }
-  } catch (_) { /* Not a valid JWT or not decodable — skip check silently */ }
-}
-
+// Supabase client — realtime desativado (exige WS nativo do Node 22+)
+const supabaseUrl = process.env.SUPABASE_URL || 'https://wbkmaeqkypqrkawumdjw.supabase.co';
+const supabaseKey = process.env.SUPABASE_KEY || process.env.service_role || '';
 const supabase = createClient(supabaseUrl, supabaseKey, {
   realtime: { enabled: false },
   global: { headers: { 'X-Client-Info': '8token-server/1.0' } }
@@ -170,58 +105,9 @@ async function sendEmail(to, subject, html) {
   }
 }
 
-// SECURITY FIX: Restrict CORS to explicit allowlist — prevents cross-origin credential theft
-const ALLOWED_ORIGINS = [
-  'https://8token.tech',
-  'https://www.8token.tech',
-];
-
-// SECURITY FIX: Explicit CORS configuration with origin allowlist, credentials, methods and headers
-app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (e.g. mobile apps, curl, server-to-server, same-origin)
-    if (!origin) return callback(null, true);
-    if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
-    // Reject all other origins
-    return callback(new Error('CORS policy: origin not allowed'));
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Admin-Secret', 'X-TOTP-Token', 'X-Requested-With', 'Accept', 'Origin'],
-}));
-// SECURITY FIX: Capture raw body for HMAC webhook signature verification
-// Must be registered BEFORE express.json() so the raw buffer is available
-app.use('/api/webhooks/kirvano', express.raw({ type: 'application/json', limit: '10mb' }));
-
+// Middleware
+app.use(cors());
 app.use(express.json({ limit: '10mb' }));
-
-// SECURITY FIX: Reject deeply nested JSON to prevent stack overflow / DoS crashes
-// Max depth 20 levels — returns 400 Bad Request for violations
-(function() {
-  const MAX_JSON_DEPTH = 20;
-  function checkDepth(value, currentDepth) {
-    if (currentDepth > MAX_JSON_DEPTH) return true;
-    if (Array.isArray(value)) {
-      for (let i = 0; i < value.length; i++) {
-        if (checkDepth(value[i], currentDepth + 1)) return true;
-      }
-    } else if (value !== null && typeof value === 'object') {
-      const keys = Object.keys(value);
-      for (let i = 0; i < keys.length; i++) {
-        if (checkDepth(value[keys[i]], currentDepth + 1)) return true;
-      }
-    }
-    return false;
-  }
-  app.use((req, res, next) => {
-    if (req.body && typeof req.body === 'object') {
-      if (checkDepth(req.body, 0)) {
-        return res.status(400).json({ error: 'JSON payload exceeds maximum nesting depth of ' + MAX_JSON_DEPTH });
-      }
-    }
-    next();
-  });
-})();
 
 // Aggressive no-cache for HTML files — prevents browser from serving stale admin/dashboard pages
 app.use((req, res, next) => {
@@ -259,14 +145,6 @@ function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
   if (!token) return res.status(401).json({ error: 'Token não fornecido' });
-
-  // SECURITY FIX: Check token blacklist before verifying (JWT revocation on logout)
-  try {
-    const decoded = jwt.decode(token);
-    if (decoded && decoded.jti && tokenBlacklist.has(decoded.jti)) {
-      return res.status(401).json({ error: 'Token revogado' });
-    }
-  } catch (_) { /* decode failure handled by verify below */ }
   jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] }, (err, user) => {
     if (err) return res.status(403).json({ error: 'Token inválido' });
     req.user = user;
@@ -274,70 +152,15 @@ function authenticateToken(req, res, next) {
   });
 }
 
-// SECURITY FIX: Rate limiter for admin endpoints (30 requests/min)
-const adminLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 30,
-  message: { error: 'Muitas requisições ao painel admin. Tente novamente em 1 minuto.' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-// SECURITY FIX: Rate limiter for authenticated /api/* endpoints (100 req/min per user)
-// Applied globally after authenticateToken to protect all user-facing API routes from abuse
-const apiLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 100,
-  keyGenerator: (req) => req.user?.id || req.clientIp || 'unknown',
-  message: { error: 'Limite de requisições atingido. Tente novamente em 1 minuto.' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-// SECURITY FIX: Tiered rate limiter for /v1/* proxy routes based on subscription plan
-// Free: 30 req/min | Mensal: 120 req/min | Trimestral: 180 req/min | Anual: 300 req/min
-const PLAN_RATE_LIMITS = { free: 30, mensal: 120, trimestral: 180, anual: 300 };
-const proxyLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: (req) => {
-    const plan = req.subscription?.plan || 'free';
-    return PLAN_RATE_LIMITS[plan] || PLAN_RATE_LIMITS.free;
-  },
-  keyGenerator: (req) => req.apiKeyUser?.user_id || req.clientIp || 'unknown',
-  message: { error: 'Limite de requisições da API atingido para o seu plano. Aguarde ou faça upgrade.' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-// SECURITY FIX: Admin auth middleware — requires valid JWT with role=admin
-// Replaces static ADMIN_SECRET comparison. Query param ?key= removed to prevent secret leakage in logs/URLs.
+// Admin auth middleware
 function adminAuth(req, res, next) {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-  if (!token) return res.status(401).json({ error: 'Token de admin não fornecido' });
-  jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] }, (err, user) => {
-    if (err) return res.status(403).json({ error: 'Token de admin inválido ou expirado' });
-    // SECURITY FIX: Check token blacklist for revoked tokens (logout support)
-    if (user.jti && tokenBlacklist.has(user.jti)) {
-      return res.status(401).json({ error: 'Token revogado' });
-    }
-    // SECURITY FIX: Enforce role=admin check — regular user tokens are rejected
-    if (user.role !== 'admin') return res.status(403).json({ error: 'Acesso negado: privilégios de admin necessários' });
-    req.user = user;
-    next();
-  });
+  const secret = req.headers['x-admin-secret'] || req.query.key;
+  if (secret !== ADMIN_SECRET) return res.status(403).json({ error: 'Acesso negado' });
+  next();
 }
 
 // Helper: ensure IP record exists for user — REMOVED: IPs should only be saved when user explicitly requests authorization
 // async function ensureIpRecord(ip, userId) { ... } — no longer auto-creates IP records on login/register
-
-// SECURITY FIX: Apply rate limiting to ALL admin routes via path prefix middleware
-// This ensures every /api/admin/* endpoint is rate-limited to 30 req/min before auth check
-// SECURITY FIX: Apply rate limiting to ALL authenticated /api/* endpoints (100 req/min per user)
-// Must be registered before individual /api/* routes so every authenticated endpoint is protected
-app.use('/api', apiLimiter);
-
-app.use('/api/admin', adminLimiter);
 
 // --- ADMIN 2FA (TOTP / Google Authenticator) ---
 const totpVerifyLimiter = rateLimit({
@@ -469,14 +292,6 @@ const PLAN_EXPIRY_MS = {
 
 app.post('/api/auth/register', registerLimiter, async (req, res) => {
   try {
-    // SECURITY FIX: Explicit field allowlist — reject requests with unexpected fields to prevent mass assignment
-    const ALLOWED_REGISTER_FIELDS = new Set(['email', 'password', 'name']);
-    const receivedFields = Object.keys(req.body || {});
-    const unexpectedFields = receivedFields.filter(f => !ALLOWED_REGISTER_FIELDS.has(f));
-    if (unexpectedFields.length > 0) {
-      return res.status(400).json({ error: 'Campos não permitidos na requisição: ' + unexpectedFields.join(', ') });
-    }
-
     const { email, password, name } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email e senha são obrigatórios' });
     if (password.length < 6) return res.status(400).json({ error: 'Senha deve ter pelo menos 6 caracteres' });
@@ -528,21 +343,31 @@ app.post('/api/auth/register', registerLimiter, async (req, res) => {
       // If insert fails (e.g. duplicate), try to find existing
       const { data: found } = await supabase.from('users').select('*').eq('email', normalizedEmail).single();
       if (found) {
-        // SECURITY FIX: Add jti claim for token revocation support; include role for admin auth
-        const token = jwt.sign({ id: found.id, email: found.email, role: found.role || 'user', jti: crypto.randomUUID() }, JWT_SECRET, { algorithm: 'HS256', expiresIn: '30d' });
-        return res.json({ token, user: { id: found.id, email: found.email, name: found.name, plan: found.plan, role: found.role || 'user' } });
+        const token = jwt.sign({ id: found.id, email: found.email }, JWT_SECRET, { algorithm: 'HS256', expiresIn: '30d' });
+        return res.json({ token, user: { id: found.id, email: found.email, name: found.name, plan: found.plan } });
       }
       throw error;
     }
 
-    // NOTE: não criar ip_subscriptions automaticamente no registro.
-    // O usuário só aparece no painel admin quando o admin adiciona um IP manualmente
-    // ou quando o usuário autoriza um IP pelo dashboard. Isso evita linhas "pending"
-    // duplicadas que confundem a interface.
+    // Auto-create ip_subscriptions entry — only if none exists for this user yet
+    try {
+      const { data: existingSub } = await supabase.from('ip_subscriptions')
+        .select('id').eq('user_id', authUserId).limit(1).single();
+      if (!existingSub) {
+        await supabase.from('ip_subscriptions').insert({
+          ip: 'pending-' + authUserId.slice(0, 8),
+          user_id: authUserId,
+          plan: 'free',
+          status: 'pending',
+          notes: 'Conta criada via registro automático'
+        });
+      }
+    } catch (ipErr) {
+      console.error('Auto-create ip_subscription warning:', ipErr.message);
+    }
 
-    // SECURITY FIX: Add jti claim for token revocation support; include role for admin auth
-    const token = jwt.sign({ id: newUser.id, email: normalizedEmail, role: role || 'user', jti: crypto.randomUUID() }, JWT_SECRET, { algorithm: 'HS256', expiresIn: '30d' });
-    res.json({ token, user: { id: newUser.id, email: normalizedEmail, name: displayName, plan, role: role || 'user' } });
+    const token = jwt.sign({ id: newUser.id, email: normalizedEmail }, JWT_SECRET, { algorithm: 'HS256', expiresIn: '30d' });
+    res.json({ token, user: { id: newUser.id, email: normalizedEmail, name: displayName, plan } });
   } catch (err) {
     console.error('Register error:', err);
     res.status(500).json({ error: 'Erro ao criar conta: ' + (err.message || 'Erro interno') });
@@ -580,8 +405,7 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
       user.role = 'admin';
     }
 
-    // SECURITY FIX: Add jti claim for token revocation support; include role for admin auth
-    const token = jwt.sign({ id: user.id, email: user.email, role: user.role || 'user', jti: crypto.randomUUID() }, JWT_SECRET, { algorithm: 'HS256', expiresIn: '30d' });
+    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { algorithm: 'HS256', expiresIn: '30d' });
     res.json({ token, user: { id: user.id, email: user.email, name: user.name, plan: user.plan, role: user.role || 'user' } });
   } catch (err) {
     console.error('Login error:', err);
@@ -668,10 +492,22 @@ app.post('/api/auth/google', async (req, res) => {
         user = newUser;
       }
 
-      // NOTE: não criar ip_subscriptions automaticamente no Google OAuth.
-      // O usuário só aparece no painel admin quando o admin adiciona um IP manualmente
-      // ou quando o usuário autoriza um IP pelo dashboard. Isso evita linhas "pending"
-      // duplicadas que confundem a interface.
+      // Auto-create ip_subscriptions entry — only if none exists for this user yet
+      try {
+        const { data: existingSub } = await supabase.from('ip_subscriptions')
+          .select('id').eq('user_id', authUserId).limit(1).single();
+        if (!existingSub) {
+          await supabase.from('ip_subscriptions').insert({
+            ip: 'pending-' + authUserId.slice(0, 8),
+            user_id: authUserId,
+            plan: 'free',
+            status: 'pending',
+            notes: 'Conta criada via Google OAuth'
+          });
+        }
+      } catch (ipErr) {
+        console.error('Auto-create ip_subscription warning (Google):', ipErr.message);
+      }
     } else {
       // User exists — link Google account if not already linked, PRIORITIZE Google name
       const updates = {
@@ -705,32 +541,11 @@ app.post('/api/auth/google', async (req, res) => {
       }
     }
 
-    // SECURITY FIX: Add jti claim for token revocation support; include role for admin auth
-    const token = jwt.sign({ id: user.id, email: user.email, role: user.role || 'user', jti: crypto.randomUUID() }, JWT_SECRET, { algorithm: 'HS256', expiresIn: '30d' });
+    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { algorithm: 'HS256', expiresIn: '30d' });
     res.json({ token, user: { id: user.id, email: user.email, name: user.name || name, plan: user.plan, role: user.role || 'user' } });
   } catch (err) {
     console.error('Google auth error:', err);
     res.status(500).json({ error: 'Erro na autenticação com Google' });
-  }
-});
-
-// SECURITY FIX: JWT logout endpoint — revokes token by adding jti to in-memory blacklist
-app.post('/api/auth/logout', authenticateToken, (req, res) => {
-  try {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-    if (token) {
-      const decoded = jwt.decode(token);
-      if (decoded && decoded.jti) {
-        // Store jti with expiry matching the token's own exp claim
-        const expiresAt = decoded.exp ? decoded.exp * 1000 : Date.now() + BLACKLIST_TTL_MS;
-        tokenBlacklist.set(decoded.jti, expiresAt);
-      }
-    }
-    res.json({ success: true, message: 'Logout realizado com sucesso' });
-  } catch (err) {
-    console.error('Logout error:', err);
-    res.status(500).json({ error: 'Erro ao realizar logout' });
   }
 });
 
@@ -956,20 +771,11 @@ app.post('/api/keys', authenticateToken, async (req, res) => {
 
 // DELETE /api/keys/:id — revogar chave + remover todos os IPs autorizados (CASCADE via FK)
 app.delete('/api/keys/:id', authenticateToken, async (req, res) => {
-  // SECURITY FIX: Ownership check — only revoke keys belonging to the authenticated user.
-  // Return 404 if no matching row instead of silent success (prevents IDOR enumeration).
   // CASCADE na FK key_authorized_ips.api_key_id remove os IPs automaticamente
-  const { error: updateErr, count } = await supabase
-    .from('api_keys')
-    .update({ revoked: true })
-    .eq('id', req.params.id)
-    .eq('user_id', req.user.id);
-  if (updateErr) return res.status(500).json({ error: 'Erro ao revogar chave: ' + updateErr.message });
-  // SECURITY FIX: If no row matched (wrong owner or nonexistent key), return 404
-  if (count === 0) return res.status(404).json({ error: 'Chave não encontrada.' });
+  await supabase.from('api_keys').update({ revoked: true }).eq('id', req.params.id).eq('user_id', req.user.id);
   // Limpar cache do gateway para esta chave
   try {
-    const { data: keyRow } = await supabase.from('api_keys').select('key_hash').eq('id', req.params.id).eq('user_id', req.user.id).single();
+    const { data: keyRow } = await supabase.from('api_keys').select('key_hash').eq('id', req.params.id).single();
     if (keyRow?.key_hash) { invalidateKeyCache(keyRow.key_hash); invalidateSubCache(req.user.id); }
   } catch (_) {}
   res.json({ success: true });
@@ -1170,98 +976,38 @@ app.get('/api/checkout/status', authenticateToken, async (req, res) => {
 
 // --- WEBHOOK ---
 app.post('/api/webhooks/kirvano', async (req, res) => {
-  // SECURITY FIX: HMAC-SHA256 signature verification with timestamp validation
-  // Raw body was captured by express.raw() middleware before express.json()
-  const rawBody = req.body instanceof Buffer ? req.body : Buffer.from(JSON.stringify(req.body));
-  // Parse JSON payload from raw body (since express.raw() leaves req.body as Buffer)
-  let payload;
+  // Read webhook token from DB settings (admin-configurable) — fall back to env var
+  let dbWebhookToken = '';
   try {
-    payload = JSON.parse(rawBody.toString('utf8'));
-  } catch (parseErr) {
-    console.error('[Kirvano Webhook] Failed to parse JSON body:', parseErr.message);
-    return res.status(400).json({ error: 'Invalid JSON body' });
+    const { data: cfgRow } = await supabase.from('site_settings').select('value').eq('key', 'kirvano_config').single();
+    if (cfgRow) {
+      const cfg = JSON.parse(cfgRow.value);
+      dbWebhookToken = cfg.webhook_token || '';
+    }
+  } catch (_) { /* ignore — proceed with env var or no auth */ }
+
+  const effectiveToken = dbWebhookToken || KIRVANO_WEBHOOK_TOKEN;
+  const authHeader = req.headers['authorization'] || req.headers['x-webhook-token'] || req.headers['x-webhook-secret'] || '';
+  const token = authHeader.replace('Bearer ', '').trim();
+
+  // Fail-closed: reject all requests if no webhook token is configured
+  if (!effectiveToken) {
+    console.error('[SECURITY] KIRVANO_WEBHOOK_TOKEN not configured — rejecting webhook request');
+    return res.status(500).json({ error: 'Webhook not configured' });
   }
-
-  // SECURITY FIX: Read HMAC secret from env (KIRVANO_WEBHOOK_SECRET)
-  const hmacSecret = process.env.KIRVANO_WEBHOOK_SECRET || '';
-  const signatureHeader = req.headers['x-webhook-signature'] || '';
-  const timestampHeader = req.headers['x-webhook-timestamp'] || '';
-
-  // SECURITY FIX: Try HMAC-SHA256 verification first if secret and signature are present
-  let hmacVerified = false;
-  if (hmacSecret && signatureHeader) {
-    // Validate timestamp to prevent replay attacks (5-minute window)
-    if (!timestampHeader) {
-      console.error('[SECURITY] Kirvano webhook missing X-Webhook-Timestamp header — rejecting HMAC request');
-      return res.status(401).json({ error: 'Missing timestamp header' });
-    }
-    const webhookTimestamp = parseInt(timestampHeader, 10);
-    const now = Math.floor(Date.now() / 1000);
-    const TIMESTAMP_TOLERANCE = 300; // 5 minutes in seconds
-    if (isNaN(webhookTimestamp) || Math.abs(now - webhookTimestamp) > TIMESTAMP_TOLERANCE) {
-      console.error(`[SECURITY] Kirvano webhook timestamp outside tolerance: ts=${webhookTimestamp}, now=${now}, diff=${Math.abs(now - webhookTimestamp)}s`);
-      return res.status(401).json({ error: 'Timestamp expired or invalid' });
-    }
-
-    // Compute HMAC-SHA256 over "timestamp.rawBody"
-    const signedPayload = `${timestampHeader}.${rawBody.toString('utf8')}`;
-    const expectedSignature = crypto.createHmac('sha256', hmacSecret)
-      .update(signedPayload, 'utf8')
-      .digest('hex');
-
-    // Timing-safe comparison to prevent timing attacks
-    try {
-      const sigBuf = Buffer.from(signatureHeader, 'hex');
-      const expBuf = Buffer.from(expectedSignature, 'hex');
-      if (sigBuf.length === expBuf.length && crypto.timingSafeEqual(sigBuf, expBuf)) {
-        hmacVerified = true;
-      }
-    } catch (_) {
-      // Signature format invalid — fall through to static token check
-    }
-
-    if (!hmacVerified) {
-      console.error('[SECURITY] Kirvano webhook HMAC signature verification failed');
-      return res.status(401).json({ error: 'Invalid HMAC signature' });
-    }
-  }
-
-  // SECURITY FIX: Static token fallback — log deprecation warning when used
-  if (!hmacVerified) {
-    // Read webhook token from DB settings (admin-configurable) — fall back to env var
-    let dbWebhookToken = '';
-    try {
-      const { data: cfgRow } = await supabase.from('site_settings').select('value').eq('key', 'kirvano_config').single();
-      if (cfgRow) {
-        const cfg = JSON.parse(cfgRow.value);
-        dbWebhookToken = cfg.webhook_token || '';
-      }
-    } catch (_) { /* ignore — proceed with env var or no auth */ }
-
-    const effectiveToken = dbWebhookToken || KIRVANO_WEBHOOK_TOKEN;
-    const authHeader = req.headers['authorization'] || req.headers['x-webhook-token'] || req.headers['x-webhook-secret'] || '';
-    const token = authHeader.replace('Bearer ', '').trim();
-
-    // Fail-closed: reject all requests if no webhook token is configured
-    if (!effectiveToken) {
-      console.error('[SECURITY] KIRVANO_WEBHOOK_TOKEN not configured — rejecting webhook request');
-      return res.status(500).json({ error: 'Webhook not configured' });
-    }
-    if (!token) return res.status(401).json({ error: 'Missing authentication token' });
-    // Timing-safe comparison to prevent timing attacks
-    try {
-      const expected = Buffer.from(effectiveToken);
-      const provided = Buffer.from(token);
-      if (expected.length !== provided.length || !crypto.timingSafeEqual(expected, provided)) {
-        return res.status(401).json({ error: 'Unauthorized' });
-      }
-    } catch (_) {
+  if (!token) return res.status(401).json({ error: 'Missing authentication token' });
+  // Timing-safe comparison to prevent timing attacks
+  try {
+    const expected = Buffer.from(effectiveToken);
+    const provided = Buffer.from(token);
+    if (expected.length !== provided.length || !crypto.timingSafeEqual(expected, provided)) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
-
-    // SECURITY FIX: Deprecation warning for static token usage
-    console.warn('[DEPRECATION] Kirvano webhook authenticated via static token — migrate to HMAC-SHA256 (set KIRVANO_WEBHOOK_SECRET and send X-Webhook-Signature + X-Webhook-Timestamp headers)');
+  } catch (_) {
+    return res.status(401).json({ error: 'Unauthorized' });
   }
+
+  const payload = req.body;
   const event = payload.event;
   console.log(`[Kirvano Webhook] ${event} | sale_id: ${payload.sale_id}`);
 
@@ -1952,7 +1698,7 @@ app.delete('/api/admin/users/:subId/delete-complete', adminAuth, requireTotp('de
 
 
 // --- ADMIN: RESET SUBSCRIPTION (alias route matching frontend call) ---
-app.post('/api/admin/subscriptions/:id/reset', adminAuth, requireTotp('reset'), async (req, res) => {
+app.post('/api/admin/subscriptions/:id/reset', adminAuth, async (req, res) => {
   const { id } = req.params;
   try {
     const { data: sub, error: subErr } = await supabase
@@ -1999,7 +1745,7 @@ app.post('/api/admin/subscriptions/:id/reset', adminAuth, requireTotp('reset'), 
 });
 
 // --- ADMIN: DELETE SUBSCRIPTION COMPLETE (alias route matching frontend call) ---
-app.delete('/api/admin/subscriptions/:id/delete-complete', adminAuth, requireTotp('delete'), async (req, res) => {
+app.delete('/api/admin/subscriptions/:id/delete-complete', adminAuth, async (req, res) => {
   const { id } = req.params;
   try {
     const { data: sub, error: subErr } = await supabase
@@ -3286,90 +3032,6 @@ app.get('/api/admin/crm/ip-history/:user_id', adminAuth, async (req, res) => {
 const GHOSTCLI_BASE_URL = process.env.GHOSTCLI_BASE_URL || 'https://ghostcli.dev/v1';
 const GHOSTCLI_API_KEY = process.env.GHOSTCLI_API_KEY || '';
 
-// SECURITY FIX: Model-to-tier access control — prevents free-tier users from accessing premium models
-// Each plan tier includes all models from lower tiers plus its own exclusive models.
-const ALLOWED_MODELS_BY_PLAN = {
-  free: [
-    'gpt-4o-mini', 'gpt-4o-mini-2024-07-18',
-    'claude-3-haiku-20240307', 'claude-3-5-haiku-20241022',
-    'gemini-1.5-flash', 'gemini-2.0-flash',
-    'llama-3.1-8b-instruct', 'llama-3.2-3b-instruct',
-    'qwen2.5-7b-instruct', 'mistral-7b-instruct-v0.3',
-  ],
-  mensal: [
-    'gpt-4o', 'gpt-4o-2024-08-06', 'gpt-4o-2024-11-20',
-    'gpt-4-turbo', 'gpt-4-turbo-2024-04-09',
-    'claude-3-5-sonnet-20241022', 'claude-3-opus-20240229',
-    'claude-fable-5.1',
-    'gemini-1.5-pro', 'gemini-2.0-pro',
-    'glm-5.3',
-    'llama-3.1-70b-instruct', 'llama-3.1-405b-instruct',
-    'qwen2.5-72b-instruct', 'mistral-large-2407',
-  ],
-  trimestral: [
-    'o1-preview', 'o1-mini', 'o1-2024-12-17',
-    'gpt-6-astra',
-    'claude-sonnet-4-20250514', 'claude-opus-4-20250514',
-    'gemini-2.5-pro',
-  ],
-  anual: [
-    'o1-pro', 'o3', 'o3-mini',
-    'gpt-6-astra-pro',
-    'claude-opus-4-thinking',
-    'gemini-2.5-ultra',
-  ],
-};
-
-// Build cumulative allowed sets: each tier inherits all lower-tier models
-const CUMULATIVE_MODELS = {};
-const PLAN_HIERARCHY = ['free', 'mensal', 'trimestral', 'anual'];
-{
-  let accumulated = new Set();
-  for (const tier of PLAN_HIERARCHY) {
-    accumulated = new Set([...accumulated, ...(ALLOWED_MODELS_BY_PLAN[tier] || [])]);
-    CUMULATIVE_MODELS[tier] = accumulated;
-  }
-}
-
-// Explicit deny list: premium models that must NEVER be accessible from lower tiers
-// Defense-in-depth layer on top of the prefix-matching fix below
-const PREMIUM_MODEL_DENY_FOR_FREE = new Set([
-  'gpt-4o', 'gpt-4-turbo', 'gpt-4',
-  'claude-sonnet-4-20250514', 'claude-opus-4-20250514', 'claude-opus-4-thinking',
-  'gemini-2.5-pro', 'gemini-2.5-ultra',
-  'o1-preview', 'o1-pro', 'o3', 'o3-mini',
-  'gpt-6-astra', 'gpt-6-astra-pro',
-]);
-
-// Check if a model is allowed for a given plan tier
-function isModelAllowedForPlan(model, plan) {
-  if (!model) return true; // No model specified (e.g. /models listing) — allow
-  const normalizedModel = String(model).toLowerCase().trim();
-  const effectivePlan = PLAN_HIERARCHY.includes(plan) ? plan : 'free';
-  const allowedSet = CUMULATIVE_MODELS[effectivePlan];
-  if (!allowedSet) return false;
-
-  // DEFENSE-IN-DEPTH: Block known premium models for free tier explicitly
-  if (effectivePlan === 'free' && PREMIUM_MODEL_DENY_FOR_FREE.has(normalizedModel)) return false;
-
-  // SECURITY FIX: Exact match or forward-prefix only (requested starts with allowed + separator)
-  // Prevents bidirectional bypass where free-tier 'gpt-4o-mini' matched premium 'gpt-4o'
-  if (allowedSet.has(normalizedModel)) return true;
-  for (const allowed of allowedSet) {
-    // Only allow if requested model is a versioned variant of an allowed base model
-    // e.g. "gpt-4o-mini" startsWith "gpt-4o-mini" (exact) or "gpt-4o-2024-08-06" startsWith "gpt-4o-"
-    if (normalizedModel.startsWith(allowed + '-') || normalizedModel.startsWith(allowed + '_')) return true;
-  }
-  return false;
-}
-
-// Get all allowed models for a plan tier (for /v1/models filtering)
-function getAllowedModelsForPlan(plan) {
-  const effectivePlan = PLAN_HIERARCHY.includes(plan) ? plan : 'free';
-  const allowedSet = CUMULATIVE_MODELS[effectivePlan];
-  return allowedSet ? [...allowedSet] : [];
-}
-
 // --- Cache em memória para validação de chaves (TTL 300s) ---
 const keyCache = new Map(); // keyHash → { userId, revoked, cachedAt }
 const subCache = new Map(); // userId → { ip, additional_ip, has_additional_ip, plan, status, expires_at, cachedAt }
@@ -3504,18 +3166,6 @@ const PROXY_TIMEOUT_MS = 60000; // 60s max — evita travamento infinito se upst
 async function proxyRequest(req, res, path) {
   const startTime = Date.now();
   let ttfb = 0; // Time To First Byte — latência real do upstream
-
-  // SECURITY FIX: Validate model access against user's plan tier before proxying
-  const requestedModel = req.body?.model;
-  if (requestedModel && req.subscription) {
-    const userPlan = req.subscription.plan || 'free';
-    if (!isModelAllowedForPlan(requestedModel, userPlan)) {
-      return res.status(403).json({
-        error: `Modelo '${requestedModel}' não está disponível no plano '${userPlan}'. Faça upgrade para acessar este modelo.`
-      });
-    }
-  }
-
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), PROXY_TIMEOUT_MS);
   try {
@@ -3585,22 +3235,11 @@ async function proxyRequest(req, res, path) {
   }
 }
 
-// SECURITY FIX: Apply tiered rate limiting to all /v1/* proxy routes based on subscription plan
-app.post('/v1/chat/completions', validateApiKey, proxyLimiter, (req, res) => proxyRequest(req, res, '/chat/completions'));
-app.post('/v1/completions', validateApiKey, proxyLimiter, (req, res) => proxyRequest(req, res, '/completions'));
-// SECURITY FIX: Filter /v1/models to return only models allowed for the user's plan tier
-app.get('/v1/models', validateApiKey, proxyLimiter, (req, res) => {
-  const allowedModels = getAllowedModelsForPlan(req.subscription?.plan || 'free');
-  const modelsList = allowedModels.map(id => ({
-    id,
-    object: 'model',
-    created: Math.floor(Date.now() / 1000),
-    owned_by: '8token',
-  }));
-  res.json({ object: 'list', data: modelsList });
-});
-app.post('/v1/messages', validateApiKey, proxyLimiter, (req, res) => proxyRequest(req, res, '/messages'));
-app.post('/v1/embeddings', validateApiKey, proxyLimiter, (req, res) => proxyRequest(req, res, '/embeddings'));
+app.post('/v1/chat/completions', validateApiKey, (req, res) => proxyRequest(req, res, '/chat/completions'));
+app.post('/v1/completions', validateApiKey, (req, res) => proxyRequest(req, res, '/completions'));
+app.get('/v1/models', validateApiKey, (req, res) => proxyRequest(req, res, '/models'));
+app.post('/v1/messages', validateApiKey, (req, res) => proxyRequest(req, res, '/messages'));
+app.post('/v1/embeddings', validateApiKey, (req, res) => proxyRequest(req, res, '/embeddings'));
 
 // =============================================================================
 // USER: USAGE STATS (métricas de consumo para o dashboard do cliente)
@@ -3827,21 +3466,6 @@ app.get('/api/admin/usage/stats', adminAuth, async (req, res) => {
   } catch (err) {
     console.error('Admin usage stats error:', err);
     res.status(500).json({ error: 'Erro ao carregar métricas globais: ' + err.message });
-  }
-});
-
-// GET /api/admin/usage/logs — últimas N requisições da API com dados do usuário
-app.get('/api/admin/usage/logs', adminAuth, async (req, res) => {
-  const limit = Math.min(parseInt(req.query.limit) || 50, 200);
-  try {
-    const { data } = await supabase.from('usage_logs')
-      .select('id, user_id, api_key_id, model, tokens_in, tokens_out, latency_ms, ip, status, created_at, users(email, name), api_keys(key_prefix, key_suffix)')
-      .order('created_at', { ascending: false })
-      .limit(limit);
-    res.json(data || []);
-  } catch (err) {
-    console.error('Admin usage logs error:', err);
-    res.status(500).json({ error: 'Erro ao carregar logs da API: ' + err.message });
   }
 });
 
