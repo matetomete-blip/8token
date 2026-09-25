@@ -329,9 +329,28 @@ let filteredLogs = [];
 let currentPage = 1;
 const PAGE_SIZE = 25;
 
+function getAdminSecret() {
+  let secret = sessionStorage.getItem('8token_admin_secret');
+  if (!secret) {
+    secret = prompt('Digite a senha de administrador:');
+    if (secret) sessionStorage.setItem('8token_admin_secret', secret);
+  }
+  return secret;
+}
+
 async function apiFetch(path) {
-  const r = await fetch(API + path, { credentials: 'include' });
-  if (!r.ok) throw new Error('HTTP ' + r.status);
+  const secret = getAdminSecret();
+  if (!secret) throw new Error('Autenticação cancelada');
+  const r = await fetch(API + path, {
+    headers: { 'Content-Type': 'application/json', 'X-Admin-Secret': secret }
+  });
+  if (!r.ok) {
+    if (r.status === 403) {
+      sessionStorage.removeItem('8token_admin_secret');
+      throw new Error('Senha incorreta — recarregue a página e tente novamente');
+    }
+    throw new Error('HTTP ' + r.status);
+  }
   return r.json();
 }
 
