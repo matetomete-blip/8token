@@ -279,11 +279,7 @@
                 Expirados
                 <span class="sidebar-count" id="expiredCount" style="display:none;">0</span>
             </button>
-            <button class="sidebar-link" onclick="switchTab('coupons', this)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-                Cupons
-            </button>
-            <button class="sidebar-link" onclick="switchTab('ipchanges', this)">
+                        <button class="sidebar-link" onclick="switchTab('ipchanges', this)">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
                 Solicitações IP
                 <span class="sidebar-count" id="ipChangeCount" style="display:none;">0</span>
@@ -379,14 +375,6 @@
                         <div class="form-group"><label class="form-label">Expira em</label><input type="datetime-local" id="fieldExpires" class="form-input"></div>
                     </div>
                     <div class="form-row"><div class="form-group" style="grid-column: 1 / -1;"><label class="form-label">Notas</label><input type="text" id="fieldNotes" class="form-input" placeholder="Observações internas (opcional)"></div></div>
-                    <div class="form-row">
-                        <div class="form-group" style="grid-column: 1 / -1;">
-                            <label style="display:flex;align-items:center;gap:var(--space-sm);cursor:pointer;">
-                                <input type="checkbox" id="fieldFamilyFriend" style="width:18px;height:18px;accent-color:var(--accent-orange);cursor:pointer;">
-                                <span class="form-label" style="margin:0;text-transform:none;letter-spacing:normal;font-size:13px;color:var(--text-secondary);">👨👩‍ Amigos e Família — não conta como venda paga (custo por IP ignora este registro)</span>
-                            </label>
-                        </div>
-                    </div>
                     <div style="display:flex;gap:var(--space-md);margin-top:var(--space-md);">
                         <button class="btn btn-primary" onclick="saveSubscription()">Salvar</button>
                         <button class="btn btn-secondary" onclick="resetUserForm()">Limpar</button>
@@ -412,28 +400,7 @@
                 </div>
             </div>
 
-            <!-- TAB: COUPONS -->
-            <div class="tab-panel" id="tab-coupons">
-                <div class="card">
-                    <div class="card-title">Criar Cupom de Desconto</div>
-                    <div id="couponFormAlert" class="alert"></div>
-                    <div class="form-row">
-                        <div class="form-group"><label class="form-label">Código *</label><input type="text" id="couponCode" class="form-input" placeholder="Ex: PROMO20" style="text-transform:uppercase;"></div>
-                        <div class="form-group"><label class="form-label">Desconto (%) *</label><input type="number" id="couponDiscount" class="form-input" placeholder="Ex: 20" min="1" max="100" value="10"></div>
-                        <div class="form-group"><label class="form-label">Máx. de Usos</label><input type="number" id="couponMaxUses" class="form-input" placeholder="Ilimitado se vazio" min="1"></div>
-                        <div class="form-group"><label class="form-label">Expira em</label><input type="datetime-local" id="couponExpires" class="form-input"></div>
-                    </div>
-                    <div class="form-row"><div class="form-group" style="grid-column: 1 / -1;"><label class="form-label">Notas</label><input type="text" id="couponNotes" class="form-input" placeholder="Observações internas (opcional)"></div></div>
-                    <button class="btn btn-primary" onclick="createCoupon()" style="margin-top:var(--space-sm);">Criar Cupom</button>
-                </div>
-                <div class="table-wrap">
-                    <table>
-                        <thead><tr><th>Código</th><th>Desconto</th><th>Usos</th><th>Máx.</th><th>Expira</th><th>Status</th><th>Ações</th></tr></thead>
-                        <tbody id="couponsTableBody"><tr><td colspan="7" class="empty-state">Carregando...</td></tr></tbody>
-                    </table>
-                </div>
-            </div>
-
+            
             <!-- TAB: IP CHANGES -->
             <div class="tab-panel" id="tab-ipchanges">
                 <p style="color:var(--text-secondary);font-size:14px;margin-bottom:var(--space-lg);">Solicitações de alteração de IP enviadas pelos usuários. Aprove para atualizar o IP autorizado ou rejeite com motivo.</p>
@@ -483,7 +450,7 @@
 
             <!-- TAB: PLANS -->
             <div class="tab-panel" id="tab-plans">
-                <p style="color:var(--text-secondary);font-size:14px;margin-bottom:var(--space-lg);">Visualize os IPs vinculados a cada plano e remova diretamente. A lista atualiza automaticamente após qualquer alteração.</p>
+                <p style="color:var(--text-secondary);font-size:14px;margin-bottom:var(--space-lg);">Visualize os IPs vinculados a cada plano. A lista atualiza automaticamente após qualquer alteração.</p>
                 <div id="plansContainer"><div class="empty-state">Carregando...</div></div>
             </div>
 
@@ -665,12 +632,10 @@
                 const FIXED_COST = 650;
                 const planBreakdownForCost = stats.planBreakdown || [];
                 const activeIps = planBreakdownForCost.reduce((sum, p) => sum + (p.count || 0), 0);
-                // paidActiveIps: only paid plans, active, NOT family/friend — used for cost & profit per IP
-                const paidActiveIps = stats.paidActiveIps != null ? stats.paidActiveIps : activeIps;
                 const revenue = stats.totalRevenue || 0;
                 document.getElementById('dashActiveIps').textContent = activeIps;
-                const costPerIp = paidActiveIps > 0 ? FIXED_COST / paidActiveIps : 0;
-                const profitPerIp = paidActiveIps > 0 ? (revenue - FIXED_COST) / paidActiveIps : 0;
+                const costPerIp = activeIps > 0 ? FIXED_COST / activeIps : 0;
+                const profitPerIp = activeIps > 0 ? (revenue - FIXED_COST) / activeIps : 0;
                 document.getElementById('dashCostPerIp').textContent = 'R$ ' + costPerIp.toFixed(2);
                 const profitEl = document.getElementById('dashProfitPerIp');
                 profitEl.textContent = (profitPerIp >= 0 ? 'R$ ' : '-R$ ') + Math.abs(profitPerIp).toFixed(2);
@@ -855,7 +820,6 @@
             document.getElementById('fieldStatus').value = 'active';
             document.getElementById('fieldExpires').value = '';
             document.getElementById('fieldNotes').value = '';
-            document.getElementById('fieldFamilyFriend').checked = false;
             document.getElementById('userFormTitle').textContent = 'Adicionar IP';
             document.getElementById('fieldIp').disabled = false;
         }
@@ -870,7 +834,6 @@
             document.getElementById('fieldStatus').value = sub.status;
             document.getElementById('fieldExpires').value = sub.expires_at ? sub.expires_at.slice(0, 16) : '';
             document.getElementById('fieldNotes').value = sub.notes || '';
-            document.getElementById('fieldFamilyFriend').checked = !!sub.is_family_friend;
             document.getElementById('userFormTitle').textContent = `Editar IP: ${sub.ip}`;
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -882,14 +845,13 @@
             const status = document.getElementById('fieldStatus').value;
             const expires = document.getElementById('fieldExpires').value || null;
             const notes = document.getElementById('fieldNotes').value.trim() || null;
-            const isFamilyFriend = document.getElementById('fieldFamilyFriend').checked;
             if (!editId && !ip) { showAlert('userFormAlert', 'O endereço IP é obrigatório.', 'error'); return; }
             try {
                 if (editId) {
-                    await apiFetch(`/api/admin/subscriptions/${editId}`, { method: 'PUT', body: JSON.stringify({ plan, status, expires_at: expires, notes, is_family_friend: isFamilyFriend }) });
+                    await apiFetch(`/api/admin/subscriptions/${editId}`, { method: 'PUT', body: JSON.stringify({ plan, status, expires_at: expires, notes }) });
                     showAlert('userFormAlert', 'Assinatura atualizada com sucesso!', 'success');
                 } else {
-                    await apiFetch('/api/admin/subscriptions', { method: 'POST', body: JSON.stringify({ ip, plan, status, expires_at: expires, notes, is_family_friend: isFamilyFriend }) });
+                    await apiFetch('/api/admin/subscriptions', { method: 'POST', body: JSON.stringify({ ip, plan, status, expires_at: expires, notes }) });
                     showAlert('userFormAlert', `IP ${ip} adicionado com sucesso!`, 'success');
                 }
                 resetUserForm(); loadSubscriptions();
@@ -1217,31 +1179,6 @@
                 const planColors = { admin: '#a855f7', anual: '#FF5500', trimestral: '#00D4FF', mensal: '#00D4FF', free: '#555555' };
                 const planLabels = { admin: 'Admin', anual: 'Anual', trimestral: 'Trimestral', mensal: 'Mensal', free: 'Free' };
                 subs.forEach(s => { if (!grouped[s.plan]) grouped[s.plan] = []; grouped[s.plan].push(s); });
-
-                // Count active IPs per user_id across all plans
-                const userIpCount = {};
-                subs.forEach(s => {
-                    if (s.status === 'active' && s.user_id) {
-                        userIpCount[s.user_id] = (userIpCount[s.user_id] || 0) + 1;
-                    }
-                });
-
-                const renderRow = (s) => {
-                    const email = s.users?.email || s.user_email || '—';
-                    const extraIps = s.user_id && userIpCount[s.user_id] > 1 ? userIpCount[s.user_id] - 1 : 0;
-                    const extraBadge = extraIps > 0
-                        ? ` <span class="badge badge-warning" title="${extraIps} outro(s) IP(s) ativo(s) deste usuário">+${extraIps} IP${extraIps > 1 ? 's' : ''}</span>`
-                        : '';
-                    return `
-                        <tr>
-                            <td class="mono">${s.ip}</td>
-                            <td>${badgeForStatus(s.status)}</td>
-                            <td style="font-size:13px;color:var(--text-secondary);">${email}${extraBadge}</td>
-                            <td class="mono" style="font-size:12px;">${formatDate(s.expires_at)}</td>
-                        </tr>
-                    `;
-                };
-
                 const container = document.getElementById('plansContainer');
                 let html = '';
                 for (const plan of planOrder) {
@@ -1257,7 +1194,14 @@
                                     <table>
                                         <thead><tr><th>IP</th><th>Status</th><th>Usuário</th><th>Expira</th></tr></thead>
                                         <tbody>
-                                            ${ips.map(renderRow).join('')}
+                                            ${ips.map(s => `
+                                                <tr>
+                                                    <td class="mono">${s.ip}</td>
+                                                    <td>${badgeForStatus(s.status)}</td>
+                                                    <td style="font-size:13px;color:var(--text-secondary);">${s.user_email || '—'}</td>
+                                                    <td class="mono" style="font-size:12px;">${formatDate(s.expires_at)}</td>
+                                                </tr>
+                                            `).join('')}
                                         </tbody>
                                     </table>
                                 </div>
@@ -1275,7 +1219,14 @@
                                 <table>
                                     <thead><tr><th>IP</th><th>Status</th><th>Usuário</th><th>Expira</th></tr></thead>
                                     <tbody>
-                                        ${ips.map(renderRow).join('')}
+                                        ${ips.map(s => `
+                                            <tr>
+                                                <td class="mono">${s.ip}</td>
+                                                <td>${badgeForStatus(s.status)}</td>
+                                                <td style="font-size:13px;color:var(--text-secondary);">${s.user_email || '—'}</td>
+                                                <td class="mono" style="font-size:12px;">${formatDate(s.expires_at)}</td>
+                                            </tr>
+                                        `).join('')}
                                     </tbody>
                                 </table>
                             </div>
@@ -1288,6 +1239,7 @@
             }
         }
 
+        
         // ---- COUPONS ----
         async function loadCoupons() {
             try {
