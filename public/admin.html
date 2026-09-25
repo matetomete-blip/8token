@@ -583,6 +583,43 @@
                         <button class="btn btn-primary" onclick="saveWebhookConfig()">Salvar Configuração</button>
                         <button class="btn btn-secondary" onclick="testWebhook()" style="border-color:var(--accent-teal);color:var(--accent-teal);">Testar Webhook</button>
                     </div>
+                    <!-- Resumo da configuração salva -->
+                    <div id="webhookConfigSummary" style="display:none;margin-top:var(--space-lg);background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-lg);">
+                        <div style="font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent-teal);margin-bottom:var(--space-md);display:flex;align-items:center;gap:8px;">
+                            <span style="width:8px;height:8px;border-radius:50%;background:var(--accent-teal);display:inline-block;"></span>
+                            Configuração Ativa
+                        </div>
+                        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--space-md);">
+                            <div>
+                                <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Token Secreto</div>
+                                <div id="summaryToken" style="font-family:var(--font-mono);font-size:13px;color:var(--text-secondary);">••••••••</div>
+                            </div>
+                            <div>
+                                <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Produto Mensal</div>
+                                <div id="summaryProductMensal" style="font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);word-break:break-all;">—</div>
+                            </div>
+                            <div>
+                                <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Produto Trimestral</div>
+                                <div id="summaryProductTrimestral" style="font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);word-break:break-all;">—</div>
+                            </div>
+                            <div>
+                                <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Produto Anual</div>
+                                <div id="summaryProductAnual" style="font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);word-break:break-all;">—</div>
+                            </div>
+                            <div>
+                                <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Checkout Mensal</div>
+                                <div id="summaryCheckoutMensal" style="font-size:12px;color:var(--text-secondary);word-break:break-all;">—</div>
+                            </div>
+                            <div>
+                                <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Checkout Trimestral</div>
+                                <div id="summaryCheckoutTrimestral" style="font-size:12px;color:var(--text-secondary);word-break:break-all;">—</div>
+                            </div>
+                            <div>
+                                <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Checkout Anual</div>
+                                <div id="summaryCheckoutAnual" style="font-size:12px;color:var(--text-secondary);word-break:break-all;">—</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="card">
                     <div class="card-title">Logs do Webhook</div>
@@ -711,6 +748,22 @@
                     document.getElementById('kirvanoCheckoutMensal').value = config.checkout_mensal_url || '';
                     document.getElementById('kirvanoCheckoutTrimestral').value = config.checkout_trimestral_url || '';
                     document.getElementById('kirvanoCheckoutAnual').value = config.checkout_anual_url || '';
+                    // Preencher container de resumo (token mascarado)
+                    const summary = document.getElementById('webhookConfigSummary');
+                    if (summary) {
+                        summary.style.display = 'block';
+                        const tk = config.webhook_token || '';
+                        document.getElementById('summaryToken').textContent = tk ? '••••••' + tk.slice(-4) : '—';
+                        document.getElementById('summaryProductMensal').textContent = config.product_mensal_id || '—';
+                        document.getElementById('summaryProductTrimestral').textContent = config.product_trimestral_id || '—';
+                        document.getElementById('summaryProductAnual').textContent = config.product_anual_id || '—';
+                        document.getElementById('summaryCheckoutMensal').textContent = config.checkout_mensal_url || '—';
+                        document.getElementById('summaryCheckoutTrimestral').textContent = config.checkout_trimestral_url || '—';
+                        document.getElementById('summaryCheckoutAnual').textContent = config.checkout_anual_url || '—';
+                    }
+                } else {
+                    const summary = document.getElementById('webhookConfigSummary');
+                    if (summary) summary.style.display = 'none';
                 }
             } catch (e) { console.error('Load webhook config error:', e); }
         }
