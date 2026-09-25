@@ -804,13 +804,57 @@
         function getAdminSecret() {
             let secret = sessionStorage.getItem('8token_admin_secret');
             if (!secret) {
-                try { secret = prompt('Digite a senha de administrador:'); } catch (e) {
-                    const params = new URLSearchParams(window.location.search);
-                    secret = params.get('key') || '8token-admin-change-me';
+                const params = new URLSearchParams(window.location.search);
+                secret = params.get('key') || '';
+                if (!secret) {
+                    showAdminLoginModal();
+                    return null;
                 }
-                if (secret) sessionStorage.setItem('8token_admin_secret', secret);
+                sessionStorage.setItem('8token_admin_secret', secret);
             }
             return secret;
+        }
+
+        function showAdminLoginModal() {
+            const existing = document.getElementById('adminLoginOverlay');
+            if (existing) existing.remove();
+            const overlay = document.createElement('div');
+            overlay.id = 'adminLoginOverlay';
+            overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.92);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;';
+            overlay.innerHTML = `
+                <div style="background:#111;border:1px solid #333;border-radius:16px;padding:40px;max-width:400px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FF5500" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        <h2 style="font-size:20px;font-weight:700;color:#fff;margin:0;">Acesso Admin</h2>
+                    </div>
+                    <p style="font-size:13px;color:#888;margin:0 0 20px;line-height:1.5;">Digite sua chave de acesso para entrar no painel.</p>
+                    <input type="password" id="adminSecretInput" placeholder="Chave de acesso" autocomplete="off" spellcheck="false"
+                        style="width:100%;height:44px;padding:0 16px;font-size:15px;color:#fff;background:#0a0a0a;border:1px solid #333;border-radius:8px;outline:none;box-sizing:border-box;transition:border-color 0.2s;"
+                        onfocus="this.style.borderColor='#FF5500'" onblur="this.style.borderColor='#333'">
+                    <div id="adminLoginError" style="display:none;font-size:12px;color:#FF3333;margin-top:8px;"></div>
+                    <button id="adminLoginBtn" onclick="submitAdminLogin()" style="width:100%;height:44px;margin-top:16px;font-size:15px;font-weight:600;color:#fff;background:#FF5500;border:none;border-radius:8px;cursor:pointer;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Entrar</button>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            const input = document.getElementById('adminSecretInput');
+            if (input) {
+                setTimeout(() => input.focus(), 100);
+                input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitAdminLogin(); });
+            }
+        }
+
+        function submitAdminLogin() {
+            const input = document.getElementById('adminSecretInput');
+            const errEl = document.getElementById('adminLoginError');
+            const val = input ? input.value.trim() : '';
+            if (!val) {
+                if (errEl) { errEl.style.display = 'block'; errEl.textContent = 'Digite sua chave de acesso.'; }
+                return;
+            }
+            sessionStorage.setItem('8token_admin_secret', val);
+            const overlay = document.getElementById('adminLoginOverlay');
+            if (overlay) overlay.remove();
+            location.reload();
         }
 
         async function apiFetch(url, options = {}) {
