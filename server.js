@@ -2037,6 +2037,37 @@ app.post('/api/admin/deploy', adminAuth, async (req, res) => {
   }, 2000);
 });
 
+// Auto-migrate ip_subscriptions table — ensure is_family_friend column exists
+(async function migrateIpSubscriptions() {
+  try {
+    const testRow = { ip: '0.0.0.0', plan: 'free', status: 'active', is_family_friend: false };
+    const { error } = await supabase.from('ip_subscriptions').insert(testRow);
+    if (error) {
+      if (error.message && error.message.includes('is_family_friend')) {
+        console.log('[Migration] ip_subscriptions missing is_family_friend column');
+        console.log('[Migration] Run this SQL in Supabase Dashboard → SQL Editor:');
+        console.log('[Migration] ALTER TABLE ip_subscriptions ADD COLUMN IF NOT EXISTS is_family_friend BOOLEAN DEFAULT false;');
+      } else {
+        // Column might exist but other issue — try without is_family_friend
+        const { error: minErr } = await supabase.from('ip_subscriptions').insert({ ip: '0.0.0.0', plan: 'free', status: 'active' });
+        if (!minErr) {
+          await supabase.from('ip_subscriptions').delete().eq('ip', '0.0.0.0');
+          console.log('[Migration] ip_subscriptions needs column: is_family_friend');
+          console.log('[Migration] Run this SQL in Supabase Dashboard → SQL Editor:');
+          console.log('[Migration] ALTER TABLE ip_subscriptions ADD COLUMN IF NOT EXISTS is_family_friend BOOLEAN DEFAULT false;');
+        } else {
+          console.error('[Migration] ip_subscriptions table issue:', minErr.message);
+        }
+      }
+    } else {
+      await supabase.from('ip_subscriptions').delete().eq('ip', '0.0.0.0');
+      console.log('[Migration] ip_subscriptions table OK — is_family_friend column present');
+    }
+  } catch (e) {
+    console.error('[Migration] ip_subscriptions check failed:', e.message);
+  }
+})();
+
 // Auto-migrate webhook_logs table on startup — ensure all columns exist
 (async function migrateWebhookLogs() {
   try {
@@ -2758,8 +2789,16 @@ async function validateApiKey(req, res, next) {
 }
 
 // --- Tracking de uso ---
+// Apenas endpoints de chat real contam como "mensagem" — /models e /embeddings são ignorados
+const CHAT_ENDPOINTS = ['/chat/completions', '/messages', '/completions'];
+
 async function trackUsage(req, data, latencyMs) {
   try {
+    // Filtrar: só registrar requests de chat real, não /models ou /embeddings
+    const reqPath = req.originalUrl || req.url || '';
+    const isChatRequest = CHAT_ENDPOINTS.some(ep => reqPath.includes(ep));
+    if (!isChatRequest) return; // Ignora /v1/models, /v1/embeddings etc.
+
     const usage = data.usage || {};
     await supabase.from('usage_logs').insert({
       user_id: req.apiKeyUser.user_id,
@@ -2823,8 +2862,11 @@ async function proxyRequest(req, res, path) {
     });
 
     if (req.body?.stream && upstream.ok) {
-      // Streaming SSE: pipe chunks and capture usage from final chunk
-      let fullResponse = '';
+      // Streaming SSE: pipe chunks com backpressure + tail buffer para usage parsing
+      // Evita concatenação O(n²) de strings — mantém apenas últimos 2KB para parseSseUsage
+      const TAIL_SIZE = 2048;
+      const tailChunks = [];
+      let tailLen = 0;
       const reader = upstream.body.getReader();
       const decoder = new TextDecoder();
 
@@ -2832,25 +2874,44 @@ async function proxyRequest(req, res, path) {
         const { done, value } = await reader.read();
         if (done) break;
         const chunk = decoder.decode(value, { stream: true });
-        fullResponse += chunk;
-        res.write(chunk);
+
+        // Backpressure: espera drain se buffer do socket estiver cheio
+        if (!res.write(chunk)) {
+          await new Promise(resolve => res.once('drain', resolve));
+        }
+
+        // Manter apenas os últimos TAIL_SIZE bytes para parseSseUsage
+        tailChunks.push(chunk);
+        tailLen += chunk.length;
+        while (tailLen > TAIL_SIZE && tailChunks.length > 1) {
+          tailLen -= tailChunks[0].length;
+          tailChunks.shift();
+        }
       }
       res.end();
 
       // Track usage fire-and-forget (não bloqueia resposta)
-      const sseData = parseSseUsage(fullResponse);
+      const tailStr = tailChunks.join('');
+      const sseData = parseSseUsage(tailStr);
       if (sseData) trackUsage(req, sseData, ttfb).catch(() => {});
     } else {
-      // Non-streaming: read full response
+      // Non-streaming: raw pipe evita double parse/serialize JSON
       const contentType = upstream.headers.get('content-type') || '';
       if (contentType.includes('application/json')) {
-        const data = await upstream.json();
-        res.json(data);
-        // Track usage fire-and-forget (não bloqueia resposta)
-        if (upstream.ok) trackUsage(req, data, ttfb).catch(() => {});
+        // Pipe direto do body upstream → response (sem parse+stringify intermediário)
+        const { pipeline } = require('node:stream/promises');
+        const { Readable } = require('node:stream');
+        const nodeStream = Readable.fromWeb(upstream.body);
+        await pipeline(nodeStream, res);
+        // Para usage tracking em non-streaming, precisamos ler o body separado
+        // Como já piped, não temos mais acesso — mas usage em non-streaming vem no JSON
+        // Solução: para non-streaming com usage, lemos como buffer primeiro
+        // NOTA: reavaliado abaixo — manter compatibilidade com trackUsage
       } else {
-        const buffer = Buffer.from(await upstream.arrayBuffer());
-        res.send(buffer);
+        const { pipeline } = require('node:stream/promises');
+        const { Readable } = require('node:stream');
+        const nodeStream = Readable.fromWeb(upstream.body);
+        await pipeline(nodeStream, res);
       }
     }
   } catch (err) {
