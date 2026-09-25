@@ -1412,14 +1412,16 @@ app.post('/api/admin/migrate-webhook-logs', adminAuth, async (req, res) => {
   }
 });
 
-// Remote deploy endpoint — runs git pull + pm2 restart on the VPS
+// Remote deploy endpoint — responds BEFORE restarting to avoid 502
 app.post('/api/admin/deploy', adminAuth, async (req, res) => {
-  const { exec } = require('child_process');
-  const cmd = 'cd /opt/8token && git pull && pm2 restart 8token';
-  exec(cmd, { timeout: 30000 }, (err, stdout, stderr) => {
-    if (err) return res.status(500).json({ error: err.message, stderr });
-    res.json({ success: true, output: stdout, stderr });
-  });
+  res.json({ success: true, message: 'Deploy iniciado — servidor vai reiniciar em 2s' });
+  setTimeout(() => {
+    const { exec } = require('child_process');
+    exec('cd /opt/8token && git pull && pm2 restart 8token', { timeout: 30000 }, (err) => {
+      if (err) console.error('[Deploy] Error:', err.message);
+      else console.log('[Deploy] Success — server restarted');
+    });
+  }, 2000);
 });
 
 app.get('/api/admin/webhook-logs', adminAuth, async (req, res) => {
