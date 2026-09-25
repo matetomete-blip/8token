@@ -364,12 +364,19 @@ app.put('/api/user/name', authenticateToken, async (req, res) => {
 });
 
 // --- API KEYS ---
-// GET /api/keys — lista chaves com IPs autorizados (JOIN key_authorized_ips)
+// GET /api/keys — lista chaves com IPs autorizados (JOIN key_authorized_ips) + max_ips do plano
 app.get('/api/keys', authenticateToken, async (req, res) => {
   const { data } = await supabase.from('api_keys')
     .select('id, name, key_prefix, key_suffix, key_encrypted, created_at, last_used_at, revoked, key_authorized_ips(id, ip, authorized_at)')
     .eq('user_id', req.user.id)
     .order('created_at', { ascending: false });
+  // Buscar info do plano para calcular max_ips (1 base + adicionais comprados)
+  const { data: subData } = await supabase.from('ip_subscriptions')
+    .select('has_additional_ip')
+    .eq('user_id', req.user.id)
+    .eq('status', 'active')
+    .single();
+  const maxIps = 1 + (subData?.has_additional_ip ? 1 : 0);
   const keys = (data || []).map(k => {
     let full_key = null;
     if (k.key_encrypted) {
@@ -380,7 +387,7 @@ app.get('/api/keys', authenticateToken, async (req, res) => {
     }
     return { ...k, full_key, authorized_ips: k.key_authorized_ips || [] };
   });
-  res.json(keys);
+  res.json({ keys, max_ips: maxIps });
 });
 
 // POST /api/keys — gerar chave (máximo 1 ativa por usuário)

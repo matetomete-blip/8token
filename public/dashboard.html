@@ -736,7 +736,17 @@
                     if (gwEl && gwData.gateway_url) gwEl.textContent = gwData.gateway_url;
                 }
                 let keys = [];
-                if (keysRes.ok) keys = await keysRes.json();
+                let maxIps = 1;
+                if (keysRes.ok) {
+                    const keysData = await keysRes.json();
+                    // Backend returns { keys: [...], max_ips: N } or plain array (backward compat)
+                    if (Array.isArray(keysData)) {
+                        keys = keysData;
+                    } else {
+                        keys = keysData.keys || [];
+                        maxIps = keysData.max_ips || 1;
+                    }
+                }
                 const activeKeys = (keys || []).filter(k => !k.revoked);
 
                 // Show/hide generate row (only if no active key)
@@ -782,12 +792,15 @@
                         <div style="display:flex;align-items:center;justify-content:space-between;padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border);flex-wrap:wrap;gap:var(--space-sm);">
                             <div style="display:flex;align-items:center;gap:var(--space-sm);min-width:0;">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-orange)" stroke-width="2" style="flex-shrink:0;"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
-                                <div style="min-width:0;">
+                                <div style="min-width:0;" data-key-id="${key.id}">
                                     <div style="font-size:15px;font-weight:700;color:var(--text-primary);">${key.name || 'Minha chave'}</div>
-                                    <div style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted);margin-top:1px;">${maskedKey} · CRIADA EM ${createdDate}</div>
+                                    <div class="key-display" data-masked="true" style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted);margin-top:1px;cursor:pointer;transition:color 0.2s;" onclick="toggleKeyVisibility('${key.id}','${(key.full_key || '').replace(/'/g, "\\'")}')">${maskedKey} · CRIADA EM ${createdDate}</div>
                                 </div>
                             </div>
                             <div style="display:flex;gap:var(--space-xs);flex-shrink:0;">
+                                <button class="btn-icon" id="eyeBtn_${key.id}" onclick="toggleKeyVisibility('${key.id}','${(key.full_key || '').replace(/'/g, "\\'")}')" title="Mostrar/ocultar chave" style="width:32px;height:32px;">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                </button>
                                 <button class="btn-icon" onclick="copyKeyValue('${(key.full_key || '').replace(/'/g, "\\'")}')" title="Copiar chave" style="width:32px;height:32px;">
                                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                                 </button>
@@ -800,7 +813,7 @@
                         <div style="padding:var(--space-md) var(--space-lg);">
                             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-xs);">
                                 <div style="font-size:14px;font-weight:700;color:var(--text-primary);">IPs autorizados</div>
-                                <span style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono);">${ips.length}/5 redes</span>
+                                <span style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono);">${ips.length}/${maxIps} rede${maxIps !== 1 ? 's' : ''}</span>
                             </div>
                             <p style="font-size:12px;color:var(--text-muted);line-height:1.5;margin:0 0 var(--space-md);">Libere um IP para autorizar a rede. Se o IP mudar dentro do mesmo provedor, a API continua funcionando.</p>
                             <div style="display:flex;flex-direction:column;gap:var(--space-sm);margin-bottom:var(--space-md);">
@@ -855,9 +868,10 @@
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-green)'; feedback.textContent = 'Chave gerada! Copiada para a área de transferência.'; }
+                    if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-green)'; feedback.textContent = 'Chave gerada com sucesso!'; }
                     if (nameInput) nameInput.value = '';
-                    if (data.key) navigator.clipboard.writeText(data.key).catch(() => {});
+                    // Show popup with the new key for copying
+                    if (data.key) showKeyPopup(data.key);
                     await loadApiKeysSection();
                 } else {
                     if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-red)'; feedback.textContent = data.error || 'Erro ao gerar chave.'; }
@@ -933,6 +947,54 @@
                 const feedback = document.getElementById('apiKeyFeedback');
                 if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-green)'; feedback.textContent = 'Chave copiada!'; setTimeout(() => { feedback.style.display = 'none'; }, 2000); }
             });
+        }
+
+        // Toggle key visibility (eye button)
+        function toggleKeyVisibility(keyId, fullKey) {
+            const maskedEl = document.querySelector(`[data-key-id="${keyId}"] .key-display`);
+            const eyeBtn = document.getElementById('eyeBtn_' + keyId);
+            if (!maskedEl || !fullKey) return;
+            const isMasked = maskedEl.dataset.masked === 'true';
+            if (isMasked) {
+                maskedEl.textContent = fullKey;
+                maskedEl.dataset.masked = 'false';
+                maskedEl.style.color = 'var(--accent-orange)';
+                if (eyeBtn) eyeBtn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+            } else {
+                const masked = fullKey.slice(0, 12) + '••••••••' + fullKey.slice(-4);
+                maskedEl.textContent = masked;
+                maskedEl.dataset.masked = 'true';
+                maskedEl.style.color = 'var(--text-muted)';
+                if (eyeBtn) eyeBtn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+            }
+        }
+
+        // Show key popup modal (called after generating a new key)
+        function showKeyPopup(keyValue) {
+            // Remove existing modal if any
+            const existing = document.getElementById('keyPopupModal');
+            if (existing) existing.remove();
+            const modal = document.createElement('div');
+            modal.id = 'keyPopupModal';
+            modal.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);';
+            modal.innerHTML = `
+                <div style="background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-xl);max-width:520px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+                    <div style="display:flex;align-items:center;gap:var(--space-sm);margin-bottom:var(--space-md);">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent-green)" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        <h3 style="font-size:18px;font-weight:700;color:var(--text-primary);margin:0;">Chave gerada com sucesso!</h3>
+                    </div>
+                    <p style="font-size:13px;color:var(--text-secondary);line-height:1.5;margin:0 0 var(--space-md);">Copie sua chave agora. Por segurança, ela não será exibida novamente.</p>
+                    <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:var(--space-md);margin-bottom:var(--space-md);">
+                        <div style="font-family:var(--font-mono);font-size:14px;color:var(--accent-orange);word-break:break-all;user-select:all;" id="popupKeyValue">${keyValue}</div>
+                    </div>
+                    <div style="display:flex;gap:var(--space-sm);">
+                        <button onclick="navigator.clipboard.writeText(document.getElementById('popupKeyValue').textContent).then(()=>{this.textContent='✓ Copiado!';this.style.background='var(--accent-green)';setTimeout(()=>{this.textContent='Copiar chave';this.style.background='';},2000)})" class="btn-upgrade" style="flex:1;height:40px;font-size:14px;">Copiar chave</button>
+                        <button onclick="document.getElementById('keyPopupModal').remove()" class="btn-upgrade btn-secondary" style="height:40px;padding:0 var(--space-lg);font-size:14px;">Fechar</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
         }
 
         // Buy additional IP — redirects to checkout (existing logic)

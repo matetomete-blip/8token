@@ -1323,13 +1323,19 @@
                     const arrow = level > 0 ? '<span style="color:var(--accent-orange);margin-right:8px;">↳</span>' : '';
                     const parentInfo = a.parent_affiliate_id && affiliateMap[a.parent_affiliate_id]
                         ? `<br><span style="font-size:10px;color:var(--text-muted);">Sub de: ${affiliateMap[a.parent_affiliate_id].code}</span>` : '';
+                    // Supabase retorna users como objeto aninhado { email, name }
+                    const userEmail = (a.users && a.users.email) || a.user_email || '—';
+                    const userName = (a.users && a.users.name) || a.user_name || '';
+                    // UUIDs precisam de aspas nos handlers onclick
+                    const idStr = JSON.stringify(a.id);
+                    const parentIdStr = a.parent_affiliate_id ? JSON.stringify(a.parent_affiliate_id) : 'null';
 
                     html += `
-                        <tr draggable="true" data-affiliate-id="${a.id}" ondragstart="handleDragStart(event, ${a.id})" ondragover="handleDragOver(event)" ondrop="handleDrop(event, ${a.id})" ondragleave="handleDragLeave(event)" style="cursor:move;">
-                            <td class="mono">#${a.id}</td>
+                        <tr draggable="true" data-affiliate-id="${a.id}" ondragstart="handleDragStart(event, ${idStr})" ondragover="handleDragOver(event)" ondrop="handleDrop(event, ${idStr})" ondragleave="handleDragLeave(event)" style="cursor:move;">
+                            <td class="mono" style="font-size:11px;">#${String(a.id).slice(0,8)}</td>
                             <td style="font-size:13px;padding-left:${indent}px;">
-                                ${arrow}${a.user_email || '—'}${parentInfo}<br>
-                                <span style="font-size:11px;color:var(--text-muted);padding-left:${indent + (level > 0 ? 20 : 0)}px;">${a.user_name || ''}</span>
+                                ${arrow}<strong>${userEmail}</strong>${parentInfo}<br>
+                                <span style="font-size:11px;color:var(--text-muted);padding-left:${indent + (level > 0 ? 20 : 0)}px;">${userName}</span>
                             </td>
                             <td class="mono" style="font-size:12px;">${a.code}</td>
                             <td>
@@ -1340,8 +1346,8 @@
                             <td class="mono">${a.paid_referrals || 0}</td>
                             <td class="mono">R$ ${(a.total_commission_base || 0).toFixed(2)}</td>
                             <td class="actions">
-                                <button class="btn btn-secondary btn-sm" onclick="editAffiliateCommission(${a.id}, ${a.commission_pct}, ${a.parent_affiliate_id || 'null'})">Editar %</button>
-                                <button class="btn btn-danger btn-sm" onclick="removeAffiliate(${a.id})">Remover</button>
+                                <button class="btn btn-secondary btn-sm" onclick='editAffiliateCommission(${idStr}, ${a.commission_pct}, ${parentIdStr})'>Editar %</button>
+                                <button class="btn btn-danger btn-sm" onclick='removeAffiliate(${idStr})'>Remover</button>
                             </td>
                         </tr>
                     `;
