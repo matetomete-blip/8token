@@ -774,7 +774,6 @@ app.put('/api/admin/subscriptions/:id', adminAuth, async (req, res) => {
       if (user_data.role !== undefined) userUpdate.role = user_data.role;
     }
     if (Object.keys(userUpdate).length > 0) {
-      userUpdate.updated_at = new Date().toISOString();
       const { error: userError } = await supabase.from('users').update(userUpdate).eq('id', syncedUserId);
       if (userError) {
         console.error(`[Admin PUT] Failed to sync user ${syncedUserId}:`, userError);
