@@ -537,6 +537,27 @@ async function syncKeyAuthorizedIps(userId, oldIp, newIp, subId = null) {
   }
 }
 
+// --- HELPER: clear ALL authorized IPs for a user (used when admin resets/suspends/cancels) ---
+async function clearUserAuthorizedIps(userId) {
+  if (!userId) return;
+  try {
+    const { data: keys } = await supabase.from('api_keys')
+      .select('id').eq('user_id', userId);
+    if (!keys || keys.length === 0) return;
+    const keyIds = keys.map(k => k.id);
+    await supabase.from('key_authorized_ips').delete().in('api_key_id', keyIds);
+    // Invalidate cache for all keys
+    for (const key of keys) {
+      const { data: kh } = await supabase.from('api_keys').select('key_hash').eq('id', key.id).single();
+      if (kh?.key_hash) invalidateKeyCache(kh.key_hash);
+    }
+    invalidateSubCache(userId);
+    console.log(`[clearUserAuthorizedIps] ✅ Cleared all authorized IPs for user ${userId} (${keys.length} keys)`);
+  } catch (e) {
+    console.error('[clearUserAuthorizedIps] Error:', e.message);
+  }
+}
+
 // --- HELPER: toggle IP authorization for a specific key ---
 // Adds or removes an IP from a specific key's authorized list
 async function toggleKeyIpAuthorization(keyId, ip, authorize = true) {
@@ -647,6 +668,15 @@ app.post('/api/keys/:id/authorize-ip', authenticateToken, async (req, res) => {
     { onConflict: 'api_key_id,ip', ignoreDuplicates: true }
   );
   if (error) return res.status(500).json({ error: 'Erro ao autorizar IP: ' + error.message });
+  // Sync ip_subscriptions: update to active with this IP
+  const { data: sub } = await supabase.from('ip_subscriptions')
+    .select('id, status').eq('user_id', req.user.id).in('status', ['pending_ip', 'active']).order('created_at', { ascending: false }).limit(1).single();
+  if (sub) {
+    await supabase.from('ip_subscriptions')
+      .update({ ip: targetIp, status: 'active' })
+      .eq('id', sub.id);
+    console.log(`[User Authorize IP] ✅ Updated subscription ${sub.id} to active with IP ${targetIp}`);
+  }
   // Limpar cache
   try {
     const { data: kh } = await supabase.from('api_keys').select('key_hash').eq('id', id).single();
@@ -665,7 +695,21 @@ app.delete('/api/keys/:id/authorized-ips/:ipId', authenticateToken, async (req, 
   const { data: keyRow } = await supabase.from('api_keys')
     .select('id').eq('id', id).eq('user_id', req.user.id).single();
   if (!keyRow) return res.status(404).json({ error: 'Chave não encontrada.' });
+  // Get the IP being removed before deleting
+  const { data: ipRow } = await supabase.from('key_authorized_ips')
+    .select('ip').eq('id', ipId).eq('api_key_id', id).single();
   await supabase.from('key_authorized_ips').delete().eq('id', ipId).eq('api_key_id', id);
+  // Sync ip_subscriptions: if this was the user's active IP, reset to pending_ip
+  if (ipRow?.ip) {
+    const { data: sub } = await supabase.from('ip_subscriptions')
+      .select('id, ip, status').eq('user_id', req.user.id).eq('ip', ipRow.ip).eq('status', 'active').single();
+    if (sub) {
+      await supabase.from('ip_subscriptions')
+        .update({ ip: 'pending-activation', status: 'pending_ip' })
+        .eq('id', sub.id);
+      console.log(`[User Delete IP] ✅ Reset subscription ${sub.id} to pending_ip after user removed IP ${ipRow.ip}`);
+    }
+  }
   // Limpar cache
   try {
     const { data: kh } = await supabase.from('api_keys').select('key_hash').eq('id', id).single();
@@ -1130,26 +1174,75 @@ app.get('/api/user/ip-info', authenticateToken, async (req, res) => {
   });
 });
 
+// --- MIGRATION: Add is_friends_family column ---
+app.post('/api/admin/migrate-friends-family', adminAuth, async (req, res) => {
+  try {
+    // Check if column exists
+    const { error } = await supabase.from('ip_subscriptions').select('is_friends_family').limit(1);
+    if (error && error.message.includes('does not exist')) {
+      // Column doesn't exist, need to add it via SQL
+      // Since we can't run raw SQL directly, we'll use a workaround
+      // Try to update a row with the new column to trigger creation
+      const { data: testRow } = await supabase.from('ip_subscriptions').select('id').limit(1);
+      if (testRow && testRow.length > 0) {
+        const { error: updateError } = await supabase
+          .from('ip_subscriptions')
+          .update({ is_friends_family: false })
+          .eq('id', testRow[0].id);
+
+        if (updateError && updateError.message.includes('does not exist')) {
+          return res.status(400).json({
+            error: 'Column does not exist. Run this SQL in Supabase dashboard:',
+            sql: 'ALTER TABLE ip_subscriptions ADD COLUMN IF NOT EXISTS is_friends_family BOOLEAN DEFAULT false;'
+          });
+        }
+      }
+      return res.json({ success: true, message: 'Column added successfully' });
+    } else {
+      return res.json({ success: true, message: 'Column already exists' });
+    }
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+});
+
 // --- ADMIN ROUTES ---
 app.get('/api/admin/stats', adminAuth, async (req, res) => {
   const { count: totalIps } = await supabase.from('ip_subscriptions').select('*', { count: 'exact', head: true });
   const { count: activeIps } = await supabase.from('ip_subscriptions').select('*', { count: 'exact', head: true }).eq('status', 'active');
   const { count: paidPlans } = await supabase.from('ip_subscriptions').select('*', { count: 'exact', head: true }).neq('plan', 'free').eq('status', 'active');
+
+  // Count paid plans that are NOT friends/family (for cost calculation)
+  const { count: paidPlansExcludingFriendsFamily } = await supabase
+    .from('ip_subscriptions')
+    .select('*', { count: 'exact', head: true })
+    .neq('plan', 'free')
+    .eq('status', 'active')
+    .eq('is_friends_family', false);
+
   let planBreakdown = [];
   try {
     const { data: rpcData } = await supabase.rpc('get_plan_breakdown');
     planBreakdown = rpcData || [];
   } catch (e) { /* rpc not available, use fallback */ }
-  // Fallback: manual breakdown
+  // Fallback: manual breakdown (excluding friends/family)
   let breakdown = [];
   if (!planBreakdown || !planBreakdown.length) {
-    const { data: subs } = await supabase.from('ip_subscriptions').select('plan').eq('status', 'active');
+    const { data: subs } = await supabase
+      .from('ip_subscriptions')
+      .select('plan')
+      .eq('status', 'active')
+      .eq('is_friends_family', false);
     const counts = {};
     (subs || []).forEach(s => { counts[s.plan] = (counts[s.plan] || 0) + 1; });
     breakdown = Object.entries(counts).map(([plan, count]) => ({ plan, count }));
   }
-  // Active subscriptions with expires_at for revenue projection
-  const { data: activeSubs } = await supabase.from('ip_subscriptions').select('plan, expires_at').eq('status', 'active');
+  // Active subscriptions with expires_at for revenue projection (excluding friends/family)
+  const { data: activeSubs } = await supabase
+    .from('ip_subscriptions')
+    .select('plan, expires_at')
+    .eq('status', 'active')
+    .eq('is_friends_family', false);
   const { count: totalUsers } = await supabase.from('users').select('*', { count: 'exact', head: true });
   const { data: recentInvoices } = await supabase.from('invoices').select('*').eq('status', 'paid').order('paid_at', { ascending: false }).limit(10);
   const totalRevenue = (recentInvoices || []).reduce((sum, inv) => sum + (inv.amount || 0), 0);
@@ -1214,13 +1307,14 @@ app.post('/api/admin/subscriptions', adminAuth, async (req, res) => {
 });
 
 app.put('/api/admin/subscriptions/:id', adminAuth, async (req, res) => {
-  const { plan, status, notes, expires_at, ip, user_data } = req.body;
+  const { plan, status, notes, expires_at, ip, user_data, is_friends_family } = req.body;
   const update = {};
   if (plan !== undefined) update.plan = plan;
   if (status !== undefined) update.status = status;
   if (notes !== undefined) update.notes = notes;
   if (expires_at !== undefined) update.expires_at = expires_at;
   if (ip !== undefined) update.ip = ip;
+  if (is_friends_family !== undefined) update.is_friends_family = is_friends_family;
 
   // Step 1: Get the current subscription to know its IP before updating
   const { data: currentSub } = await supabase.from('ip_subscriptions').select('id, ip, user_id').eq('id', req.params.id).single();
@@ -1579,8 +1673,17 @@ app.post('/api/admin/fix-legacy-ips', adminAuth, async (req, res) => {
           .eq('id', sub.id);
 
         if (!updateErr) {
+          // Also clean up key_authorized_ips for this user's keys matching this IP
+          if (userKeys && userKeys.length > 0) {
+            const keyIds = userKeys.map(k => k.id);
+            await supabase
+              .from('key_authorized_ips')
+              .delete()
+              .in('api_key_id', keyIds)
+              .eq('ip', sub.ip);
+          }
           fixed++;
-          details.push({ sub_id: sub.id, user_id: sub.user_id, old_ip: sub.ip, action: 'reset to pending_ip' });
+          details.push({ sub_id: sub.id, user_id: sub.user_id, old_ip: sub.ip, action: 'reset to pending_ip + cleaned key_authorized_ips' });
         }
       }
     }
@@ -1589,6 +1692,74 @@ app.post('/api/admin/fix-legacy-ips', adminAuth, async (req, res) => {
     res.json({ fixed, total: subs.length, details });
   } catch (e) {
     console.error('[Admin] fix-legacy-ips error:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// --- ADMIN: CLEAN ORPHAN AUTHORIZED IPS — remove key_authorized_ips entries that don't match any active subscription IP ---
+app.post('/api/admin/clean-orphan-ips', adminAuth, async (req, res) => {
+  try {
+    // Get all active subscriptions with their IPs
+    const { data: subs } = await supabase
+      .from('ip_subscriptions')
+      .select('user_id, ip, status')
+      .in('status', ['active', 'pending_ip']);
+
+    // Build a map: user_id → Set of valid IPs
+    const validIpsByUser = {};
+    if (subs) {
+      for (const sub of subs) {
+        if (!validIpsByUser[sub.user_id]) validIpsByUser[sub.user_id] = new Set();
+        if (sub.ip && sub.ip !== 'pending-activation' && sub.ip !== 'pending') {
+          validIpsByUser[sub.user_id].add(sub.ip);
+        }
+      }
+    }
+
+    // Get all api_keys with their user_id
+    const { data: keys } = await supabase
+      .from('api_keys')
+      .select('id, user_id');
+
+    if (!keys || !keys.length) return res.json({ cleaned: 0, message: 'Nenhuma chave encontrada.' });
+
+    // Build key_id → user_id map
+    const keyToUser = {};
+    for (const k of keys) keyToUser[k.id] = k.user_id;
+
+    // Get all authorized IPs
+    const { data: authIps } = await supabase
+      .from('key_authorized_ips')
+      .select('id, api_key_id, ip');
+
+    if (!authIps || !authIps.length) return res.json({ cleaned: 0, message: 'Nenhum IP autorizado encontrado.' });
+
+    let cleaned = 0;
+    const details = [];
+    const toDelete = [];
+
+    for (const entry of authIps) {
+      const userId = keyToUser[entry.api_key_id];
+      const validIps = validIpsByUser[userId] || new Set();
+      if (!validIps.has(entry.ip)) {
+        toDelete.push(entry.id);
+        details.push({ id: entry.id, api_key_id: entry.api_key_id, ip: entry.ip, user_id: userId, reason: 'IP not in active subscription' });
+      }
+    }
+
+    if (toDelete.length > 0) {
+      // Delete in batches of 100
+      for (let i = 0; i < toDelete.length; i += 100) {
+        const batch = toDelete.slice(i, i + 100);
+        await supabase.from('key_authorized_ips').delete().in('id', batch);
+      }
+      cleaned = toDelete.length;
+    }
+
+    console.log(`[Admin] clean-orphan-ips: removed ${cleaned} orphan entries`);
+    res.json({ cleaned, total: authIps.length, details });
+  } catch (e) {
+    console.error('[Admin] clean-orphan-ips error:', e);
     res.status(500).json({ error: e.message });
   }
 });
@@ -1646,8 +1817,11 @@ app.post('/api/admin/ips/invalidate', adminAuth, async (req, res) => {
 
   // If sub_id is provided, suspend ONLY that specific subscription (per-user isolation)
   if (sub_id) {
+    const { data: sub } = await supabase.from('ip_subscriptions').select('user_id').eq('id', sub_id).single();
     const { error } = await supabase.from('ip_subscriptions').update({ status: 'suspended' }).eq('id', sub_id);
     if (error) return res.status(500).json({ error: error.message });
+    // Clear authorized IPs so dashboard reflects the suspension
+    if (sub?.user_id) await clearUserAuthorizedIps(sub.user_id);
     return res.json({ success: true, sub_id, status: 'suspended' });
   }
 
@@ -1658,6 +1832,7 @@ app.post('/api/admin/ips/invalidate', adminAuth, async (req, res) => {
   if (subs && subs.length > 0) {
     for (const sub of subs) {
       await supabase.from('ip_subscriptions').update({ status: 'suspended' }).eq('id', sub.id);
+      if (sub.user_id) await clearUserAuthorizedIps(sub.user_id);
     }
   }
   res.json({ success: true, ip, status: 'suspended', affected: (subs || []).length });
@@ -1879,12 +2054,31 @@ app.get('/api/admin/affiliates', adminAuth, async (req, res) => {
   res.json(data || []);
 });
 
-// Busca usuários por email (para cadastro de afiliados)
+// Busca usuários por email ou nome (para cadastro de afiliados e edição de usuário)
 app.get('/api/admin/users/search', adminAuth, async (req, res) => {
-  const { email } = req.query;
-  if (!email || email.trim().length < 2) return res.status(400).json({ error: 'Digite pelo menos 2 caracteres' });
-  const { data } = await supabase.from('users').select('id, email, name, plan, created_at').ilike('email', `%${email.trim()}%`).limit(10);
+  const q = (req.query.q || req.query.email || '').trim();
+  if (!q || q.length < 2) return res.status(400).json({ error: 'Digite pelo menos 2 caracteres' });
+  const { data } = await supabase.from('users')
+    .select('id, email, name, plan, role, created_at')
+    .or(`email.ilike.%${q}%,name.ilike.%${q}%`)
+    .limit(10);
   res.json(data || []);
+});
+
+// Atualiza dados de um usuário (nome, email, role, plan)
+app.put('/api/admin/users/:id', adminAuth, async (req, res) => {
+  const { id } = req.params;
+  const { name, email, role, plan } = req.body;
+  const update = {};
+  if (name !== undefined) update.name = name;
+  if (email !== undefined) update.email = email;
+  if (role !== undefined) update.role = role;
+  if (plan !== undefined) update.plan = plan;
+  if (Object.keys(update).length === 0) return res.status(400).json({ error: 'Nenhum campo para atualizar' });
+  const { data, error } = await supabase.from('users').update(update).eq('id', id).select().single();
+  if (error) return res.status(500).json({ error: error.message });
+  if (!data) return res.status(404).json({ error: 'Usuário não encontrado' });
+  res.json(data);
 });
 
 app.post('/api/admin/affiliates', adminAuth, async (req, res) => {

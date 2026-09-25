@@ -270,6 +270,7 @@
             </a>
             <div class="navbar-right">
                 <button class="btn btn-secondary btn-sm" onclick="fixLegacyIps()" style="border-color:var(--accent-amber);color:var(--accent-amber);">🔧 Corrigir IPs Legados</button>
+                <button class="btn btn-secondary btn-sm" onclick="cleanOrphanIps()" style="border-color:var(--accent-red);color:var(--accent-red);">🧹 Limpar IPs Órfãos</button>
                                 <a href="dashboard.html" class="btn btn-secondary btn-sm">Dashboard</a>
                 <a href="index.html" class="btn btn-secondary btn-sm">Site</a>
             </div>
@@ -439,6 +440,15 @@
                     <div class="form-row">
                         <div class="form-group"><label class="form-label">Plano</label><select id="fieldPlan" class="form-select"><option value="free">Free</option><option value="mensal">Mensal</option><option value="trimestral">Trimestral</option><option value="anual">Anual</option></select></div>
                         <div class="form-group"><label class="form-label">Expira em</label><input type="datetime-local" id="fieldExpires" class="form-input"></div>
+                    </div>
+
+                    <!-- Amigos e Família -->
+                    <div style="margin-top:var(--space-sm);margin-bottom:var(--space-md);padding:var(--space-sm) var(--space-md);background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);display:flex;align-items:center;gap:var(--space-sm);">
+                        <input type="checkbox" id="fieldFriendsFamily" style="width:18px;height:18px;accent-color:var(--accent-orange);cursor:pointer;">
+                        <label for="fieldFriendsFamily" style="font-size:13px;color:var(--text-primary);cursor:pointer;user-select:none;">
+                            👨‍👩‍👧 Amigos e Família
+                            <span style="display:block;font-size:11px;color:var(--text-muted);margin-top:2px;">Marque se este usuário não paga — não conta no custo por IP</span>
+                        </label>
                     </div>
 
                     <!-- Produto +1 IP Adicional -->
@@ -1211,6 +1221,7 @@
                         document.getElementById('fieldPlan').value = sub.plan || 'free';
                         document.getElementById('fieldExpires').value = sub.expires_at ? new Date(sub.expires_at).toISOString().slice(0, 16) : '';
                         document.getElementById('fieldNotes').value = sub.notes || '';
+                        document.getElementById('fieldFriendsFamily').checked = !!sub.is_friends_family;
 
                         // Load authorized IPs for this user's keys + populate key select + load +1IP status
                         const userId = sub.user_id;
@@ -1482,7 +1493,16 @@
             } catch (e) { showAlert('userFormAlert', e.message, 'error'); }
         }
 
-        
+        async function cleanOrphanIps() {
+            if (!confirm('Isso vai remover todos os IPs autorizados nas chaves de API que NÃO correspondem a nenhum IP ativo na subscription do usuário. Use após "Corrigir IPs Legados" para limpar o dashboard dos usuários. Continuar?')) return;
+            try {
+                const result = await apiFetch('/api/admin/clean-orphan-ips', { method: 'POST' });
+                showAlert('userFormAlert', `Limpeza concluída: ${result.cleaned} de ${result.total} IP(s) órfão(s) removido(s) das chaves de API.`, 'success');
+                loadSubscriptions(); loadDashboard();
+            } catch (e) { showAlert('userFormAlert', e.message, 'error'); }
+        }
+
+
         async function loadSubscriptions() {
             try {
                 allSubs = await apiFetch('/api/admin/subscriptions');
@@ -1524,6 +1544,7 @@
             const plan = document.getElementById('fieldPlan').value;
             const expires = document.getElementById('fieldExpires').value || null;
             const notes = document.getElementById('fieldNotes').value.trim() || null;
+            const isFriendsFamily = document.getElementById('fieldFriendsFamily').checked;
 
             if (!editId && !email) {
                 showAlert('userFormAlert', 'Email é obrigatório para novo registro.', 'error');
@@ -1531,14 +1552,53 @@
             }
 
             try {
-                if (editId) {
-                    // Update subscription AND user data (no IP field — IPs managed via key_authorized_ips)
+                // Check if this is a virtual user-only entry (ID starts with 'user-')
+                const isUserOnly = editId && editId.startsWith('user-');
+
+                if (isUserOnly) {
+                    // Extract real user_id from virtual ID (format: 'user-' + first 8 chars of uuid)
+                    // We need to find the actual user by email and create a subscription for them
+                    const users = await apiFetch(`/api/admin/users/search?q=${encodeURIComponent(email)}`);
+                    const userId = users?.[0]?.id || null;
+
+                    if (!userId) {
+                        showAlert('userFormAlert', 'Usuário não encontrado no sistema.', 'error');
+                        return;
+                    }
+
+                    // Create a new subscription with a unique placeholder IP
+                    const timestamp = Date.now();
+                    const placeholderIp = `pending-${userId.substring(0, 8)}-${timestamp}`;
+
+                    await apiFetch('/api/admin/subscriptions', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            ip: placeholderIp,
+                            user_id: userId,
+                            plan,
+                            status: 'pending_ip',
+                            expires_at: expires,
+                            notes: notes || 'Usuário registrado (sem IP)',
+                            is_friends_family: isFriendsFamily
+                        })
+                    });
+
+                    // Also update user data
+                    await apiFetch(`/api/admin/users/${userId}`, {
+                        method: 'PUT',
+                        body: JSON.stringify({ name, email, role, plan })
+                    });
+
+                    showAlert('userFormAlert', 'Usuário atualizado e subscription criada!', 'success');
+                } else if (editId) {
+                    // Update existing subscription AND user data
                     await apiFetch(`/api/admin/subscriptions/${editId}`, {
                         method: 'PUT',
                         body: JSON.stringify({
                             plan,
                             expires_at: expires,
                             notes,
+                            is_friends_family: isFriendsFamily,
                             user_data: { name, email, role }
                         })
                     });
@@ -1547,13 +1607,16 @@
                     // Create new — find user by email first
                     const users = await apiFetch(`/api/admin/users/search?q=${encodeURIComponent(email)}`);
                     const userId = users?.[0]?.id || null;
+                    const timestamp = Date.now();
+                    const placeholderIp = `pending-${userId ? userId.substring(0, 8) : 'new'}-${timestamp}`;
+
                     await apiFetch('/api/admin/subscriptions', {
                         method: 'POST',
                         body: JSON.stringify({
-                            ip: '0.0.0.0',
+                            ip: placeholderIp,
                             user_id: userId,
                             plan,
-                            status: 'active',
+                            status: 'pending_ip',
                             expires_at: expires,
                             notes
                         })
