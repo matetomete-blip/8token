@@ -533,6 +533,55 @@ app.delete('/api/keys/:id/authorized-ips/:ipId', authenticateToken, async (req, 
   res.json({ success: true });
 });
 
+// --- ADMIN: Toggle IP authorization for a specific key ---
+// POST /api/admin/keys/:keyId/toggle-ip — authorize or block an IP for a specific key
+app.post('/api/admin/keys/:keyId/toggle-ip', adminAuth, async (req, res) => {
+  const { keyId } = req.params;
+  const { ip, authorize } = req.body; // authorize: true = liberar, false = bloquear
+  if (!keyId || !ip) return res.status(400).json({ error: 'keyId e ip são obrigatórios.' });
+  try {
+    await toggleKeyIpAuthorization(keyId, ip, authorize !== false);
+    // Return updated list of authorized IPs for this key
+    const { data: ips } = await supabase.from('key_authorized_ips')
+      .select('id, ip, authorized_at').eq('api_key_id', keyId).order('authorized_at', { ascending: false });
+    res.json({ success: true, authorized_ips: ips || [] });
+  } catch (e) {
+    res.status(500).json({ error: 'Erro ao alterar IP: ' + e.message });
+  }
+});
+
+// DELETE /api/admin/keys/:keyId/authorized-ips/:ipId — admin remove IP autorizado de uma chave
+app.delete('/api/admin/keys/:keyId/authorized-ips/:ipId', adminAuth, async (req, res) => {
+  const { keyId, ipId } = req.params;
+  try {
+    await supabase.from('key_authorized_ips').delete().eq('id', ipId).eq('api_key_id', keyId);
+    const { data: kh } = await supabase.from('api_keys').select('key_hash').eq('id', keyId).single();
+    if (kh?.key_hash) invalidateKeyCache(kh.key_hash);
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: 'Erro ao remover IP: ' + e.message });
+  }
+});
+
+// GET /api/admin/users/:userId/authorized-ips — get all authorized IPs across all keys of a user
+app.get('/api/admin/users/:userId/authorized-ips', adminAuth, async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const { data: keys } = await supabase.from('api_keys')
+      .select('id, name, key_prefix, key_suffix, revoked, key_authorized_ips(id, ip, authorized_at)')
+      .eq('user_id', userId).eq('revoked', false);
+    const result = (keys || []).map(k => ({
+      key_id: k.id,
+      key_name: k.name,
+      key_prefix: k.key_prefix,
+      authorized_ips: k.key_authorized_ips || []
+    }));
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ error: 'Erro ao buscar IPs: ' + e.message });
+  }
+});
+
 // --- CHECKOUT ---
 app.get('/api/checkout/:plan', authenticateToken, async (req, res) => {
   const { plan } = req.params;

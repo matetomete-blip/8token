@@ -428,15 +428,24 @@
                         <div class="form-group"><label class="form-label">Email</label><input type="email" id="fieldEmail" class="form-input" placeholder="email@exemplo.com"></div>
                     </div>
                     <div class="form-row">
-                        <div class="form-group"><label class="form-label">Endereço IP</label><input type="text" id="fieldIp" class="form-input" placeholder="Ex: 203.0.113.42"></div>
                         <div class="form-group"><label class="form-label">Cargo</label><select id="fieldRole" class="form-select"><option value="user">Usuário</option><option value="admin">Admin</option><option value="affiliate">Afiliado</option></select></div>
                     </div>
                     <div class="form-row">
                         <div class="form-group"><label class="form-label">Plano</label><select id="fieldPlan" class="form-select"><option value="free">Free</option><option value="mensal">Mensal</option><option value="trimestral">Trimestral</option><option value="anual">Anual</option></select></div>
-                        <div class="form-group"><label class="form-label">Acesso ao Gateway (IP)</label><select id="fieldStatus" class="form-select"><option value="active">🟢 IP Liberado</option><option value="suspended">🔴 IP Bloqueado</option></select><div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Controla se este IP pode usar os tokens ilimitados. A conta do usuário permanece sempre ativa.</div></div>
+                        <div class="form-group"><label class="form-label">Expira em</label><input type="datetime-local" id="fieldExpires" class="form-input"></div>
+                    </div>
+
+                    <!-- IPs Autorizados — containers individuais por chave/IP -->
+                    <div style="margin-top:var(--space-md);margin-bottom:var(--space-md);">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-sm);">
+                            <label class="form-label" style="margin-bottom:0;">IPs Autorizados por Chave</label>
+                            <span id="ipCountBadge" style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono);"></span>
+                        </div>
+                        <div id="authorizedIpsContainer" style="display:flex;flex-direction:column;gap:var(--space-sm);">
+                            <div style="text-align:center;padding:var(--space-md);color:var(--text-muted);font-size:12px;">Carregando...</div>
+                        </div>
                     </div>
                     <div class="form-row">
-                        <div class="form-group"><label class="form-label">Expira em</label><input type="datetime-local" id="fieldExpires" class="form-input"></div>
                         <div class="form-group"><label class="form-label">Chave API</label><input type="text" id="fieldApiKey" class="form-input" placeholder="Gerada automaticamente" readonly style="opacity:0.7;"></div>
                     </div>
                     <div class="form-row">
@@ -1048,10 +1057,7 @@
                         <td style="font-size:13px;color:var(--text-muted);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${(s.notes||'').replace(/"/g,'&quot;')}">${s.notes || '—'}</td>
                         <td class="mono" style="font-size:12px;color:var(--text-muted);">${formatDate(s.updated_at)}</td>
                         <td class="actions">
-                            <button class="btn btn-success btn-sm" onclick="validateSub('${s.id}')">Ativar IP</button>
-                            <button class="btn btn-secondary btn-sm" onclick="invalidateSub('${s.id}')">Desativar IP</button>
                             <button class="btn btn-primary btn-sm" onclick="openUserModal('${s.id}')">Editar</button>
-                            <button class="btn btn-danger btn-sm" onclick="deleteSub('${s.id}','${s.ip}')">Remover</button>
                         </td>
                     </tr>`;
                 });
@@ -1060,7 +1066,7 @@
         }
 
         // --- MODAL & BULK ACTIONS ---
-        function openUserModal(id = null) {
+        async function openUserModal(id = null) {
             const modal = document.getElementById('userModal');
             const title = document.getElementById('userModalTitle');
             const alert = document.getElementById('userFormAlert');
@@ -1070,13 +1076,17 @@
             document.getElementById('editId').value = id || '';
             document.getElementById('fieldName').value = '';
             document.getElementById('fieldEmail').value = '';
-            document.getElementById('fieldIp').value = '';
             document.getElementById('fieldRole').value = 'user';
             document.getElementById('fieldPlan').value = 'free';
-            document.getElementById('fieldStatus').value = 'active';
             document.getElementById('fieldExpires').value = '';
             document.getElementById('fieldNotes').value = '';
             document.getElementById('fieldApiKey').value = '';
+
+            // Reset authorized IPs container
+            const ipsContainer = document.getElementById('authorizedIpsContainer');
+            const ipBadge = document.getElementById('ipCountBadge');
+            if (ipsContainer) ipsContainer.innerHTML = '<div style="text-align:center;padding:var(--space-md);color:var(--text-muted);font-size:12px;">Carregando...</div>';
+            if (ipBadge) ipBadge.textContent = '';
 
             if (id) {
                 title.textContent = 'Editar Usuário / IP';
@@ -1085,18 +1095,101 @@
                     if (sub) {
                         document.getElementById('fieldName').value = sub.users?.name || '';
                         document.getElementById('fieldEmail').value = sub.users?.email || '';
-                        document.getElementById('fieldIp').value = sub.ip || '';
                         document.getElementById('fieldRole').value = sub.users?.role || 'user';
                         document.getElementById('fieldPlan').value = sub.plan || 'free';
-                        document.getElementById('fieldStatus').value = sub.status || 'active';
                         document.getElementById('fieldExpires').value = sub.expires_at ? new Date(sub.expires_at).toISOString().slice(0, 16) : '';
                         document.getElementById('fieldNotes').value = sub.notes || '';
+
+                        // Load authorized IPs for this user's keys
+                        const userId = sub.user_id;
+                        if (userId && ipsContainer) {
+                            try {
+                                const keysWithIps = await apiFetch(`/api/admin/users/${userId}/authorized-ips`);
+                                renderAuthorizedIps(keysWithIps, ipsContainer, ipBadge);
+                            } catch (e) {
+                                ipsContainer.innerHTML = '<div style="text-align:center;padding:var(--space-md);color:var(--accent-red);font-size:12px;">Erro ao carregar IPs</div>';
+                            }
+                        } else if (ipsContainer) {
+                            ipsContainer.innerHTML = '<div style="text-align:center;padding:var(--space-md);color:var(--text-muted);font-size:12px;">Nenhuma chave API encontrada</div>';
+                        }
                     }
                 }
             } else {
                 title.textContent = 'Adicionar Usuário / IP';
+                if (ipsContainer) ipsContainer.innerHTML = '<div style="text-align:center;padding:var(--space-md);color:var(--text-muted);font-size:12px;">Salve o registro primeiro para gerenciar IPs</div>';
             }
             modal.style.display = 'block';
+        }
+
+        function renderAuthorizedIps(keysWithIps, container, badge) {
+            if (!keysWithIps || keysWithIps.length === 0) {
+                container.innerHTML = '<div style="text-align:center;padding:var(--space-md);color:var(--text-muted);font-size:12px;">Nenhuma chave API ativa</div>';
+                if (badge) badge.textContent = '';
+                return;
+            }
+            let totalIps = 0;
+            let html = '';
+            keysWithIps.forEach(keyData => {
+                const ips = keyData.authorized_ips || [];
+                totalIps += ips.length;
+                const maskedPrefix = keyData.key_prefix || '8tk_';
+                html += `<div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:var(--space-md);margin-bottom:var(--space-sm);">`;
+                html += `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-sm);">`;
+                html += `<div style="font-size:13px;font-weight:600;color:var(--text-primary);">${keyData.key_name || 'Chave'}</div>`;
+                html += `<span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);">${maskedPrefix}••••</span>`;
+                html += `</div>`;
+                if (ips.length === 0) {
+                    html += `<div style="font-size:12px;color:var(--text-muted);padding:var(--space-xs) 0;">Nenhum IP autorizado nesta chave</div>`;
+                } else {
+                    ips.forEach(ipRow => {
+                        html += `<div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-sm);padding:var(--space-xs) var(--space-sm);background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:var(--space-xs);">`;
+                        html += `<span style="font-family:var(--font-mono);font-size:13px;color:var(--accent-blue);">${ipRow.ip}</span>`;
+                        html += `<div style="display:flex;gap:var(--space-xs);">`;
+                        html += `<button class="btn btn-success btn-sm" onclick="toggleAdminKeyIp('${keyData.key_id}','${ipRow.id}',false)" style="font-size:11px;padding:2px 8px;height:24px;" title="Bloquear este IP">🔴 Bloquear</button>`;
+                        html += `<button class="btn btn-danger btn-sm" onclick="removeAdminKeyIp('${keyData.key_id}','${ipRow.id}')" style="font-size:11px;padding:2px 8px;height:24px;" title="Remover IP">✕</button>`;
+                        html += `</div></div>`;
+                    });
+                }
+                html += `</div>`;
+            });
+            container.innerHTML = html;
+            if (badge) badge.textContent = `${totalIps} IP${totalIps !== 1 ? 's' : ''} autorizado${totalIps !== 1 ? 's' : ''}`;
+        }
+
+        async function toggleAdminKeyIp(keyId, ipId, authorize) {
+            try {
+                // Get the IP from the DOM or re-fetch
+                const result = await apiFetch(`/api/admin/keys/${keyId}/toggle-ip`, {
+                    method: 'POST',
+                    body: JSON.stringify({ ip: null, ipId, authorize })
+                });
+                // Reload the modal IPs
+                const editId = document.getElementById('editId').value;
+                if (editId && window.allSubscriptions) {
+                    const sub = window.allSubscriptions.find(s => s.id === editId);
+                    if (sub?.user_id) {
+                        const keysWithIps = await apiFetch(`/api/admin/users/${sub.user_id}/authorized-ips`);
+                        renderAuthorizedIps(keysWithIps, document.getElementById('authorizedIpsContainer'), document.getElementById('ipCountBadge'));
+                    }
+                }
+                showAlert('userFormAlert', authorize ? 'IP liberado!' : 'IP bloqueado!', 'success');
+            } catch (e) { showAlert('userFormAlert', e.message, 'error'); }
+        }
+
+        async function removeAdminKeyIp(keyId, ipId) {
+            if (!confirm('Remover este IP autorizado?')) return;
+            try {
+                await apiFetch(`/api/admin/keys/${keyId}/authorized-ips/${ipId}`, { method: 'DELETE' });
+                const editId = document.getElementById('editId').value;
+                if (editId && window.allSubscriptions) {
+                    const sub = window.allSubscriptions.find(s => s.id === editId);
+                    if (sub?.user_id) {
+                        const keysWithIps = await apiFetch(`/api/admin/users/${sub.user_id}/authorized-ips`);
+                        renderAuthorizedIps(keysWithIps, document.getElementById('authorizedIpsContainer'), document.getElementById('ipCountBadge'));
+                    }
+                }
+                showAlert('userFormAlert', 'IP removido.', 'success');
+            } catch (e) { showAlert('userFormAlert', e.message, 'error'); }
         }
 
         function closeUserModal() {
