@@ -778,26 +778,13 @@
 
         function renderUsersTable(subs) {
             const tbody = document.getElementById('usersTableBody');
-            if (!subs.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhum registro encontrado.</td></tr>'; return; }
-            // Count active IPs per user_id across all loaded subs
-            const userIpCount = {};
-            (allSubs || subs).forEach(s => {
-                if (s.status === 'active' && s.user_id) {
-                    userIpCount[s.user_id] = (userIpCount[s.user_id] || 0) + 1;
-                }
-            });
-            tbody.innerHTML = subs.map(s => {
-                const email = s.users?.email || s.user_email || '—';
-                const extraIps = s.user_id && userIpCount[s.user_id] > 1 ? userIpCount[s.user_id] - 1 : 0;
-                const extraBadge = extraIps > 0
-                    ? ` <span class="badge badge-warning" title="${extraIps} outro(s) IP(s) ativo(s) deste usuário">+${extraIps} IP${extraIps > 1 ? 's' : ''}</span>`
-                    : '';
-                return `
+            if (!subs.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Nenhum registro encontrado.</td></tr>'; return; }
+            tbody.innerHTML = subs.map(s => `
                 <tr data-id="${s.id}">
                     <td class="mono">${s.ip}</td>
                     <td>${badgeForPlan(s.plan)}</td>
                     <td>${badgeForStatus(s.status)}</td>
-                    <td style="font-size:13px;color:var(--text-secondary);">${email}${extraBadge}</td>
+                    <td style="font-size:13px;color:var(--text-secondary);">${s.user_email || '—'}</td>
                     <td class="mono" style="font-size:12px;">${formatDate(s.expires_at)}</td>
                     <td style="font-size:13px;color:var(--text-muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${(s.notes||'').replace(/"/g,'&quot;')}">${s.notes || '—'}</td>
                     <td class="mono" style="font-size:12px;color:var(--text-muted);">${formatDate(s.updated_at)}</td>
@@ -805,10 +792,10 @@
                         <button class="btn btn-success btn-sm" onclick="validateIp('${s.ip}')">Validar</button>
                         <button class="btn btn-secondary btn-sm" onclick="invalidateIp('${s.ip}')">Desvalidar</button>
                         <button class="btn btn-secondary btn-sm" onclick="editSub(${s.id})">Editar</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteSub(${s.id},'${s.ip}')">Remover</button>
                     </td>
                 </tr>
-            `;
-            }).join('');
+            `).join('');
         }
 
         async function validateIp(ip) {
@@ -1189,29 +1176,18 @@
                 const tbody = document.getElementById('expiredTableBody');
                 const badge = document.getElementById('expiredCount');
                 if (expired.length > 0) { badge.textContent = expired.length; badge.style.display = 'inline'; } else { badge.style.display = 'none'; }
-                if (!expired.length) { tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Nenhum plano expirado. Tudo em dia!</td></tr>'; return; }
-                // Count active IPs per user_id across all subs
-                const userIpCount = {};
-                subs.forEach(s => {
-                    if (s.status === 'active' && s.user_id) {
-                        userIpCount[s.user_id] = (userIpCount[s.user_id] || 0) + 1;
-                    }
-                });
+                if (!expired.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Nenhum plano expirado. Tudo em dia!</td></tr>'; return; }
                 tbody.innerHTML = expired.map(s => {
                     const daysExpired = Math.floor((now - new Date(s.expires_at)) / (1000*60*60*24));
-                    const email = s.users?.email || s.user_email || '—';
-                    const extraIps = s.user_id && userIpCount[s.user_id] > 1 ? userIpCount[s.user_id] - 1 : 0;
-                    const extraBadge = extraIps > 0
-                        ? ` <span class="badge badge-warning" title="${extraIps} outro(s) IP(s) ativo(s) deste usuário">+${extraIps} IP${extraIps > 1 ? 's' : ''}</span>`
-                        : '';
                     return `<tr>
                         <td class="mono">${s.ip}</td>
                         <td>${badgeForPlan(s.plan)}</td>
-                        <td style="font-size:13px;color:var(--text-secondary);">${email}${extraBadge}</td>
+                        <td style="font-size:13px;color:var(--text-secondary);">${s.user_email || '—'}</td>
                         <td class="mono" style="font-size:12px;">${formatDate(s.expires_at)}</td>
                         <td><span class="badge badge-expired">${daysExpired} dia${daysExpired !== 1 ? 's' : ''}</span></td>
                         <td class="actions">
                             <button class="btn btn-success btn-sm" onclick="reactivateIp(${s.id},'${s.ip}')">Reativar</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteSub(${s.id},'${s.ip}')">Remover</button>
                         </td>
                     </tr>`;
                 }).join('');
