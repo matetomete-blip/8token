@@ -308,7 +308,6 @@
                 <button class="admin-tab-btn" onclick="switchTab('plans', this)" data-tab="plans">Planos</button>
                 <button class="admin-tab-btn" onclick="switchTab('expired', this)" data-tab="expired">Expirados <span class="tab-badge" id="expiredCount" style="display:none;">0</span></button>
                 <button class="admin-tab-btn" onclick="switchTab('coupons', this)" data-tab="coupons">Cupons</button>
-                <button class="admin-tab-btn" onclick="switchTab('ipchanges', this)" data-tab="ipchanges">Solicitações IP <span class="tab-badge" id="ipChangeCount" style="display:none;">0</span></button>
                 <button class="admin-tab-btn" onclick="switchTab('notifications', this)" data-tab="notifications">Notificações</button>
                 <button class="admin-tab-btn" onclick="switchTab('webhook', this)" data-tab="webhook">Webhook</button>
                 <button class="admin-tab-btn" onclick="switchTab('settings', this)" data-tab="settings">Config</button>
@@ -469,17 +468,6 @@
                     <table>
                         <thead><tr><th>Código</th><th>Desconto</th><th>Usos</th><th>Máx.</th><th>Expira</th><th>Status</th><th>Ações</th></tr></thead>
                         <tbody id="couponsTableBody"><tr><td colspan="7" class="empty-state">Carregando...</td></tr></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- TAB: IP CHANGES -->
-            <div class="tab-panel" id="tab-ipchanges">
-                <p style="color:var(--text-secondary);font-size:14px;margin-bottom:var(--space-lg);">Solicitações de alteração de IP enviadas pelos usuários. Aprove para atualizar o IP autorizado ou rejeite com motivo.</p>
-                <div class="table-wrap">
-                    <table>
-                        <thead><tr><th>ID</th><th>Usuário</th><th>IP Atual</th><th>IP Solicitado</th><th>Data</th><th>Status</th><th>Ações</th></tr></thead>
-                        <tbody id="ipChangesTableBody"><tr><td colspan="7" class="empty-state">Carregando...</td></tr></tbody>
                     </table>
                 </div>
             </div>
@@ -812,7 +800,6 @@
             if (name === 'plans') loadPlans();
             if (name === 'expired') loadExpired();
             if (name === 'coupons') loadCoupons();
-            if (name === 'ipchanges') loadIpChanges();
             if (name === 'settings') loadSettings();
             if (name === 'webhook') { loadWebhookLogs(); loadWebhookConfig(); startWebhookLogsPolling(); } else { stopWebhookLogsPolling(); }
         }
@@ -1749,48 +1736,6 @@
         async function deleteCoupon(id, code) {
             if (!confirm(`Remover o cupom ${code}?`)) return;
             try { await apiFetch(`/api/admin/coupons/${id}`, { method: 'DELETE' }); loadCoupons(); } catch (e) { alert(e.message); }
-        }
-
-        // ---- IP CHANGE REQUESTS ----
-        async function loadIpChanges() {
-            try {
-                const requests = await apiFetch('/api/admin/ip-changes');
-                const pendingCount = requests.filter(r => r.status === 'pending').length;
-                const badge = document.getElementById('ipChangeCount');
-                if (badge) { badge.textContent = pendingCount; badge.style.display = pendingCount > 0 ? 'inline' : 'none'; }
-                const tbody = document.getElementById('ipChangesTableBody');
-                if (!requests.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhuma solicitação</td></tr>'; return; }
-                tbody.innerHTML = requests.map(r => {
-                    const statusBadge = r.status === 'pending' ? '<span class="badge badge-pending">Pendente</span>' :
-                        r.status === 'approved' ? '<span class="badge badge-approved">Aprovado</span>' :
-                        '<span class="badge badge-rejected">Rejeitado</span>';
-                    const actions = r.status === 'pending' ?
-                        `<button class="btn btn-success btn-sm" onclick="approveIpChange(${r.id})">Aprovar</button>
-                         <button class="btn btn-danger btn-sm" onclick="rejectIpChange(${r.id})">Rejeitar</button>` :
-                        '<span style="color:var(--text-muted);font-size:12px;">—</span>';
-                    return `<tr>
-                        <td class="mono" style="font-size:12px;">#${r.id}</td>
-                        <td style="font-size:13px;">${r.user_email || '—'}</td>
-                        <td class="mono" style="font-size:12px;">${r.old_ip}</td>
-                        <td class="mono" style="font-size:12px;color:var(--accent-orange);">${r.new_ip}</td>
-                        <td class="mono" style="font-size:12px;">${formatDate(r.created_at)}</td>
-                        <td>${statusBadge}</td>
-                        <td class="actions">${actions}</td>
-                    </tr>`;
-                }).join('');
-            } catch (e) {
-                document.getElementById('ipChangesTableBody').innerHTML = '<tr><td colspan="7" class="empty-state">Erro ao carregar</td></tr>';
-            }
-        }
-
-        async function approveIpChange(id) {
-            if (!confirm('Aprovar esta alteração de IP?')) return;
-            try { await apiFetch(`/api/admin/ip-changes/${id}/approve`, { method: 'POST' }); loadIpChanges(); loadDashboard(); } catch (e) { alert(e.message); }
-        }
-
-        async function rejectIpChange(id) {
-            const notes = prompt('Motivo da recusa (opcional):');
-            try { await apiFetch(`/api/admin/ip-changes/${id}/reject`, { method: 'POST', body: JSON.stringify({ notes }) }); loadIpChanges(); } catch (e) { alert(e.message); }
         }
 
         // ---- NOTIFICATIONS BROADCAST ----
