@@ -702,8 +702,15 @@
                     </div>
                 </div>
                 <div class="card">
-                    <div class="card-title">Logs do Webhook</div>
-                    <p style="color:var(--text-secondary);font-size:13px;margin-bottom:var(--space-md);">Últimas requisições recebidas da Kirvano. Use para depurar problemas de integração.</p>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-md);">
+                        <div>
+                            <div class="card-title" style="margin-bottom:4px;">Logs do Webhook</div>
+                            <p style="color:var(--text-secondary);font-size:13px;margin:0;">Últimas 10 requisições recebidas da Kirvano.</p>
+                        </div>
+                        <a href="webhook-logs.html" style="font-size:13px;font-weight:600;color:var(--accent-orange);display:inline-flex;align-items:center;gap:6px;white-space:nowrap;padding:8px 16px;border:1px solid rgba(255,85,0,0.3);border-radius:var(--radius-sm);transition:all 0.2s;" onmouseover="this.style.background='rgba(255,85,0,0.1)'" onmouseout="this.style.background='transparent'">
+                            Ver todos os logs →
+                        </a>
+                    </div>
                     <div class="table-wrap">
                         <table>
                             <thead><tr><th>Data/Hora</th><th>Evento</th><th>Status</th><th>Email</th><th>IP</th><th>Plano</th><th>Detalhes</th></tr></thead>
@@ -1002,8 +1009,8 @@
             return `<span class="badge ${map[role] || 'badge-free'}" style="margin-left:4px;font-size:10px;">${labels[role] || role}</span>`;
         }
         function badgeForStatus(status) {
-            const map = { active: 'badge-active', pending: 'badge-pending', expired: 'badge-expired', suspended: 'badge-suspended', approved: 'badge-approved', rejected: 'badge-rejected', paid: 'badge-active', unpaid: 'badge-pending', orphaned: 'badge-expired', duplicate: 'badge-expired' };
-            const labels = { active: '🟢 IP Liberado', pending: '⏳ Pendente', expired: '⏰ Expirado', suspended: '🔴 IP Bloqueado', approved: '✅ Aprovado', rejected: '❌ Recusado', paid: '💰 Pago', unpaid: '⏳ Pendente', orphaned: ' Órfão', duplicate: '📋 Duplicado' };
+            const map = { active: 'badge-active', pending: 'badge-pending', pending_ip: 'badge-pending', expired: 'badge-expired', suspended: 'badge-suspended', approved: 'badge-approved', rejected: 'badge-rejected', paid: 'badge-active', unpaid: 'badge-pending', orphaned: 'badge-expired', duplicate: 'badge-expired' };
+            const labels = { active: '🟢 IP Liberado', pending: '⏳ Pendente', pending_ip: '⏳ Aguardando IP', expired: '⏰ Expirado', suspended: '🔴 IP Bloqueado', approved: '✅ Aprovado', rejected: '❌ Recusado', paid: '💰 Pago', unpaid: '⏳ Pendente', orphaned: ' Órfão', duplicate: '📋 Duplicado' };
             return `<span class="badge ${map[status] || 'badge-free'}">${labels[status] || status}</span>`;
         }
         function formatDate(d) {
@@ -1032,7 +1039,7 @@
                         <td class="mono" style="font-size:11px;color:var(--text-muted);">${isMain ? userIdShort : ''}</td>
                         <td style="font-size:13px;color:var(--text-secondary);">${isMain ? (g.user_name !== '—' ? g.user_name : g.user_email) : ''}</td>
                         <td>${isMain ? badgeForRole(g.user_role) : ''}</td>
-                        <td class="mono" style="${!isMain ? 'padding-left:24px;color:var(--accent-blue);' : ''}">${isMain ? s.ip : '↳ ' + s.ip}</td>
+                        <td class="mono" style="${!isMain ? 'padding-left:24px;color:var(--accent-blue);' : ''}">${(() => { const ipVal = isMain ? s.ip : '↳ ' + s.ip; const isPending = !s.ip || s.ip === 'pending-activation' || s.ip === 'pending'; return isPending ? '<span style="color:var(--text-muted);font-style:italic;">Sem IP</span>' : ipVal; })()}</td>
                         <td>${badgeForPlan(s.plan)}</td>
                         <td>${badgeForStatus(s.status)}</td>
                         <td style="font-size:13px;color:var(--text-secondary);">${isMain ? g.user_email : ''}</td>

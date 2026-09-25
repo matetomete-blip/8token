@@ -363,6 +363,38 @@ app.put('/api/user/name', authenticateToken, async (req, res) => {
   res.json({ success: true, name });
 });
 
+// --- HELPER: sync key_authorized_ips when admin changes a user's IP ---
+// Replaces old_ip with new_ip across all active keys of a user, or adds new_ip if no authorized IPs exist
+async function syncKeyAuthorizedIps(userId, oldIp, newIp) {
+  if (!userId || !newIp) return;
+  try {
+    // Get all active (non-revoked) keys for this user
+    const { data: keys } = await supabase.from('api_keys')
+      .select('id').eq('user_id', userId).eq('revoked', false);
+    if (!keys || keys.length === 0) return;
+
+    for (const key of keys) {
+      if (oldIp && oldIp !== newIp) {
+        // Remove old IP from this key's authorized list
+        await supabase.from('key_authorized_ips')
+          .delete().eq('api_key_id', key.id).eq('ip', oldIp);
+      }
+      // Add new IP (ignore duplicates via upsert)
+      await supabase.from('key_authorized_ips').upsert(
+        { api_key_id: key.id, ip: newIp },
+        { onConflict: 'api_key_id,ip', ignoreDuplicates: true }
+      );
+      // Invalidate cache for this key
+      const { data: kh } = await supabase.from('api_keys').select('key_hash').eq('id', key.id).single();
+      if (kh?.key_hash) invalidateKeyCache(kh.key_hash);
+    }
+    invalidateSubCache(userId);
+    console.log(`[syncKeyAuthorizedIps] ✅ Synced ${keys.length} key(s) for user ${userId}: ${oldIp || 'none'} → ${newIp}`);
+  } catch (e) {
+    console.error('[syncKeyAuthorizedIps] Error:', e.message);
+  }
+}
+
 // --- API KEYS ---
 // GET /api/keys — lista chaves com IPs autorizados (JOIN key_authorized_ips) + max_ips do plano
 app.get('/api/keys', authenticateToken, async (req, res) => {
@@ -657,11 +689,11 @@ app.post('/api/webhooks/kirvano', async (req, res) => {
       }
       subId = existingSub.id;
     } else {
-      // No active subscription — create one using the request IP or a placeholder
-      const ip = req.clientIp || 'pending-activation';
+      // No active subscription — always use placeholder; IP is only set when user explicitly authorizes it from dashboard
+      const ip = 'pending-activation';
       const { data: newSub, error: subInsertErr } = await supabase
         .from('ip_subscriptions')
-        .insert({ user_id: user.id, ip, plan, status: 'active', expires_at: expiresAt })
+        .insert({ user_id: user.id, ip, plan, status: 'pending_ip', expires_at: expiresAt })
         .select('id')
         .single();
       if (subInsertErr) {
@@ -738,7 +770,7 @@ app.get('/api/ip/status', async (req, res) => {
 
 // --- USER: IP ADDITIONAL & CHANGE ---
 app.post('/api/user/additional-ip', authenticateToken, async (req, res) => {
-  const { data: sub } = await supabase.from('ip_subscriptions').select('*').eq('user_id', req.user.id).eq('status', 'active').single();
+  const { data: sub } = await supabase.from('ip_subscriptions').select('*').in('status', ['active', 'pending_ip']).eq('user_id', req.user.id).order('created_at', { ascending: false }).limit(1).single();
   if (!sub) return res.status(400).json({ error: 'Nenhum plano ativo encontrado.' });
   if (sub.has_additional_ip) return res.status(400).json({ error: 'Você já possui um IP adicional ativo.' });
   if (sub.plan === 'free') return res.status(400).json({ error: 'Plano free não pode comprar IP adicional.' });
@@ -789,12 +821,12 @@ app.post('/api/user/authorize-current-ip', authenticateToken, async (req, res) =
   const currentIp = req.clientIp;
   if (!currentIp) return res.status(400).json({ error: 'Não foi possível detectar seu IP.' });
   const { data: sub } = await supabase.from('ip_subscriptions')
-    .select('*').eq('user_id', req.user.id).eq('status', 'active')
+    .select('*').in('status', ['active', 'pending_ip']).eq('user_id', req.user.id)
     .order('created_at', { ascending: false }).limit(1).single();
   if (!sub) return res.status(400).json({ error: 'Nenhum plano ativo encontrado.' });
-  if (sub.ip === currentIp) return res.json({ success: true, message: 'IP da rede já está liberado!', ip: currentIp });
-  // Atualiza o IP principal imediatamente
-  await supabase.from('ip_subscriptions').update({ ip: currentIp }).eq('id', sub.id);
+  if (sub.ip === currentIp && sub.status === 'active') return res.json({ success: true, message: 'IP da rede já está liberado!', ip: currentIp });
+  // Atualiza o IP principal e muda status para active
+  await supabase.from('ip_subscriptions').update({ ip: currentIp, status: 'active' }).eq('id', sub.id);
   // Cancela qualquer solicitação pendente anterior
   await supabase.from('ip_change_requests').update({ status: 'cancelled' })
     .eq('user_id', req.user.id).eq('status', 'pending');
@@ -809,15 +841,15 @@ app.get('/api/user/ip-info', authenticateToken, async (req, res) => {
   // Get ALL active subscriptions for this user (supports multiple IPs)
   // Try with additional_ip_expires_at first, fallback without it if column doesn't exist
   let subs;
-  const result1 = await supabase.from('ip_subscriptions').select('id, ip, additional_ip, has_additional_ip, additional_ip_expires_at, plan, status, expires_at, created_at').eq('user_id', req.user.id).eq('status', 'active').order('created_at', { ascending: false });
+  const result1 = await supabase.from('ip_subscriptions').select('id, ip, additional_ip, has_additional_ip, additional_ip_expires_at, plan, status, expires_at, created_at').eq('user_id', req.user.id).in('status', ['active', 'pending_ip']).order('created_at', { ascending: false });
   if (result1.error) {
     // Fallback: query without additional_ip_expires_at if column doesn't exist
-    const result2 = await supabase.from('ip_subscriptions').select('id, ip, additional_ip, has_additional_ip, plan, status, expires_at, created_at').eq('user_id', req.user.id).eq('status', 'active').order('created_at', { ascending: false });
+    const result2 = await supabase.from('ip_subscriptions').select('id, ip, additional_ip, has_additional_ip, plan, status, expires_at, created_at').eq('user_id', req.user.id).in('status', ['active', 'pending_ip']).order('created_at', { ascending: false });
     subs = result2.data;
   } else {
     subs = result1.data;
   }
-  if (!subs || !subs.length) return res.json({ ip: null, additional_ip: null, has_additional_ip: false, additional_ip_expires_at: null, plan: null, all_ips: [] });
+  if (!subs || !subs.length) return res.json({ ip: null, additional_ip: null, has_additional_ip: false, additional_ip_expires_at: null, plan: null, status: null, all_ips: [] });
   // Primary = most recent subscription
   const primary = subs[0];
   // Collect all unique IPs
@@ -932,8 +964,12 @@ app.put('/api/admin/subscriptions/:id', adminAuth, async (req, res) => {
         console.log(`[Admin PUT] ✅ Synced user ${syncedUserId} → plan=${plan}, expires=${expires_at}`);
       }
     }
+    // Step 6: Sync key_authorized_ips — if IP changed, update all keys of this user
+    if (ip !== undefined && currentSub.ip !== ip) {
+      await syncKeyAuthorizedIps(syncedUserId, currentSub.ip, ip);
+    }
   } else {
-    console.warn(`[Admin PUT] ⚠️ Sub ${req.params.id} (IP ${targetIp}) has no user_id and no linked sub — users.plan NOT synced`);
+    console.warn(`[Admin PUT] ⚠️ Sub ${req.params.id} has no user_id — users.plan NOT synced`);
   }
 
   res.json({ success: true, synced_user_id: syncedUserId || null });
@@ -1245,6 +1281,8 @@ app.post('/api/admin/ip-changes/:id/approve', adminAuth, async (req, res) => {
   if (!changeReq) return res.status(404).json({ error: 'Não encontrada' });
   if (changeReq.status !== 'pending') return res.status(400).json({ error: 'Já processada' });
   await supabase.from('ip_subscriptions').update({ ip: changeReq.new_ip }).eq('user_id', changeReq.user_id).eq('status', 'active');
+  // Sync key_authorized_ips — replace old IP with new IP across all keys of this user
+  await syncKeyAuthorizedIps(changeReq.user_id, changeReq.old_ip, changeReq.new_ip);
   await supabase.from('ip_change_requests').update({ status: 'approved', resolved_at: new Date().toISOString() }).eq('id', req.params.id);
   await supabase.from('notifications').insert({ user_id: changeReq.user_id, title: 'IP Alterado!', message: `Seu IP foi alterado de ${changeReq.old_ip} para ${changeReq.new_ip}.`, type: 'success' });
   const { data: approvedUser } = await supabase.from('users').select('email').eq('id', changeReq.user_id).single();
