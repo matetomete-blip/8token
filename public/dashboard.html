@@ -430,36 +430,8 @@
                 <p>Gerencie sua assinatura, chaves e acompanhe o uso em tempo real.</p>
             </div>
 
-            <!-- KPIs -->
+            <!-- KPIs Primários -->
             <div class="kpi-row">
-                <div class="kpi-card" id="planCardContainer" style="position:relative;">
-                    <!-- Estado: Sem plano -->
-                    <div id="planCardEmpty" style="text-align:center;padding:var(--space-sm) 0;">
-                        <div class="kpi-label">Plano Atual</div>
-                        <div style="font-size:28px;margin-bottom:var(--space-xs);">📋</div>
-                        <div style="font-size:14px;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-xs);">Sem plano</div>
-                        <a href="index.html#pricing" class="btn-upgrade" style="display:inline-flex;height:32px;padding:0 var(--space-md);font-size:12px;margin-top:var(--space-xs);">Ver planos</a>
-                    </div>
-                    <!-- Estado: Com plano -->
-                    <div id="planCardActive" style="display:none;">
-                        <div class="kpi-label">Plano Atual</div>
-                        <div class="plan-name" style="margin-top:var(--space-xs);">
-                            <span id="planCardName" style="font-size:22px;">—</span>
-                            <span class="plan-badge" id="planCardBadge" style="display:none;"></span>
-                        </div>
-                        <div class="plan-details" style="font-size:11px;margin-top:4px;">
-                            Claude Opus 5, Sonnet 5, Fable 5.1 e GLM 5.3 · Uso ilimitado
-                        </div>
-                        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:var(--space-sm);flex-wrap:wrap;gap:var(--space-xs);">
-                            <div>
-                                <span class="plan-price-value" id="planCardPrice" style="font-size:18px;">—</span>
-                                <span class="plan-price-period" id="planCardPeriod" style="font-size:11px;"></span>
-                                <div class="plan-renewal" id="planCardRenewal" style="font-size:10px;"></div>
-                            </div>
-                            <a href="account.html" class="btn-upgrade btn-secondary" style="display:inline-flex;height:28px;padding:0 var(--space-sm);font-size:11px;">Gerenciar</a>
-                        </div>
-                    </div>
-                </div>
                 <div class="kpi-card">
                     <div class="kpi-label">Chaves API</div>
                     <div class="kpi-value green" id="kpiKeys">—</div>
@@ -497,7 +469,39 @@
                 </div>
             </div>
 
-            <!-- IP Autorizado — full width -->
+            <!-- Plano Atual + IP Autorizado — side by side -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);">
+            <div class="dash-section" id="planCardContainer" style="margin-bottom: 0;">
+                <div class="dash-section-title">Plano Atual</div>
+                <div class="card plan-card">
+                    <!-- Estado: Sem plano -->
+                    <div id="planCardEmpty" style="text-align:center;padding:var(--space-xl) 0;">
+                        <div style="font-size:40px;margin-bottom:var(--space-sm);">📋</div>
+                        <div style="font-size:16px;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-xs);">Nenhum plano ativo</div>
+                        <div style="font-size:13px;color:var(--text-muted);margin-bottom:var(--space-lg);">Assine um plano para acessar todos os modelos de IA</div>
+                        <a href="index.html#pricing" class="btn-upgrade" style="display:inline-flex;height:40px;padding:0 var(--space-lg);font-size:14px;">Ver planos e assinar</a>
+                    </div>
+                    <!-- Estado: Com plano -->
+                    <div id="planCardActive" style="display:none;">
+                        <div class="plan-info">
+                            <div class="plan-name">
+                                <span id="planCardName">—</span>
+                                <span class="plan-badge" id="planCardBadge" style="display:none;"></span>
+                            </div>
+                            <div class="plan-details">
+                                Claude Opus 5, Sonnet 5, Fable 5.1 e GLM 5.3 · Uso ilimitado
+                            </div>
+                        </div>
+                        <div class="plan-price">
+                            <div class="plan-price-value" id="planCardPrice">—</div>
+                            <div class="plan-price-period" id="planCardPeriod"></div>
+                            <div class="plan-renewal" id="planCardRenewal"></div>
+                        </div>
+                        <a href="account.html" class="btn-upgrade btn-secondary" style="display:inline-flex;height:36px;padding:0 var(--space-md);font-size:13px;text-align:center;">Gerenciar Plano</a>
+                    </div>
+                </div>
+            </div>
+
             <div class="dash-section" style="margin-bottom: 0;">
                 <div class="dash-section-title">IP Autorizado</div>
                     <div class="card" style="display:flex; flex-direction:column; gap:var(--space-lg);">
