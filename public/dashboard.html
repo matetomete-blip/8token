@@ -467,45 +467,43 @@
             <!-- Plano Atual -->
             <div class="dash-section" id="planCardContainer" style="margin-bottom: 0;">
                 <div class="dash-section-title">Plano Atual</div>
-                <div class="card plan-card" id="planCardInner" style="transition: border-color 0.3s, box-shadow 0.3s; position: relative; overflow: hidden; padding: var(--space-md) var(--space-lg);">
+                <div class="card plan-card" id="planCardInner" style="transition: border-color 0.3s, box-shadow 0.3s; position: relative; overflow: hidden; padding: 16px 24px;">
                     <!-- Estado: Sem plano -->
-                    <div id="planCardEmpty" style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-md);">
-                        <div style="display:flex;align-items:center;gap:var(--space-md);">
-                            <div style="width:44px;height:44px;border-radius:var(--radius-md);background:rgba(255,85,0,0.1);border:1px solid rgba(255,85,0,0.2);display:flex;align-items:center;justify-content:center;font-size:20px;">📋</div>
+                    <div id="planCardEmpty" style="display:flex;align-items:center;justify-content:space-between;gap:16px;">
+                        <div style="display:flex;align-items:center;gap:12px;">
+                            <div style="width:36px;height:36px;border-radius:8px;background:rgba(255,85,0,0.1);display:flex;align-items:center;justify-content:center;font-size:18px;">📋</div>
                             <div>
-                                <div style="font-size:15px;font-weight:700;color:var(--text-primary);margin-bottom:2px;">Nenhum plano ativo</div>
-                                <div style="font-size:13px;color:var(--text-secondary);">Assine para acessar todos os modelos de IA</div>
+                                <div style="font-size:14px;font-weight:600;color:var(--text-primary);">Nenhum plano ativo</div>
+                                <div style="font-size:12px;color:var(--text-muted);">Assine para acessar todos os modelos</div>
                             </div>
                         </div>
-                        <a href="index.html#pricing" class="btn-upgrade" style="display:inline-flex;height:38px;padding:0 var(--space-lg);font-size:13px;font-weight:600;">Ver planos</a>
+                        <a href="index.html#pricing" class="btn-upgrade" style="display:inline-flex;height:34px;padding:0 16px;font-size:12px;font-weight:600;">Ver planos</a>
                     </div>
                     <!-- Estado: Com plano -->
-                    <div id="planCardActive" style="display:none;align-items:center;justify-content:space-between;gap:var(--space-lg);">
-                        <div style="display:flex;align-items:center;gap:var(--space-md);min-width:0;">
-                            <div style="width:44px;height:44px;border-radius:var(--radius-md);background:rgba(255,85,0,0.1);border:1px solid rgba(255,85,0,0.2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">⚡</div>
-                            <div style="display:flex;flex-direction:column;gap:6px;min-width:0;">
-                                <div style="display:flex;align-items:center;gap:var(--space-sm);flex-wrap:wrap;">
-                                    <span id="planCardName" style="font-size:17px;font-weight:700;color:var(--text-primary);">—</span>
+                    <div id="planCardActive" style="display:none;align-items:center;justify-content:space-between;gap:24px;">
+                        <div style="display:flex;align-items:center;gap:16px;flex:1;min-width:0;">
+                            <div style="display:flex;flex-direction:column;gap:4px;min-width:0;">
+                                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                                    <span id="planCardName" style="font-size:16px;font-weight:700;color:var(--text-primary);">—</span>
                                     <span class="plan-badge" id="planCardBadge" style="display:none;"></span>
-                                    <div style="display:flex;align-items:center;gap:6px;padding:4px 10px;background:rgba(0,255,148,0.08);border-radius:var(--radius-pill);border:1px solid rgba(0,255,148,0.15);">
+                                    <div style="display:flex;align-items:center;gap:5px;padding:2px 8px;background:rgba(0,255,148,0.1);border-radius:999px;">
                                         <div style="width:6px;height:6px;border-radius:50%;background:var(--accent-green);box-shadow:0 0 6px var(--accent-green);" id="planStatusDot"></div>
                                         <span style="font-size:11px;font-weight:600;color:var(--accent-green);" id="planStatusText">Ativo</span>
                                     </div>
                                 </div>
-                                <div style="font-size:12px;color:var(--text-secondary);display:flex;align-items:center;gap:var(--space-sm);">
-                                    <span style="color:var(--text-muted);">Expira em</span>
-                                    <span id="planExpiryText" style="font-weight:600;color:var(--text-primary);">—</span>
+                                <div style="font-size:12px;color:var(--text-muted);">
+                                    Expira em <span id="planExpiryText" style="font-weight:600;color:var(--text-secondary);">—</span>
                                 </div>
                             </div>
                         </div>
-                        <div style="display:flex;align-items:center;gap:var(--space-lg);flex-shrink:0;">
-                            <div style="text-align:right;display:flex;flex-direction:column;gap:2px;">
-                                <div style="display:flex;align-items:baseline;gap:4px;justify-content:flex-end;">
-                                    <span class="plan-price-value" id="planCardPrice" style="font-size:20px;font-weight:700;color:var(--text-primary);line-height:1;">—</span>
+                        <div style="display:flex;align-items:center;gap:20px;flex-shrink:0;">
+                            <div style="text-align:right;">
+                                <div style="font-size:18px;font-weight:700;color:var(--text-primary);line-height:1;">
+                                    <span class="plan-price-value" id="planCardPrice">—</span>
+                                    <span class="plan-price-period" id="planCardPeriod" style="font-size:12px;font-weight:400;color:var(--text-muted);"></span>
                                 </div>
-                                <span class="plan-price-period" id="planCardPeriod" style="font-size:11px;color:var(--text-muted);"></span>
                             </div>
-                            <a href="account.html" class="btn-upgrade btn-secondary" style="display:inline-flex;height:38px;padding:0 var(--space-lg);font-size:13px;font-weight:600;">Gerenciar</a>
+                            <a href="account.html" class="btn-upgrade btn-secondary" style="display:inline-flex;height:34px;padding:0 16px;font-size:12px;font-weight:600;">Gerenciar</a>
                         </div>
                     </div>
                 </div>
