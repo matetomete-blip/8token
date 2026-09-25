@@ -478,7 +478,7 @@
                         <a href="index.html#pricing" class="btn-upgrade" style="display:flex;height:44px;align-items:center;justify-content:center;font-size:14px;font-weight:600;width:100%;">Ver planos e assinar</a>
                     </div>
                     <!-- Estado: Com plano -->
-                    <div id="planCardActive" style="display:none;flex-direction:column;gap:28px;">
+                    <div id="planCardActive" style="display:none;flex-direction:column;gap:36px;">
                         <div style="display:flex;align-items:center;justify-content:space-between;">
                             <span id="planCardName" style="font-size:22px;font-weight:700;color:var(--text-primary);">—</span>
                             <span class="plan-badge" id="planCardBadge" style="display:none;"></span>
@@ -789,7 +789,7 @@
                         <div style="padding:var(--space-md) var(--space-lg);">
                             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-xs);">
                                 <div style="font-size:14px;font-weight:700;color:var(--text-primary);">IPs autorizados</div>
-                                <span style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono);">${ips.length}/${maxIps} rede${maxIps !== 1 ? 's' : ''}</span>
+                                <span style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono);">${ips.length} IP${ips.length !== 1 ? 's' : ''} liberado${ips.length !== 1 ? 's' : ''}</span>
                             </div>
                             <p style="font-size:12px;color:var(--text-muted);line-height:1.5;margin:0 0 var(--space-md);">Libere um IP para autorizar a rede. Se o IP mudar dentro do mesmo provedor, a API continua funcionando.</p>
                             <div style="display:flex;flex-direction:column;gap:var(--space-sm);margin-bottom:var(--space-md);">
