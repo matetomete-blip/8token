@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Admin 8Token</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -301,7 +304,6 @@
             <div class="admin-tabs-nav" style="display:flex;flex-wrap:wrap;gap:8px;padding-bottom:var(--space-md);border-bottom:1px solid var(--border);margin-bottom:var(--space-sm);">
                 <button class="admin-tab-btn active" onclick="switchTab('dashboard', this)" data-tab="dashboard">Dashboard</button>
                 <button class="admin-tab-btn" onclick="switchTab('users', this)" data-tab="users">Usuários / IPs</button>
-                <button class="admin-tab-btn" onclick="switchTab('activations', this)" data-tab="activations">Ativação <span class="tab-badge" id="pendingCount" style="display:none;">0</span></button>
                 <button class="admin-tab-btn" onclick="switchTab('affiliates', this)" data-tab="affiliates">Afiliados</button>
                 <button class="admin-tab-btn" onclick="switchTab('plans', this)" data-tab="plans">Planos</button>
                 <button class="admin-tab-btn" onclick="switchTab('expired', this)" data-tab="expired">Expirados <span class="tab-badge" id="expiredCount" style="display:none;">0</span></button>
