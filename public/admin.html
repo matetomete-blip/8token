@@ -3,9 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
     <title>Admin 8Token</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -71,7 +68,7 @@
             display: flex; align-items: center;
         }
         .navbar-inner {
-            max-width: 100%; margin: 0; width: 100%; padding: 0 var(--space-sm);
+            max-width: 1600px; margin: 0 auto; width: 100%; padding: 0 var(--space-md);
             display: flex; justify-content: space-between; align-items: center;
         }
         .navbar-logo {
@@ -87,7 +84,7 @@
 
         /* Admin Layout: Sidebar + Content */
         .admin-layout {
-            max-width: 100%; margin: 0; padding: 100px var(--space-sm) var(--space-lg);
+            max-width: 1600px; margin: 0 auto; padding: 120px var(--space-md) var(--space-xl);
             display: grid; grid-template-columns: 280px 1fr; gap: var(--space-xl);
         }
         @media (max-width: 1024px) { .admin-layout { grid-template-columns: 1fr; } }
@@ -113,25 +110,6 @@
             margin-left: auto; background: rgba(255, 85, 0, 0.15); color: var(--accent-orange);
             font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: var(--radius-pill);
             min-width: 18px; text-align: center;
-        }
-
-        /* Admin Sub-Navigation Tabs */
-        .admin-tab-btn {
-            padding: 8px 14px; border-radius: var(--radius-sm);
-            background: transparent; border: 1px solid var(--border);
-            color: var(--text-secondary); font-size: 13px; font-weight: 500;
-            cursor: pointer; transition: var(--transition);
-            display: inline-flex; align-items: center; gap: 6px;
-        }
-        .admin-tab-btn:hover { border-color: var(--border-hover); color: var(--text-primary); }
-        .admin-tab-btn.active {
-            background: rgba(255, 85, 0, 0.1); color: var(--accent-orange);
-            border-color: rgba(255, 85, 0, 0.3);
-        }
-        .tab-badge {
-            background: rgba(255, 85, 0, 0.2); color: var(--accent-orange);
-            font-size: 10px; font-weight: 700; padding: 1px 5px;
-            border-radius: var(--radius-pill); min-width: 16px; text-align: center;
         }
 
         /* Content Area */
@@ -212,11 +190,6 @@
         td.mono { font-family: var(--font-mono); font-size: 13px; color: var(--text-secondary); }
         td.actions { white-space: nowrap; }
         td.actions .btn { margin-right: var(--space-xs); }
-        /* Drag & Drop Affiliates */
-        tr[draggable="true"] { cursor: grab; transition: opacity 0.15s, background 0.15s; }
-        tr[draggable="true"]:active { cursor: grabbing; }
-        tr.dragging { opacity: 0.35; }
-        tr.drag-over td { background: rgba(255, 85, 0, 0.18) !important; box-shadow: inset 0 -2px 0 var(--accent-orange); }
 
         /* Badges */
         .badge { display: inline-flex; align-items: center; padding: 2px 10px; font-size: 11px; font-weight: 600; border-radius: var(--radius-pill); text-transform: uppercase; letter-spacing: 0.03em; }
@@ -269,8 +242,8 @@
                 <span class="admin-badge">Admin</span>
             </a>
             <div class="navbar-right">
-                <button class="btn btn-secondary btn-sm" onclick="fixLegacyIps()" style="border-color:var(--accent-amber);color:var(--accent-amber);">🔧 Corrigir IPs Legados</button>
-                                <a href="dashboard.html" class="btn btn-secondary btn-sm">Dashboard</a>
+                <button class="btn btn-secondary btn-sm" onclick="createTestAccounts()" style="border-color:var(--accent-purple);color:var(--accent-purple);">⚡ Contas Teste</button>
+                <a href="dashboard.html" class="btn btn-secondary btn-sm">Dashboard</a>
                 <a href="index.html" class="btn btn-secondary btn-sm">Site</a>
             </div>
         </div>
@@ -278,45 +251,59 @@
 
     <!-- Admin Layout -->
     <main class="admin-layout">
-        <!-- Sidebar Navigation (Global - same as dashboard/account) -->
+        <!-- Sidebar Navigation -->
         <aside class="sidebar">
-            <a href="dashboard.html" class="sidebar-link">
+            <button class="sidebar-link active" onclick="switchTab('dashboard', this)">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
                 Dashboard
-            </a>
-            <a href="account.html" class="sidebar-link">
+            </button>
+            <button class="sidebar-link" onclick="switchTab('users', this)">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                Minha Conta
-            </a>
-            <a href="affiliate.html" class="sidebar-link">
+                Usuários / IPs
+            </button>
+            <button class="sidebar-link" onclick="switchTab('activations', this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                Ativação de IPs
+                <span class="sidebar-count" id="pendingCount" style="display:none;">0</span>
+            </button>
+            <button class="sidebar-link" onclick="switchTab('affiliates', this)">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                 Afiliados
-            </a>
-            <a href="admin.html" class="sidebar-link active">
+            </button>
+            <button class="sidebar-link" onclick="switchTab('plans', this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                Planos
+            </button>
+            <button class="sidebar-link" onclick="switchTab('expired', this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                Expirados
+                <span class="sidebar-count" id="expiredCount" style="display:none;">0</span>
+            </button>
+            <button class="sidebar-link" onclick="switchTab('coupons', this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                Cupons
+            </button>
+            <button class="sidebar-link" onclick="switchTab('ipchanges', this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                Solicitações IP
+                <span class="sidebar-count" id="ipChangeCount" style="display:none;">0</span>
+            </button>
+            <button class="sidebar-link" onclick="switchTab('notifications', this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                Notificações
+            </button>
+            <button class="sidebar-link" onclick="switchTab('webhook', this)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                Webhook Kirvano
+            </button>
+            <button class="sidebar-link" onclick="switchTab('settings', this)">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                Painel Admin
-            </a>
-            <div class="sidebar-divider"></div>
-            <a href="#" class="sidebar-link" onclick="handleLogout()" style="color:var(--accent-red);">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                Sair
-            </a>
+                Configurações
+            </button>
         </aside>
 
         <!-- Content Area -->
         <div class="content-area">
-            <!-- Admin Sub-Navigation (tabs moved from sidebar) -->
-            <div class="admin-tabs-nav" style="display:flex;flex-wrap:wrap;gap:8px;padding-bottom:var(--space-md);border-bottom:1px solid var(--border);margin-bottom:var(--space-sm);">
-                <button class="admin-tab-btn active" onclick="switchTab('dashboard', this)" data-tab="dashboard">Dashboard</button>
-                <button class="admin-tab-btn" onclick="switchTab('users', this)" data-tab="users">Usuários / IPs</button>
-                <button class="admin-tab-btn" onclick="switchTab('affiliates', this)" data-tab="affiliates">Afiliados</button>
-                <button class="admin-tab-btn" onclick="switchTab('plans', this)" data-tab="plans">Planos</button>
-                <button class="admin-tab-btn" onclick="switchTab('expired', this)" data-tab="expired">Expirados <span class="tab-badge" id="expiredCount" style="display:none;">0</span></button>
-                <button class="admin-tab-btn" onclick="switchTab('coupons', this)" data-tab="coupons">Cupons</button>
-                <button class="admin-tab-btn" onclick="switchTab('notifications', this)" data-tab="notifications">Notificações</button>
-                <button class="admin-tab-btn" onclick="switchTab('webhook', this)" data-tab="webhook">Webhook</button>
-                <button class="admin-tab-btn" onclick="switchTab('settings', this)" data-tab="settings">Config</button>
-            </div>
             <!-- TAB: DASHBOARD -->
             <div class="tab-panel active" id="tab-dashboard">
                 <div class="stats-row">
@@ -381,138 +368,49 @@
 
             <!-- TAB: USERS / IPS -->
             <div class="tab-panel" id="tab-users">
-                <!-- Toolbar: Actions + Search -->
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-lg);flex-wrap:wrap;gap:var(--space-md);">
-                    <div style="display:flex;gap:var(--space-sm);">
-                        <button class="btn btn-primary" onclick="openUserModal()">+ Adicionar Usuário</button>
-                        <button class="btn btn-secondary" onclick="bulkValidate()">Validar Selecionados</button>
-                        <button class="btn btn-danger" onclick="bulkDelete()">Excluir Selecionados</button>
-                        <button class="btn btn-secondary" onclick="cleanupFreeIps()" style="border-color:var(--accent-amber);color:var(--accent-amber);"> Limpar IPs FREE</button>
+                <div class="card">
+                    <div class="card-title" id="userFormTitle">Adicionar IP</div>
+                    <div id="userFormAlert" class="alert"></div>
+                    <input type="hidden" id="editId" value="">
+                    <div class="form-row">
+                        <div class="form-group"><label class="form-label">Endereço IP *</label><input type="text" id="fieldIp" class="form-input" placeholder="Ex: 203.0.113.42"></div>
+                        <div class="form-group"><label class="form-label">Plano *</label><select id="fieldPlan" class="form-select"><option value="free">Free</option><option value="mensal">Mensal</option><option value="trimestral">Trimestral</option><option value="anual">Anual</option><option value="admin">Admin</option></select></div>
+                        <div class="form-group"><label class="form-label">Status</label><select id="fieldStatus" class="form-select"><option value="active">IP Ativo</option><option value="pending">Não Programado</option><option value="suspended">Desativado</option></select></div>
+                        <div class="form-group"><label class="form-label">Expira em</label><input type="datetime-local" id="fieldExpires" class="form-input"></div>
                     </div>
-                    <div style="flex:1;max-width:400px;min-width:200px;">
-                        <input type="text" id="userSearchInput" class="form-input" placeholder="Buscar por nome, email, IP..." oninput="filterUsersTable()" style="width:100%;">
+                    <div class="form-row"><div class="form-group" style="grid-column: 1 / -1;"><label class="form-label">Notas</label><input type="text" id="fieldNotes" class="form-input" placeholder="Observações internas (opcional)"></div></div>
+                    <div class="form-row">
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label style="display:flex;align-items:center;gap:var(--space-sm);cursor:pointer;">
+                                <input type="checkbox" id="fieldFamilyFriend" style="width:18px;height:18px;accent-color:var(--accent-orange);cursor:pointer;">
+                                <span class="form-label" style="margin:0;text-transform:none;letter-spacing:normal;font-size:13px;color:var(--text-secondary);">👨👩‍ Amigos e Família — não conta como venda paga (custo por IP ignora este registro)</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:var(--space-md);margin-top:var(--space-md);">
+                        <button class="btn btn-primary" onclick="saveSubscription()">Salvar</button>
+                        <button class="btn btn-secondary" onclick="resetUserForm()">Limpar</button>
                     </div>
                 </div>
-
-                <!-- Full-width Table -->
-                <div class="table-wrap" style="border:none;background:transparent;">
-                    <table style="min-width:1000px;">
-                        <thead>
-                            <tr>
-                                <th style="width:40px;"><input type="checkbox" id="selectAllUsers" onchange="toggleSelectAll(this)"></th>
-                                <th>ID</th>
-                                <th>Nome</th>
-                                <th>Cargo</th>
-                                <th>IP</th>
-                                <th>Plano</th>
-                                <th>Status</th>
-                                <th>Email</th>
-                                <th>Expira</th>
-                                <th>Notas</th>
-                                <th>Atualizado</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="usersTableBody">
-                            <tr><td colspan="12" class="empty-state">Carregando...</td></tr>
-                        </tbody>
+                <div class="search-bar"><input type="text" id="userSearchInput" class="form-input" placeholder="Buscar por IP, email ou notas..." oninput="filterUsersTable()"></div>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>IP</th><th>Plano</th><th>Status</th><th>Usuário</th><th>Expira</th><th>Notas</th><th>Atualizado</th><th>Ações</th></tr></thead>
+                        <tbody id="usersTableBody"><tr><td colspan="8" class="empty-state">Carregando...</td></tr></tbody>
                     </table>
                 </div>
             </div>
 
-            <!-- User Edit Modal (Hidden by default) -->
-            <div id="userModal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.85);backdrop-filter:blur(6px);overflow-y:auto;padding:var(--space-md);">
-                <div style="max-width:640px;margin:0 auto;min-height:100%;display:flex;align-items:flex-start;justify-content:center;padding:var(--space-xl) 0;">
-                <div style="width:100%;background:var(--bg-card-solid);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-xl);position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
-                    <button onclick="closeUserModal()" style="position:absolute;top:20px;right:20px;background:none;border:none;color:var(--text-muted);font-size:24px;cursor:pointer;">&times;</button>
-                    <h2 id="userModalTitle" style="margin-bottom:var(--space-lg);font-size:20px;">Editar Usuário</h2>
-                    <div id="userFormAlert" class="alert"></div>
-                    <input type="hidden" id="editId" value="">
-
-                    <div class="form-row">
-                        <div class="form-group"><label class="form-label">Nome</label><input type="text" id="fieldName" class="form-input" placeholder="Nome do usuário"></div>
-                        <div class="form-group"><label class="form-label">Email</label><input type="email" id="fieldEmail" class="form-input" placeholder="email@exemplo.com"></div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group"><label class="form-label">Cargo</label><select id="fieldRole" class="form-select"><option value="user">Usuário</option><option value="admin">Admin</option><option value="affiliate">Afiliado</option></select></div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group"><label class="form-label">Plano</label><select id="fieldPlan" class="form-select"><option value="free">Free</option><option value="mensal">Mensal</option><option value="trimestral">Trimestral</option><option value="anual">Anual</option></select></div>
-                        <div class="form-group"><label class="form-label">Expira em</label><input type="datetime-local" id="fieldExpires" class="form-input"></div>
-                    </div>
-
-                    <!-- Produto +1 IP Adicional -->
-                    <div style="margin-top:var(--space-md);margin-bottom:var(--space-md);padding:var(--space-md);background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);">
-                        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-sm);">
-                            <div>
-                                <div style="font-size:13px;font-weight:600;color:var(--text-primary);">Produto +1 IP Adicional</div>
-                                <div style="font-size:11px;color:var(--text-muted);margin-top:2px;" id="additionalIpStatus">Carregando...</div>
-                            </div>
-                            <div style="display:flex;gap:var(--space-xs);">
-                                <button class="btn btn-success btn-sm" onclick="adminToggleAdditionalIp(true)" style="font-size:11px;padding:4px 10px;height:28px;">+ Dar +1 IP</button>
-                                <button class="btn btn-danger btn-sm" onclick="adminToggleAdditionalIp(false)" style="font-size:11px;padding:4px 10px;height:28px;">− Remover +1 IP</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- IPs Autorizados — containers individuais por chave/IP -->
-                    <div style="margin-top:var(--space-sm);margin-bottom:var(--space-md);">
-                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-sm);">
-                            <label class="form-label" style="margin-bottom:0;">IPs Autorizados por Chave</label>
-                            <span id="ipCountBadge" style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono);"></span>
-                        </div>
-                        <div id="authorizedIpsContainer" style="display:flex;flex-direction:column;gap:var(--space-sm);">
-                            <div style="text-align:center;padding:var(--space-md);color:var(--text-muted);font-size:12px;">Carregando...</div>
-                        </div>
-                        <!-- Adicionar IP manualmente -->
-                        <div style="margin-top:var(--space-sm);display:flex;gap:var(--space-xs);align-items:stretch;">
-                            <input type="text" id="adminNewIpInput" placeholder="Adicionar IP manualmente (ex: 189.45.12.34)" class="form-input" style="flex:1;font-family:var(--font-mono);font-size:12px;height:32px;padding:0 var(--space-sm);">
-                            <select id="adminNewIpKeySelect" class="form-select" style="width:140px;font-size:11px;height:32px;">
-                                <option value="">Selecionar chave...</option>
-                            </select>
-                            <button class="btn btn-primary btn-sm" onclick="adminAddIpToKey()" style="font-size:11px;padding:0 10px;height:32px;white-space:nowrap;">+ Adicionar</button>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group"><label class="form-label">Chave API</label><input type="text" id="fieldApiKey" class="form-input" placeholder="Gerada automaticamente" readonly style="opacity:0.7;"></div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group" style="grid-column: 1 / -1;"><label class="form-label">Notas</label><textarea id="fieldNotes" class="form-input" placeholder="Observações internas..."></textarea></div>
-                    </div>
-
-                    <div style="display:flex;gap:var(--space-sm);margin-top:var(--space-lg);justify-content:space-between;align-items:center;flex-wrap:wrap;">
-                        <div style="display:flex;gap:var(--space-xs);flex-wrap:wrap;" id="dangerZoneButtons">
-                            <button class="btn btn-warning btn-sm" onclick="resetUserAccount()" id="btnResetUser" style="display:none;">🔄 Resetar Conta</button>
-                            <button class="btn btn-danger btn-sm" onclick="deleteUserCompletely()" id="btnDeleteUser" style="display:none;">🗑️ Deletar Usuário</button>
-                        </div>
-                        <div style="display:flex;gap:var(--space-sm);flex-wrap:wrap;margin-left:auto;">
-                            <button class="btn btn-secondary btn-sm" onclick="closeUserModal()">Cancelar</button>
-                            <button class="btn btn-primary btn-sm" onclick="saveSubscription()">Salvar Alterações</button>
-                        </div>
-                    </div>
+            <!-- TAB: ACTIVATIONS -->
+            <div class="tab-panel" id="tab-activations">
+                <p style="color:var(--text-secondary);font-size:14px;margin-bottom:var(--space-lg);">Pedidos de ativação de IP gerados quando um usuário completa a compra. Aprovar libera a chave API e URL do gateway para o usuário.</p>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>ID</th><th>IP</th><th>Usuário</th><th>Plano</th><th>Status</th><th>Criado</th><th>API Key</th><th>Ações</th></tr></thead>
+                        <tbody id="activationsTableBody"><tr><td colspan="8" class="empty-state">Carregando...</td></tr></tbody>
+                    </table>
                 </div>
-                </div><!-- end flex wrapper -->
-            </div><!-- end userModal overlay -->
-
-<!-- PASSWORD CONFIRMATION MODAL (overlay on top of userModal) -->
-<div id="passwordConfirmModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:10000;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);align-items:center;justify-content:center;">
-    <div style="background:#111111;border:1px solid #FF5500;border-radius:16px;padding:32px;max-width:420px;width:90%;box-shadow:0 0 40px rgba(255,85,0,0.25),0 20px 60px rgba(0,0,0,0.8);">
-        <div style="text-align:center;margin-bottom:24px;">
-            <div style="font-size:48px;margin-bottom:8px;" id="pwdModalIcon">&#128274;</div>
-            <h3 style="color:#FFFFFF;font-size:18px;font-weight:700;margin-bottom:8px;" id="pwdModalTitle">Confirmação Necessária</h3>
-            <p style="color:#A0A0A0;font-size:13px;line-height:1.5;" id="pwdModalMessage">Digite a senha de administrador para confirmar esta ação.</p>
-        </div>
-        <div style="margin-bottom:24px;">
-            <input type="password" id="pwdModalInput" class="form-input" placeholder="Senha do administrador" style="width:100%;text-align:center;font-size:16px;letter-spacing:2px;" autocomplete="off">
-            <p id="pwdModalError" style="color:#FF3333;font-size:12px;margin-top:8px;display:none;text-align:center;"></p>
-        </div>
-        <div style="display:flex;gap:16px;justify-content:center;">
-            <button class="btn btn-secondary btn-sm" onclick="closePasswordModal()" style="min-width:100px;">Cancelar</button>
-            <button class="btn btn-primary btn-sm" onclick="submitPasswordModal()" id="pwdModalSubmitBtn" style="min-width:100px;">Confirmar</button>
-        </div>
-    </div>
-</div>
-
+            </div>
 
             <!-- TAB: COUPONS -->
             <div class="tab-panel" id="tab-coupons">
@@ -536,6 +434,17 @@
                 </div>
             </div>
 
+            <!-- TAB: IP CHANGES -->
+            <div class="tab-panel" id="tab-ipchanges">
+                <p style="color:var(--text-secondary);font-size:14px;margin-bottom:var(--space-lg);">Solicitações de alteração de IP enviadas pelos usuários. Aprove para atualizar o IP autorizado ou rejeite com motivo.</p>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>ID</th><th>Usuário</th><th>IP Atual</th><th>IP Solicitado</th><th>Data</th><th>Status</th><th>Ações</th></tr></thead>
+                        <tbody id="ipChangesTableBody"><tr><td colspan="7" class="empty-state">Carregando...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
             <!-- TAB: NOTIFICATIONS -->
             <div class="tab-panel" id="tab-notifications">
                 <p style="color:var(--text-secondary);font-size:14px;margin-bottom:var(--space-lg);">Envie notificações para todos os usuários ou filtre por plano específico. As notificações aparecem no sininho do dashboard e na página de notificações dos usuários.</p>
@@ -546,7 +455,7 @@
                         <div><label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-xs);">Mensagem *</label><textarea id="notifMessage" rows="4" placeholder="Escreva a mensagem da notificação..." class="form-input"></textarea></div>
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-md);">
                             <div><label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-xs);">Tipo</label><select id="notifType" class="form-select"><option value="info">ℹ️ Info</option><option value="success">✅ Sucesso</option><option value="warning">⚠️ Aviso</option><option value="error">❌ Erro</option></select></div>
-                            <div><label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-xs);">Plano Alvo</label><select id="notifTargetPlan" class="form-select"><option value="all">🌍 Todos os usuários</option><option value="free">Free</option><option value="mensal">Mensal</option><option value="trimestral">Trimestral</option><option value="anual">Anual</option></select></div>
+                            <div><label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-xs);">Plano Alvo</label><select id="notifTargetPlan" class="form-select"><option value="all">🌍 Todos os usuários</option><option value="free">Free</option><option value="mensal">Mensal</option><option value="trimestral">Trimestral</option><option value="anual">Anual</option><option value="admin">Admin</option></select></div>
                         </div>
                         <button onclick="sendBroadcastNotification()" id="sendNotifBtn" class="btn btn-primary" style="margin-top:var(--space-sm);">🚀 Enviar Notificação</button>
                         <div id="notifSendStatus" style="display:none;padding:var(--space-md);border-radius:var(--radius-sm);font-size:13px;font-weight:600;"></div>
@@ -584,22 +493,13 @@
                     <div class="card-title">Cadastrar Afiliado</div>
                     <div id="affFormAlert" class="alert"></div>
                     <div class="form-row">
-                        <div class="form-group" style="flex:2;">
-                            <label class="form-label">Email do Usuário *</label>
-                            <div style="display:flex;gap:var(--space-sm);">
-                                <input type="email" id="affEmail" class="form-input" placeholder="usuario@exemplo.com" style="flex:1;" onkeydown="if(event.key==='Enter'){event.preventDefault();searchUserByEmail();}">
-                                <button class="btn btn-secondary" onclick="searchUserByEmail()" style="white-space:nowrap;height:38px;padding:0 var(--space-md);font-size:13px;">Buscar</button>
-                            </div>
-                        </div>
+                        <div class="form-group"><label class="form-label">ID do Usuário *</label><input type="number" id="affUserId" class="form-input" placeholder="Ex: 1"></div>
                         <div class="form-group"><label class="form-label">Comissão (%) *</label><input type="number" id="affCommission" class="form-input" placeholder="Ex: 10" min="1" max="100" value="10"></div>
-                    </div>
-                    <div id="affUserFound" style="display:none;margin:var(--space-sm) 0;padding:var(--space-sm) var(--space-md);background:rgba(0,255,148,0.08);border:1px solid rgba(0,255,148,0.2);border-radius:var(--radius-sm);font-size:13px;color:var(--accent-green);">
-                        <span id="affUserFoundInfo"></span>
                     </div>
                     <button class="btn btn-primary" onclick="addAffiliate()" style="margin-top:var(--space-sm);">Cadastrar Afiliado</button>
                 </div>
                 <div class="table-wrap">
-                    <table id="affiliatesTable">
+                    <table>
                         <thead><tr><th>ID</th><th>Usuário</th><th>Código</th><th>Comissão</th><th>Indicações</th><th>Pagantes</th><th>Volume</th><th>Ações</th></tr></thead>
                         <tbody id="affiliatesTableBody"><tr><td colspan="8" class="empty-state">Carregando...</td></tr></tbody>
                     </table>
@@ -612,8 +512,6 @@
                     <div class="card-title">Configuração do Webhook Kirvano</div>
                     <p style="color:var(--text-secondary);font-size:13px;margin-bottom:var(--space-lg);line-height:1.6;">Configure aqui a URL do webhook e o token secreto que a Kirvano usará para notificar o 8Token sobre vendas aprovadas, recusadas ou chargebacks. Copie a URL abaixo e cole no painel da Kirvano em <strong>Configurações → Webhooks</strong>.</p>
                     <div id="webhookFormAlert" class="alert"></div>
-
-                    <!-- URL do Webhook (read-only) -->
                     <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-lg);margin-bottom:var(--space-lg);">
                         <div style="font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:var(--space-sm);">URL do Webhook (cole na Kirvano)</div>
                         <div style="display:flex;gap:var(--space-sm);align-items:center;">
@@ -621,160 +519,27 @@
                             <button class="btn btn-secondary btn-sm" onclick="copyWebhookUrl()" style="white-space:nowrap;">Copiar</button>
                         </div>
                     </div>
-
-                    <!-- Blocos de configuração — sempre visíveis, clicáveis para editar -->
-                    <div id="webhookConfigBlocks" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:var(--space-md);margin-bottom:var(--space-lg);">
-                        <!-- Token -->
-                        <div class="wh-block" data-field="token" onclick="editWebhookField('token')" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-lg);cursor:pointer;transition:border-color 0.2s,box-shadow 0.2s;">
-                            <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
-                                <span>Token Secreto</span>
-                                <span style="font-size:10px;color:var(--accent-teal);opacity:0.7;">✎ editar</span>
-                            </div>
-                            <div id="blockToken" style="font-family:var(--font-mono);font-size:14px;color:var(--text-primary);">—</div>
-                            <div id="editToken" style="display:none;margin-top:8px;">
-                                <input type="password" id="webhookToken" class="form-input" placeholder="Token secreto do webhook" style="font-family:var(--font-mono);font-size:13px;width:100%;">
-                                <div style="display:flex;gap:6px;margin-top:6px;">
-                                    <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();saveWebhookConfig()">Salvar</button>
-                                    <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();cancelEditWebhook('token')">Cancelar</button>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Produto Mensal -->
-                        <div class="wh-block" data-field="productMensal" onclick="editWebhookField('productMensal')" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-lg);cursor:pointer;transition:border-color 0.2s,box-shadow 0.2s;">
-                            <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
-                                <span>ID Produto — Mensal</span>
-                                <span style="font-size:10px;color:var(--accent-teal);opacity:0.7;">✎ editar</span>
-                            </div>
-                            <div id="blockProductMensal" style="font-family:var(--font-mono);font-size:13px;color:var(--text-primary);word-break:break-all;">—</div>
-                            <div id="editProductMensal" style="display:none;margin-top:8px;">
-                                <input type="text" id="kirvanoProductMensal" class="form-input" placeholder="ID do produto mensal" style="font-family:var(--font-mono);font-size:13px;width:100%;">
-                                <div style="display:flex;gap:6px;margin-top:6px;">
-                                    <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();saveWebhookConfig()">Salvar</button>
-                                    <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();cancelEditWebhook('productMensal')">Cancelar</button>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Produto Trimestral -->
-                        <div class="wh-block" data-field="productTrimestral" onclick="editWebhookField('productTrimestral')" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-lg);cursor:pointer;transition:border-color 0.2s,box-shadow 0.2s;">
-                            <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
-                                <span>ID Produto — Trimestral</span>
-                                <span style="font-size:10px;color:var(--accent-teal);opacity:0.7;">✎ editar</span>
-                            </div>
-                            <div id="blockProductTrimestral" style="font-family:var(--font-mono);font-size:13px;color:var(--text-primary);word-break:break-all;">—</div>
-                            <div id="editProductTrimestral" style="display:none;margin-top:8px;">
-                                <input type="text" id="kirvanoProductTrimestral" class="form-input" placeholder="ID do produto trimestral" style="font-family:var(--font-mono);font-size:13px;width:100%;">
-                                <div style="display:flex;gap:6px;margin-top:6px;">
-                                    <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();saveWebhookConfig()">Salvar</button>
-                                    <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();cancelEditWebhook('productTrimestral')">Cancelar</button>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Produto Anual -->
-                        <div class="wh-block" data-field="productAnual" onclick="editWebhookField('productAnual')" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-lg);cursor:pointer;transition:border-color 0.2s,box-shadow 0.2s;">
-                            <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
-                                <span>ID Produto — Anual</span>
-                                <span style="font-size:10px;color:var(--accent-teal);opacity:0.7;">✎ editar</span>
-                            </div>
-                            <div id="blockProductAnual" style="font-family:var(--font-mono);font-size:13px;color:var(--text-primary);word-break:break-all;">—</div>
-                            <div id="editProductAnual" style="display:none;margin-top:8px;">
-                                <input type="text" id="kirvanoProductAnual" class="form-input" placeholder="ID do produto anual" style="font-family:var(--font-mono);font-size:13px;width:100%;">
-                                <div style="display:flex;gap:6px;margin-top:6px;">
-                                    <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();saveWebhookConfig()">Salvar</button>
-                                    <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();cancelEditWebhook('productAnual')">Cancelar</button>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Checkout Mensal -->
-                        <div class="wh-block" data-field="checkoutMensal" onclick="editWebhookField('checkoutMensal')" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-lg);cursor:pointer;transition:border-color 0.2s,box-shadow 0.2s;">
-                            <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
-                                <span>Checkout — Mensal</span>
-                                <span style="font-size:10px;color:var(--accent-teal);opacity:0.7;">✎ editar</span>
-                            </div>
-                            <div id="blockCheckoutMensal" style="font-size:12px;color:var(--text-primary);word-break:break-all;">—</div>
-                            <div id="editCheckoutMensal" style="display:none;margin-top:8px;">
-                                <input type="url" id="kirvanoCheckoutMensal" class="form-input" placeholder="https://pay.kirvano.com/checkout/..." style="font-size:13px;width:100%;">
-                                <div style="display:flex;gap:6px;margin-top:6px;">
-                                    <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();saveWebhookConfig()">Salvar</button>
-                                    <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();cancelEditWebhook('checkoutMensal')">Cancelar</button>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Checkout Trimestral -->
-                        <div class="wh-block" data-field="checkoutTrimestral" onclick="editWebhookField('checkoutTrimestral')" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-lg);cursor:pointer;transition:border-color 0.2s,box-shadow 0.2s;">
-                            <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
-                                <span>Checkout — Trimestral</span>
-                                <span style="font-size:10px;color:var(--accent-teal);opacity:0.7;">✎ editar</span>
-                            </div>
-                            <div id="blockCheckoutTrimestral" style="font-size:12px;color:var(--text-primary);word-break:break-all;">—</div>
-                            <div id="editCheckoutTrimestral" style="display:none;margin-top:8px;">
-                                <input type="url" id="kirvanoCheckoutTrimestral" class="form-input" placeholder="https://pay.kirvano.com/checkout/..." style="font-size:13px;width:100%;">
-                                <div style="display:flex;gap:6px;margin-top:6px;">
-                                    <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();saveWebhookConfig()">Salvar</button>
-                                    <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();cancelEditWebhook('checkoutTrimestral')">Cancelar</button>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Checkout Anual -->
-                        <div class="wh-block" data-field="checkoutAnual" onclick="editWebhookField('checkoutAnual')" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-lg);cursor:pointer;transition:border-color 0.2s,box-shadow 0.2s;">
-                            <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
-                                <span>Checkout — Anual</span>
-                                <span style="font-size:10px;color:var(--accent-teal);opacity:0.7;">✎ editar</span>
-                            </div>
-                            <div id="blockCheckoutAnual" style="font-size:12px;color:var(--text-primary);word-break:break-all;">—</div>
-                            <div id="editCheckoutAnual" style="display:none;margin-top:8px;">
-                                <input type="url" id="kirvanoCheckoutAnual" class="form-input" placeholder="https://pay.kirvano.com/checkout/..." style="font-size:13px;width:100%;">
-                                <div style="display:flex;gap:6px;margin-top:6px;">
-                                    <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();saveWebhookConfig()">Salvar</button>
-                                    <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();cancelEditWebhook('checkoutAnual')">Cancelar</button>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- IP Adicional — Produto -->
-                        <div class="wh-block" data-field="productIpAdicional" onclick="editWebhookField('productIpAdicional')" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-lg);cursor:pointer;transition:border-color 0.2s,box-shadow 0.2s;border-left:3px solid var(--accent-orange);">
-                            <div style="font-size:11px;color:var(--accent-orange);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
-                                <span>ID Produto — IP Adicional</span>
-                                <span style="font-size:10px;opacity:0.7;">✎ editar</span>
-                            </div>
-                            <div id="blockProductIpAdicional" style="font-family:var(--font-mono);font-size:13px;color:var(--text-primary);word-break:break-all;">—</div>
-                            <div id="editProductIpAdicional" style="display:none;margin-top:8px;">
-                                <input type="text" id="kirvanoProductIpAdicional" class="form-input" placeholder="ID do produto IP adicional" style="font-family:var(--font-mono);font-size:13px;width:100%;">
-                                <div style="display:flex;gap:6px;margin-top:6px;">
-                                    <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();saveWebhookConfig()">Salvar</button>
-                                    <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();cancelEditWebhook('productIpAdicional')">Cancelar</button>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- IP Adicional — Checkout -->
-                        <div class="wh-block" data-field="checkoutIpAdicional" onclick="editWebhookField('checkoutIpAdicional')" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-lg);cursor:pointer;transition:border-color 0.2s,box-shadow 0.2s;border-left:3px solid var(--accent-orange);">
-                            <div style="font-size:11px;color:var(--accent-orange);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
-                                <span>Checkout — IP Adicional</span>
-                                <span style="font-size:10px;opacity:0.7;">✎ editar</span>
-                            </div>
-                            <div id="blockCheckoutIpAdicional" style="font-size:12px;color:var(--text-primary);word-break:break-all;">—</div>
-                            <div id="editCheckoutIpAdicional" style="display:none;margin-top:8px;">
-                                <input type="url" id="kirvanoCheckoutIpAdicional" class="form-input" placeholder="https://pay.kirvano.com/checkout/..." style="font-size:13px;width:100%;">
-                                <div style="display:flex;gap:6px;margin-top:6px;">
-                                    <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();saveWebhookConfig()">Salvar</button>
-                                    <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();cancelEditWebhook('checkoutIpAdicional')">Cancelar</button>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="form-row">
+                        <div class="form-group" style="grid-column: 1 / -1;"><label class="form-label">Token Secreto do Webhook *</label><input type="password" id="webhookToken" class="form-input" placeholder="Token que a Kirvano enviará no header X-Webhook-Secret" style="font-family:var(--font-mono);"><div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Este token deve ser o mesmo configurado no painel da Kirvano. Ele valida que a requisição veio realmente da Kirvano.</div></div>
                     </div>
-
-                    <div style="display:flex;gap:var(--space-md);flex-wrap:wrap;">
+                    <div class="form-row">
+                        <div class="form-group"><label class="form-label">ID do Produto — Mensal</label><input type="text" id="kirvanoProductMensal" class="form-input" placeholder="ID do produto mensal na Kirvano" style="font-family:var(--font-mono);font-size:13px;"></div>
+                        <div class="form-group"><label class="form-label">ID do Produto — Trimestral</label><input type="text" id="kirvanoProductTrimestral" class="form-input" placeholder="ID do produto trimestral na Kirvano" style="font-family:var(--font-mono);font-size:13px;"></div>
+                        <div class="form-group"><label class="form-label">ID do Produto — Anual</label><input type="text" id="kirvanoProductAnual" class="form-input" placeholder="ID do produto anual na Kirvano" style="font-family:var(--font-mono);font-size:13px;"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label class="form-label">URL Checkout — Mensal</label><input type="url" id="kirvanoCheckoutMensal" class="form-input" placeholder="https://pay.kirvano.com/checkout/..." style="font-size:13px;"></div>
+                        <div class="form-group"><label class="form-label">URL Checkout — Trimestral</label><input type="url" id="kirvanoCheckoutTrimestral" class="form-input" placeholder="https://pay.kirvano.com/checkout/..." style="font-size:13px;"></div>
+                        <div class="form-group"><label class="form-label">URL Checkout — Anual</label><input type="url" id="kirvanoCheckoutAnual" class="form-input" placeholder="https://pay.kirvano.com/checkout/..." style="font-size:13px;"></div>
+                    </div>
+                    <div style="display:flex;gap:var(--space-md);margin-top:var(--space-md);flex-wrap:wrap;">
+                        <button class="btn btn-primary" onclick="saveWebhookConfig()">Salvar Configuração</button>
                         <button class="btn btn-secondary" onclick="testWebhook()" style="border-color:var(--accent-teal);color:var(--accent-teal);">Testar Webhook</button>
                     </div>
                 </div>
                 <div class="card">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-md);">
-                        <div>
-                            <div class="card-title" style="margin-bottom:4px;">Logs do Webhook</div>
-                            <p style="color:var(--text-secondary);font-size:13px;margin:0;">Últimas 10 requisições recebidas da Kirvano.</p>
-                        </div>
-                        <a href="webhook-logs.html" style="font-size:13px;font-weight:600;color:var(--accent-orange);display:inline-flex;align-items:center;gap:6px;white-space:nowrap;padding:8px 16px;border:1px solid rgba(255,85,0,0.3);border-radius:var(--radius-sm);transition:all 0.2s;" onmouseover="this.style.background='rgba(255,85,0,0.1)'" onmouseout="this.style.background='transparent'">
-                            Ver todos os logs →
-                        </a>
-                    </div>
+                    <div class="card-title">Logs do Webhook</div>
+                    <p style="color:var(--text-secondary);font-size:13px;margin-bottom:var(--space-md);">Últimas requisições recebidas da Kirvano. Use para depurar problemas de integração.</p>
                     <div class="table-wrap">
                         <table>
                             <thead><tr><th>Data/Hora</th><th>Evento</th><th>Status</th><th>Email</th><th>IP</th><th>Plano</th><th>Detalhes</th></tr></thead>
@@ -818,67 +583,16 @@
         let allActivations = [];
         let allAffiliates = [];
 
-        // HTML escaping helper to prevent stored XSS
-        function escAdmin(str) {
-            const d = document.createElement('div');
-            d.textContent = str || '';
-            return d.innerHTML;
-        }
-
         function getAdminSecret() {
             let secret = sessionStorage.getItem('8token_admin_secret');
             if (!secret) {
-                const params = new URLSearchParams(window.location.search);
-                secret = params.get('key') || '';
-                if (!secret) {
-                    showAdminLoginModal();
-                    return null;
+                try { secret = prompt('Digite a senha de administrador:'); } catch (e) {
+                    const params = new URLSearchParams(window.location.search);
+                    secret = params.get('key') || '8token-admin-change-me';
                 }
-                sessionStorage.setItem('8token_admin_secret', secret);
+                if (secret) sessionStorage.setItem('8token_admin_secret', secret);
             }
             return secret;
-        }
-
-        function showAdminLoginModal() {
-            const existing = document.getElementById('adminLoginOverlay');
-            if (existing) existing.remove();
-            const overlay = document.createElement('div');
-            overlay.id = 'adminLoginOverlay';
-            overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.92);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;';
-            overlay.innerHTML = `
-                <div style="background:#111;border:1px solid #333;border-radius:16px;padding:40px;max-width:400px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
-                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FF5500" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                        <h2 style="font-size:20px;font-weight:700;color:#fff;margin:0;">Acesso Admin</h2>
-                    </div>
-                    <p style="font-size:13px;color:#888;margin:0 0 20px;line-height:1.5;">Digite sua chave de acesso para entrar no painel.</p>
-                    <input type="password" id="adminSecretInput" placeholder="Chave de acesso" autocomplete="off" spellcheck="false"
-                        style="width:100%;height:44px;padding:0 16px;font-size:15px;color:#fff;background:#0a0a0a;border:1px solid #333;border-radius:8px;outline:none;box-sizing:border-box;transition:border-color 0.2s;"
-                        onfocus="this.style.borderColor='#FF5500'" onblur="this.style.borderColor='#333'">
-                    <div id="adminLoginError" style="display:none;font-size:12px;color:#FF3333;margin-top:8px;"></div>
-                    <button id="adminLoginBtn" onclick="submitAdminLogin()" style="width:100%;height:44px;margin-top:16px;font-size:15px;font-weight:600;color:#fff;background:#FF5500;border:none;border-radius:8px;cursor:pointer;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Entrar</button>
-                </div>
-            `;
-            document.body.appendChild(overlay);
-            const input = document.getElementById('adminSecretInput');
-            if (input) {
-                setTimeout(() => input.focus(), 100);
-                input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitAdminLogin(); });
-            }
-        }
-
-        function submitAdminLogin() {
-            const input = document.getElementById('adminSecretInput');
-            const errEl = document.getElementById('adminLoginError');
-            const val = input ? input.value.trim() : '';
-            if (!val) {
-                if (errEl) { errEl.style.display = 'block'; errEl.textContent = 'Digite sua chave de acesso.'; }
-                return;
-            }
-            sessionStorage.setItem('8token_admin_secret', val);
-            const overlay = document.getElementById('adminLoginOverlay');
-            if (overlay) overlay.remove();
-            location.reload();
         }
 
         async function apiFetch(url, options = {}) {
@@ -898,41 +612,28 @@
             setTimeout(() => { el.className = 'alert'; }, 5000);
         }
 
-        function handleLogout() {
-            localStorage.removeItem('8token_token');
-            sessionStorage.removeItem('8token_admin_secret');
-            window.location.href = '/login';
-        }
-
-        // ---- TABS (Admin sub-navigation) ----
+        // ---- TABS (Sidebar navigation) ----
         function switchTab(name, btnEl) {
             document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-            document.querySelectorAll('.admin-tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.sidebar-link').forEach(b => b.classList.remove('active'));
             document.getElementById('tab-' + name).classList.add('active');
             if (btnEl) btnEl.classList.add('active');
             else {
-                // Fallback: find button by data-tab attribute
-                const btns = document.querySelectorAll('.admin-tab-btn');
-                btns.forEach(b => { if (b.getAttribute('data-tab') === name) b.classList.add('active'); });
+                // Fallback: find button by tab name
+                const btns = document.querySelectorAll('.sidebar-link');
+                btns.forEach(b => { if (b.getAttribute('onclick')?.includes("'" + name + "'")) b.classList.add('active'); });
             }
             if (name === 'dashboard') loadDashboard();
             if (name === 'users') loadSubscriptions();
+            if (name === 'activations') loadActivations();
             if (name === 'affiliates') loadAffiliates();
             if (name === 'notifications') loadNotifStats();
             if (name === 'plans') loadPlans();
             if (name === 'expired') loadExpired();
             if (name === 'coupons') loadCoupons();
+            if (name === 'ipchanges') loadIpChanges();
             if (name === 'settings') loadSettings();
-            if (name === 'webhook') { loadWebhookLogs(); loadWebhookConfig(); startWebhookLogsPolling(); } else { stopWebhookLogsPolling(); }
-        }
-
-        let webhookLogsInterval = null;
-        function startWebhookLogsPolling() {
-            stopWebhookLogsPolling();
-            webhookLogsInterval = setInterval(() => loadWebhookLogs(), 5000);
-        }
-        function stopWebhookLogsPolling() {
-            if (webhookLogsInterval) { clearInterval(webhookLogsInterval); webhookLogsInterval = null; }
+            if (name === 'webhook') { loadWebhookLogs(); loadWebhookConfig(); }
         }
 
         async function loadWebhookConfig() {
@@ -940,69 +641,16 @@
                 const config = await apiFetch('/api/admin/webhook-config');
                 const urlInput = document.getElementById('webhookUrlDisplay');
                 if (urlInput) urlInput.value = window.location.origin + '/api/webhooks/kirvano';
-
-                // Preencher inputs (usados na edição inline)
-                const fields = {
-                    webhookToken: config.webhook_token || '',
-                    kirvanoProductMensal: config.product_mensal_id || '',
-                    kirvanoProductTrimestral: config.product_trimestral_id || '',
-                    kirvanoProductAnual: config.product_anual_id || '',
-                    kirvanoProductIpAdicional: config.product_ip_adicional_id || '',
-                    kirvanoCheckoutMensal: config.checkout_mensal_url || '',
-                    kirvanoCheckoutTrimestral: config.checkout_trimestral_url || '',
-                    kirvanoCheckoutAnual: config.checkout_anual_url || '',
-                    kirvanoCheckoutIpAdicional: config.checkout_ip_adicional_url || ''
-                };
-                for (const [id, val] of Object.entries(fields)) {
-                    const el = document.getElementById(id);
-                    if (el) el.value = val;
-                }
-
-                // Preencher blocos visuais (sempre visíveis)
-                const tk = config.webhook_token || '';
-                const blockData = {
-                    blockToken: tk ? '••••••' + tk.slice(-4) : '—',
-                    blockProductMensal: config.product_mensal_id || '—',
-                    blockProductTrimestral: config.product_trimestral_id || '—',
-                    blockProductAnual: config.product_anual_id || '—',
-                    blockProductIpAdicional: config.product_ip_adicional_id || '—',
-                    blockCheckoutMensal: config.checkout_mensal_url || '—',
-                    blockCheckoutTrimestral: config.checkout_trimestral_url || '—',
-                    blockCheckoutAnual: config.checkout_anual_url || '—',
-                    blockCheckoutIpAdicional: config.checkout_ip_adicional_url || '—'
-                };
-                for (const [id, val] of Object.entries(blockData)) {
-                    const el = document.getElementById(id);
-                    if (el) el.textContent = val;
+                if (config.configured) {
+                    document.getElementById('webhookToken').value = config.webhook_token || '';
+                    document.getElementById('kirvanoProductMensal').value = config.product_mensal_id || '';
+                    document.getElementById('kirvanoProductTrimestral').value = config.product_trimestral_id || '';
+                    document.getElementById('kirvanoProductAnual').value = config.product_anual_id || '';
+                    document.getElementById('kirvanoCheckoutMensal').value = config.checkout_mensal_url || '';
+                    document.getElementById('kirvanoCheckoutTrimestral').value = config.checkout_trimestral_url || '';
+                    document.getElementById('kirvanoCheckoutAnual').value = config.checkout_anual_url || '';
                 }
             } catch (e) { console.error('Load webhook config error:', e); }
-        }
-
-        function editWebhookField(field) {
-            const blockId = 'block' + field.charAt(0).toUpperCase() + field.slice(1);
-            const editId = 'edit' + field.charAt(0).toUpperCase() + field.slice(1);
-            const blockEl = document.getElementById(blockId);
-            const editEl = document.getElementById(editId);
-            if (blockEl) blockEl.style.display = 'none';
-            if (editEl) {
-                editEl.style.display = 'block';
-                const input = editEl.querySelector('input');
-                if (input) setTimeout(() => input.focus(), 50);
-            }
-            // Highlight the block
-            const parentBlock = document.querySelector(`.wh-block[data-field="${field}"]`);
-            if (parentBlock) parentBlock.style.borderColor = 'var(--accent-teal)';
-        }
-
-        function cancelEditWebhook(field) {
-            const blockId = 'block' + field.charAt(0).toUpperCase() + field.slice(1);
-            const editId = 'edit' + field.charAt(0).toUpperCase() + field.slice(1);
-            const blockEl = document.getElementById(blockId);
-            const editEl = document.getElementById(editId);
-            if (blockEl) blockEl.style.display = '';
-            if (editEl) editEl.style.display = 'none';
-            const parentBlock = document.querySelector(`.wh-block[data-field="${field}"]`);
-            if (parentBlock) parentBlock.style.borderColor = 'var(--border)';
         }
 
         // ---- DASHBOARD ----
@@ -1017,10 +665,12 @@
                 const FIXED_COST = 650;
                 const planBreakdownForCost = stats.planBreakdown || [];
                 const activeIps = planBreakdownForCost.reduce((sum, p) => sum + (p.count || 0), 0);
+                // paidActiveIps: only paid plans, active, NOT family/friend — used for cost & profit per IP
+                const paidActiveIps = stats.paidActiveIps != null ? stats.paidActiveIps : activeIps;
                 const revenue = stats.totalRevenue || 0;
                 document.getElementById('dashActiveIps').textContent = activeIps;
-                const costPerIp = activeIps > 0 ? FIXED_COST / activeIps : 0;
-                const profitPerIp = activeIps > 0 ? (revenue - FIXED_COST) / activeIps : 0;
+                const costPerIp = paidActiveIps > 0 ? FIXED_COST / paidActiveIps : 0;
+                const profitPerIp = paidActiveIps > 0 ? (revenue - FIXED_COST) / paidActiveIps : 0;
                 document.getElementById('dashCostPerIp').textContent = 'R$ ' + costPerIp.toFixed(2);
                 const profitEl = document.getElementById('dashProfitPerIp');
                 profitEl.textContent = (profitPerIp >= 0 ? 'R$ ' : '-R$ ') + Math.abs(profitPerIp).toFixed(2);
@@ -1029,7 +679,7 @@
                 const badge = document.getElementById('pendingCount');
                 if (stats.pendingActivations > 0) { badge.textContent = stats.pendingActivations; badge.style.display = 'inline'; } else { badge.style.display = 'none'; }
 
-                const planColors = { free: '#555555', mensal: '#00D4FF', trimestral: '#00D4FF', anual: '#FF5500' };
+                const planColors = { free: '#555555', mensal: '#00D4FF', trimestral: '#00D4FF', anual: '#FF5500', admin: '#a855f7' };
                 const maxCount = Math.max(...(stats.planBreakdown || []).map(p => p.count), 1);
                 const barsHtml = (stats.planBreakdown || []).map(p => `
                     <div class="plan-bar-row">
@@ -1043,7 +693,7 @@
                 const invHtml = (stats.recentInvoices || []).map(i => `
                     <tr>
                         <td class="mono" style="font-size:12px;">${formatDate(i.created_at)}</td>
-                        <td style="font-size:13px;">${escAdmin(i.user_email) || '—'}</td>
+                        <td style="font-size:13px;">${i.user_email || '—'}</td>
                         <td>${badgeForPlan(i.plan)}</td>
                         <td class="mono">R$ ${(i.amount||0).toFixed(2)}</td>
                         <td>${badgeForStatus(i.status)}</td>
@@ -1113,19 +763,12 @@
 
         // ---- USERS / IPS ----
         function badgeForPlan(plan) {
-            const map = { free: 'badge-free', mensal: 'badge-pro', trimestral: 'badge-pro', anual: 'badge-max' };
-            const labels = { free: 'Free', mensal: 'Mensal', trimestral: 'Trimestral', anual: 'Anual' };
-            return `<span class="badge ${map[plan] || 'badge-free'}">${labels[plan] || plan}</span>`;
-        }
-        function badgeForRole(role) {
-            if (!role || role === 'user') return '';
-            const map = { admin: 'badge-admin', affiliate: 'badge-affiliate' };
-            const labels = { admin: '👑 Admin', affiliate: '🤝 Afiliado' };
-            return `<span class="badge ${map[role] || 'badge-free'}" style="margin-left:4px;font-size:10px;">${labels[role] || role}</span>`;
+            const map = { free: 'badge-free', mensal: 'badge-pro', trimestral: 'badge-pro', anual: 'badge-max', admin: 'badge-admin' };
+            return `<span class="badge ${map[plan] || 'badge-free'}">${plan}</span>`;
         }
         function badgeForStatus(status) {
-            const map = { active: 'badge-active', pending: 'badge-pending', pending_ip: 'badge-pending', expired: 'badge-expired', suspended: 'badge-suspended', approved: 'badge-approved', rejected: 'badge-rejected', paid: 'badge-active', unpaid: 'badge-pending', orphaned: 'badge-expired', duplicate: 'badge-expired' };
-            const labels = { active: '🟢 IP Liberado', pending: '⏳ Pendente', pending_ip: '⏳ Aguardando IP', expired: '⏰ Expirado', suspended: '🔴 IP Bloqueado', approved: '✅ Aprovado', rejected: '❌ Recusado', paid: '💰 Pago', unpaid: '⏳ Pendente', orphaned: ' Órfão', duplicate: '📋 Duplicado' };
+            const map = { active: 'badge-active', pending: 'badge-pending', expired: 'badge-expired', suspended: 'badge-suspended', approved: 'badge-approved', rejected: 'badge-rejected', paid: 'badge-active', unpaid: 'badge-pending' };
+            const labels = { active: 'IP Ativo', pending: 'Não Programado', expired: 'Expirado', suspended: 'Desativado', approved: 'Aprovado', rejected: 'Recusado', paid: 'Pago', unpaid: 'Pendente' };
             return `<span class="badge ${map[status] || 'badge-free'}">${labels[status] || status}</span>`;
         }
         function formatDate(d) {
@@ -1134,328 +777,27 @@
         }
 
         function renderUsersTable(subs) {
-            window.allSubscriptions = subs; // Store for modal access
             const tbody = document.getElementById('usersTableBody');
-            if (!subs.length) { tbody.innerHTML = '<tr><td colspan="12" class="empty-state">Nenhum registro encontrado.</td></tr>'; return; }
-            // Group subscriptions by user_id
-            const grouped = {};
-            subs.forEach(s => {
-                const key = s.user_id || 'no-user';
-                if (!grouped[key]) grouped[key] = { user_id: s.user_id, user_name: s.users?.name || s.users?.email || s.user_email || '—', user_email: s.users?.email || s.user_email || '—', user_role: s.users?.role || 'user', subs: [] };
-                grouped[key].subs.push(s);
-            });
-            let html = '';
-            Object.values(grouped).forEach(g => {
-                const userIdShort = g.user_id ? g.user_id.substring(0, 8) + '…' : '—';
-                g.subs.forEach((s, idx) => {
-                    const isMain = idx === 0;
-                    html += `<tr data-id="${s.id}" style="${!isMain ? 'background:rgba(255,255,255,0.02);' : ''}">
-                        <td style="text-align:center;"><input type="checkbox" class="user-select-cb" value="${s.id}"></td>
-                        <td class="mono" style="font-size:11px;color:var(--text-muted);">${isMain ? userIdShort : ''}</td>
-                        <td style="font-size:13px;color:var(--text-secondary);">${isMain ? (g.user_name !== '—' ? escAdmin(g.user_name) : escAdmin(g.user_email)) : ''}</td>
-                        <td>${isMain ? badgeForRole(g.user_role) : ''}</td>
-                        <td class="mono" style="${!isMain ? 'padding-left:24px;color:var(--accent-blue);' : ''}">${(() => { const ipVal = isMain ? escAdmin(s.ip) : '↳ ' + escAdmin(s.ip); const isPending = !s.ip || s.ip === 'pending-activation' || s.ip === 'pending'; return isPending ? '<span style="color:var(--text-muted);font-style:italic;">Sem IP</span>' : ipVal; })()}</td>
-                        <td>${badgeForPlan(s.plan)}</td>
-                        <td>${badgeForStatus(s.status)}</td>
-                        <td style="font-size:13px;color:var(--text-secondary);">${isMain ? escAdmin(g.user_email) : ''}</td>
-                        <td class="mono" style="font-size:12px;">${formatDate(s.expires_at)}</td>
-                        <td style="font-size:13px;color:var(--text-muted);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escAdmin(s.notes||'').replace(/"/g,'&quot;')}">${escAdmin(s.notes) || '—'}</td>
-                        <td class="mono" style="font-size:12px;color:var(--text-muted);">${formatDate(s.updated_at)}</td>
-                        <td class="actions">
-                            <button class="btn btn-primary btn-sm" onclick="openUserModal('${s.id}')">Editar</button>
-                        </td>
-                    </tr>`;
-                });
-            });
-            tbody.innerHTML = html;
+            if (!subs.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Nenhum registro encontrado.</td></tr>'; return; }
+            tbody.innerHTML = subs.map(s => `
+                <tr data-id="${s.id}">
+                    <td class="mono">${s.ip}</td>
+                    <td>${badgeForPlan(s.plan)}</td>
+                    <td>${badgeForStatus(s.status)}</td>
+                    <td style="font-size:13px;color:var(--text-secondary);">${s.user_email || '—'}</td>
+                    <td class="mono" style="font-size:12px;">${formatDate(s.expires_at)}</td>
+                    <td style="font-size:13px;color:var(--text-muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${(s.notes||'').replace(/"/g,'&quot;')}">${s.notes || '—'}</td>
+                    <td class="mono" style="font-size:12px;color:var(--text-muted);">${formatDate(s.updated_at)}</td>
+                    <td class="actions">
+                        <button class="btn btn-success btn-sm" onclick="validateIp('${s.ip}')">Validar</button>
+                        <button class="btn btn-secondary btn-sm" onclick="invalidateIp('${s.ip}')">Desvalidar</button>
+                        <button class="btn btn-secondary btn-sm" onclick="editSub(${s.id})">Editar</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteSub(${s.id},'${s.ip}')">Remover</button>
+                    </td>
+                </tr>
+            `).join('');
         }
 
-        // --- MODAL & BULK ACTIONS ---
-        async function openUserModal(id = null) {
-            const modal = document.getElementById('userModal');
-            const title = document.getElementById('userModalTitle');
-            const alert = document.getElementById('userFormAlert');
-            if (alert) alert.style.display = 'none';
-
-            // Reset fields
-            document.getElementById('editId').value = id || '';
-            document.getElementById('fieldName').value = '';
-            document.getElementById('fieldEmail').value = '';
-            document.getElementById('fieldRole').value = 'user';
-            document.getElementById('fieldPlan').value = 'free';
-            document.getElementById('fieldExpires').value = '';
-            document.getElementById('fieldNotes').value = '';
-            document.getElementById('fieldApiKey').value = '';
-
-            // Reset authorized IPs container
-            const ipsContainer = document.getElementById('authorizedIpsContainer');
-            const ipBadge = document.getElementById('ipCountBadge');
-            if (ipsContainer) ipsContainer.innerHTML = '<div style="text-align:center;padding:var(--space-md);color:var(--text-muted);font-size:12px;">Carregando...</div>';
-            if (ipBadge) ipBadge.textContent = '';
-
-            // Show/hide danger zone buttons based on edit mode
-            const btnReset = document.getElementById('btnResetUser');
-            const btnDelete = document.getElementById('btnDeleteUser');
-
-            if (id) {
-                title.textContent = 'Editar Usuário / IP';
-                if (btnReset) btnReset.style.display = 'inline-block';
-                if (btnDelete) btnDelete.style.display = 'inline-block';
-
-                if (window.allSubscriptions) {
-                    const sub = window.allSubscriptions.find(s => s.id === id);
-                    if (sub) {
-                        document.getElementById('fieldName').value = sub.users?.name || '';
-                        document.getElementById('fieldEmail').value = sub.users?.email || '';
-                        document.getElementById('fieldRole').value = sub.users?.role || 'user';
-                        document.getElementById('fieldPlan').value = sub.plan || 'free';
-                        document.getElementById('fieldExpires').value = sub.expires_at ? new Date(sub.expires_at).toISOString().slice(0, 16) : '';
-                        document.getElementById('fieldNotes').value = sub.notes || '';
-
-                        // Load authorized IPs for this user's keys + populate key select + load +1IP status
-                        const userId = sub.user_id;
-                        if (userId && ipsContainer) {
-                            try {
-                                const keysWithIps = await apiFetch(`/api/admin/users/${userId}/authorized-ips`);
-                                renderAuthorizedIps(keysWithIps, ipsContainer, ipBadge);
-                                populateKeySelect(keysWithIps);
-                            } catch (e) {
-                                ipsContainer.innerHTML = '<div style="text-align:center;padding:var(--space-md);color:var(--accent-red);font-size:12px;">Erro ao carregar IPs</div>';
-                            }
-                        } else if (ipsContainer) {
-                            ipsContainer.innerHTML = '<div style="text-align:center;padding:var(--space-md);color:var(--text-muted);font-size:12px;">Nenhuma chave API encontrada</div>';
-                        }
-                        // Load +1 IP additional status
-                        const addIpStatusEl = document.getElementById('additionalIpStatus');
-                        if (addIpStatusEl) {
-                            addIpStatusEl.textContent = sub.has_additional_ip ? '✅ +1 IP Adicional ativo' : '❌ Sem IP adicional';
-                        }
-                    }
-                }
-            } else {
-                title.textContent = 'Adicionar Usuário / IP';
-                if (btnReset) btnReset.style.display = 'none';
-                if (btnDelete) btnDelete.style.display = 'none';
-                if (ipsContainer) ipsContainer.innerHTML = '<div style="text-align:center;padding:var(--space-md);color:var(--text-muted);font-size:12px;">Salve o registro primeiro para gerenciar IPs</div>';
-            }
-            modal.style.display = 'block';
-        }
-
-        function renderAuthorizedIps(keysWithIps, container, badge) {
-            if (!keysWithIps || keysWithIps.length === 0) {
-                container.innerHTML = '<div style="text-align:center;padding:var(--space-md);color:var(--text-muted);font-size:12px;">Nenhuma chave API ativa</div>';
-                if (badge) badge.textContent = '';
-                return;
-            }
-            let totalIps = 0;
-            let html = '';
-            keysWithIps.forEach(keyData => {
-                const ips = keyData.authorized_ips || [];
-                totalIps += ips.length;
-                const maskedPrefix = keyData.key_prefix || '8tk_';
-                html += `<div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:var(--space-md);margin-bottom:var(--space-sm);">`;
-                html += `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-sm);">`;
-                html += `<div style="font-size:13px;font-weight:600;color:var(--text-primary);">${keyData.key_name || 'Chave'}</div>`;
-                html += `<span style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted);">${maskedPrefix}••••</span>`;
-                html += `</div>`;
-                if (ips.length === 0) {
-                    html += `<div style="font-size:12px;color:var(--text-muted);padding:var(--space-xs) 0;">Nenhum IP autorizado nesta chave</div>`;
-                } else {
-                    ips.forEach(ipRow => {
-                        html += `<div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-sm);padding:var(--space-xs) var(--space-sm);background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:var(--space-xs);">`;
-                        html += `<span style="font-family:var(--font-mono);font-size:13px;color:var(--accent-blue);">${ipRow.ip}</span>`;
-                        html += `<div style="display:flex;gap:var(--space-xs);">`;
-                        html += `<button class="btn btn-primary btn-sm" onclick="editAdminKeyIp('${keyData.key_id}','${ipRow.id}','${ipRow.ip}')" style="font-size:11px;padding:2px 8px;height:24px;" title="Editar IP">✏️ Editar</button>`;
-                        html += `<button class="btn btn-success btn-sm" onclick="toggleAdminKeyIp('${keyData.key_id}','${ipRow.id}',false)" style="font-size:11px;padding:2px 8px;height:24px;" title="Bloquear este IP">🔴 Bloquear</button>`;
-                        html += `<button class="btn btn-danger btn-sm" onclick="removeAdminKeyIp('${keyData.key_id}','${ipRow.id}')" style="font-size:11px;padding:2px 8px;height:24px;" title="Remover IP">✕</button>`;
-                        html += `</div></div>`;
-                    });
-                }
-                html += `</div>`;
-            });
-            container.innerHTML = html;
-            if (badge) badge.textContent = `${totalIps} IP${totalIps !== 1 ? 's' : ''} autorizado${totalIps !== 1 ? 's' : ''}`;
-        }
-
-        async function toggleAdminKeyIp(keyId, ipId, authorize) {
-            try {
-                const result = await apiFetch(`/api/admin/keys/${keyId}/toggle-ip`, {
-                    method: 'POST',
-                    body: JSON.stringify({ ip: null, ipId, authorize })
-                });
-                await reloadModalIps();
-                showAlert('userFormAlert', authorize ? 'IP liberado!' : 'IP bloqueado!', 'success');
-            } catch (e) { showAlert('userFormAlert', e.message, 'error'); }
-        }
-
-        async function removeAdminKeyIp(keyId, ipId) {
-            if (!confirm('Remover este IP autorizado?')) return;
-            try {
-                await apiFetch(`/api/admin/keys/${keyId}/authorized-ips/${ipId}`, { method: 'DELETE' });
-                await reloadModalIps();
-                showAlert('userFormAlert', 'IP removido.', 'success');
-            } catch (e) { showAlert('userFormAlert', e.message, 'error'); }
-        }
-
-        // Edit an existing authorized IP (replace with new value)
-        async function editAdminKeyIp(keyId, ipId, currentIp) {
-            const newIp = prompt('Digite o novo IP:', currentIp);
-            if (!newIp || newIp.trim() === currentIp) return;
-            if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(newIp.trim())) {
-                showAlert('userFormAlert', 'Formato de IP inválido.', 'error');
-                return;
-            }
-            try {
-                // Remove old, add new
-                await apiFetch(`/api/admin/keys/${keyId}/authorized-ips/${ipId}`, { method: 'DELETE' });
-                await apiFetch(`/api/admin/keys/${keyId}/toggle-ip`, {
-                    method: 'POST',
-                    body: JSON.stringify({ ip: newIp.trim(), authorize: true })
-                });
-                await reloadModalIps();
-                showAlert('userFormAlert', 'IP atualizado com sucesso!', 'success');
-            } catch (e) { showAlert('userFormAlert', e.message, 'error'); }
-        }
-
-        // Add a new IP to a specific key manually
-        async function adminAddIpToKey() {
-            const ipInput = document.getElementById('adminNewIpInput');
-            const keySelect = document.getElementById('adminNewIpKeySelect');
-            const ip = ipInput ? ipInput.value.trim() : '';
-            const keyId = keySelect ? keySelect.value : '';
-            if (!ip) { showAlert('userFormAlert', 'Digite um IP.', 'error'); return; }
-            if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(ip)) { showAlert('userFormAlert', 'Formato de IP inválido.', 'error'); return; }
-            if (!keyId) { showAlert('userFormAlert', 'Selecione uma chave.', 'error'); return; }
-            try {
-                await apiFetch(`/api/admin/keys/${keyId}/toggle-ip`, {
-                    method: 'POST',
-                    body: JSON.stringify({ ip, authorize: true })
-                });
-                if (ipInput) ipInput.value = '';
-                await reloadModalIps();
-                showAlert('userFormAlert', 'IP adicionado com sucesso!', 'success');
-            } catch (e) { showAlert('userFormAlert', e.message, 'error'); }
-        }
-
-        // Toggle +1 IP additional product for user
-        async function adminToggleAdditionalIp(grant) {
-            const editId = document.getElementById('editId').value;
-            if (!editId) { showAlert('userFormAlert', 'Salve o registro primeiro.', 'error'); return; }
-            const sub = window.allSubscriptions?.find(s => s.id === editId);
-            if (!sub?.user_id) { showAlert('userFormAlert', 'Usuário não encontrado.', 'error'); return; }
-            try {
-                await apiFetch(`/api/admin/users/${sub.user_id}/toggle-additional-ip`, {
-                    method: 'POST',
-                    body: JSON.stringify({ grant })
-                });
-                // Update status display
-                const statusEl = document.getElementById('additionalIpStatus');
-                if (statusEl) statusEl.textContent = grant ? '✅ +1 IP Adicional ativo' : '❌ Sem IP adicional';
-                showAlert('userFormAlert', grant ? '+1 IP Adicional concedido!' : '+1 IP Adicional removido.', 'success');
-                // Reload subscriptions to reflect changes
-                loadSubscriptions();
-            } catch (e) { showAlert('userFormAlert', e.message, 'error'); }
-        }
-
-        // Helper: reload IPs in the modal
-        async function reloadModalIps() {
-            const editId = document.getElementById('editId').value;
-            if (editId && window.allSubscriptions) {
-                const sub = window.allSubscriptions.find(s => s.id === editId);
-                if (sub?.user_id) {
-                    const keysWithIps = await apiFetch(`/api/admin/users/${sub.user_id}/authorized-ips`);
-                    renderAuthorizedIps(keysWithIps, document.getElementById('authorizedIpsContainer'), document.getElementById('ipCountBadge'));
-                    // Also update key select dropdown
-                    populateKeySelect(keysWithIps);
-                }
-            }
-        }
-
-        // Populate the key select dropdown for adding IPs
-        function populateKeySelect(keysWithIps) {
-            const select = document.getElementById('adminNewIpKeySelect');
-            if (!select) return;
-            select.innerHTML = '<option value="">Selecionar chave...</option>';
-            (keysWithIps || []).forEach(k => {
-                const opt = document.createElement('option');
-                opt.value = k.key_id;
-                opt.textContent = (k.key_name || 'Chave') + ' (' + (k.key_prefix || '8tk_') + '••••)';
-                select.appendChild(opt);
-            });
-        }
-
-        function closeUserModal() {
-            document.getElementById('userModal').style.display = 'none';
-        }
-
-        function toggleSelectAll(source) {
-            const checkboxes = document.querySelectorAll('.user-select-cb');
-            checkboxes.forEach(cb => cb.checked = source.checked);
-        }
-
-        function getSelectedIds() {
-            return Array.from(document.querySelectorAll('.user-select-cb:checked')).map(cb => cb.value);
-        }
-
-        async function bulkValidate() {
-            const ids = getSelectedIds();
-            if (!ids.length) return alert('Selecione pelo menos um usuário.');
-            if (!confirm(`Validar ${ids.length} IPs selecionados?`)) return;
-            if (window.allSubscriptions) {
-                for (const id of ids) {
-                    const sub = window.allSubscriptions.find(s => s.id === id);
-                    if (sub && sub.ip) await validateIp(sub.ip);
-                }
-                loadSubscriptions();
-            }
-        }
-
-        async function cleanupFreeIps() {
-            if (!confirm('Limpar todos os registros IP com plano FREE e status ativo? Isso remove IPs criados automaticamente pelo bug antigo.')) return;
-            try {
-                const res = await apiFetch('/api/admin/cleanup-free-ips', { method: 'POST' });
-                showAlert('userFormAlert', res.message || `${res.deleted} registros FREE removidos.`, 'success');
-                loadUsers();
-            } catch (e) { showAlert('userFormAlert', e.message, 'error'); }
-        }
-
-        async function bulkDelete() {
-            const ids = getSelectedIds();
-            if (!ids.length) return alert('Selecione pelo menos um usuário.');
-            if (!confirm(`EXCLUIR ${ids.length} registros selecionados? Esta ação é irreversível.`)) return;
-            for (const id of ids) {
-                try { await apiFetch(`/api/admin/subscriptions/${id}`, { method: 'DELETE' }); } catch(e) { console.error(e); }
-            }
-            loadSubscriptions();
-        }
-
-        function filterUsersTable() {
-            const term = document.getElementById('userSearchInput').value.toLowerCase();
-            const rows = document.querySelectorAll('#usersTableBody tr');
-            rows.forEach(row => {
-                const text = row.textContent.toLowerCase();
-                row.style.display = text.includes(term) ? '' : 'none';
-            });
-        }
-
-        async function validateSub(subId) {
-            try {
-                await apiFetch('/api/admin/ips/validate', { method: 'POST', body: JSON.stringify({ sub_id: subId, status: 'active' }) });
-                showAlert('userFormAlert', 'IP ativado com sucesso!', 'success');
-                loadSubscriptions(); loadDashboard();
-            } catch (e) { showAlert('userFormAlert', e.message, 'error'); }
-        }
-
-        async function invalidateSub(subId) {
-            if (!confirm('Desativar este IP? O acesso ao gateway será bloqueado para este IP específico.')) return;
-            try {
-                await apiFetch('/api/admin/ips/invalidate', { method: 'POST', body: JSON.stringify({ sub_id: subId }) });
-                showAlert('userFormAlert', 'IP desativado.', 'success');
-                loadSubscriptions(); loadDashboard();
-            } catch (e) { showAlert('userFormAlert', e.message, 'error'); }
-        }
-
-        // Legacy wrappers for bulkValidate which still uses IP
         async function validateIp(ip) {
             try {
                 await apiFetch('/api/admin/ips/validate', { method: 'POST', body: JSON.stringify({ ip, status: 'active' }) });
@@ -1473,22 +815,26 @@
             } catch (e) { showAlert('userFormAlert', e.message, 'error'); }
         }
 
-        async function fixLegacyIps() {
-            if (!confirm('Isso vai resetar todos os IPs que foram salvos automaticamente pelo webhook antigo (antes do usuário pedir liberação no dashboard). O status mudará para "Aguardando IP". Continuar?')) return;
+        async function createTestAccounts() {
+            if (!confirm('Isso criará 5 contas teste (admin, afiliado, subafiliado, usuário ativo, usuário expirado). Continuar?')) return;
             try {
-                const result = await apiFetch('/api/admin/fix-legacy-ips', { method: 'POST' });
-                showAlert('userFormAlert', `Correção aplicada: ${result.fixed} de ${result.total} registro(s) resetado(s) para "Aguardando IP".`, 'success');
-                loadSubscriptions(); loadDashboard();
-            } catch (e) { showAlert('userFormAlert', e.message, 'error'); }
+                const result = await apiFetch('/api/admin/test-accounts/create', { method: 'POST' });
+                let msg = 'Contas criadas:\n';
+                result.accounts.forEach(a => {
+                    msg += `\n[${a.type}] ${a.email} / ${a.password}`;
+                    if (a.code) msg += ` (código: ${a.code})`;
+                });
+                alert(msg);
+                loadSubscriptions(); loadAffiliates(); loadDashboard();
+            } catch (e) { alert(e.message); }
         }
 
-        
         async function loadSubscriptions() {
             try {
                 allSubs = await apiFetch('/api/admin/subscriptions');
                 filterUsersTable();
             } catch (e) {
-                document.getElementById('usersTableBody').innerHTML = `<tr><td colspan="8" class="empty-state" style="color:var(--accent-red);">${escAdmin(e.message)}</td></tr>`;
+                document.getElementById('usersTableBody').innerHTML = `<tr><td colspan="8" class="empty-state" style="color:var(--accent-red);">${e.message}</td></tr>`;
                 if (e.message.includes('Acesso negado')) sessionStorage.removeItem('8token_admin_secret');
             }
         }
@@ -1504,63 +850,49 @@
 
         function resetUserForm() {
             document.getElementById('editId').value = '';
+            document.getElementById('fieldIp').value = '';
             document.getElementById('fieldPlan').value = 'free';
+            document.getElementById('fieldStatus').value = 'active';
             document.getElementById('fieldExpires').value = '';
             document.getElementById('fieldNotes').value = '';
-            const titleEl = document.getElementById('userFormTitle');
-            if (titleEl) titleEl.textContent = 'Adicionar Usuário';
+            document.getElementById('fieldFamilyFriend').checked = false;
+            document.getElementById('userFormTitle').textContent = 'Adicionar IP';
+            document.getElementById('fieldIp').disabled = false;
         }
 
         function editSub(id) {
-            // Legacy function — redirect to modal-based editing
-            openUserModal(id);
+            const sub = allSubs.find(s => s.id === id);
+            if (!sub) return;
+            document.getElementById('editId').value = sub.id;
+            document.getElementById('fieldIp').value = sub.ip;
+            document.getElementById('fieldIp').disabled = true;
+            document.getElementById('fieldPlan').value = sub.plan;
+            document.getElementById('fieldStatus').value = sub.status;
+            document.getElementById('fieldExpires').value = sub.expires_at ? sub.expires_at.slice(0, 16) : '';
+            document.getElementById('fieldNotes').value = sub.notes || '';
+            document.getElementById('fieldFamilyFriend').checked = !!sub.is_family_friend;
+            document.getElementById('userFormTitle').textContent = `Editar IP: ${sub.ip}`;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         async function saveSubscription() {
             const editId = document.getElementById('editId').value;
-            const name = document.getElementById('fieldName').value.trim();
-            const email = document.getElementById('fieldEmail').value.trim();
-            const role = document.getElementById('fieldRole').value;
+            const ip = document.getElementById('fieldIp').value.trim();
             const plan = document.getElementById('fieldPlan').value;
+            const status = document.getElementById('fieldStatus').value;
             const expires = document.getElementById('fieldExpires').value || null;
             const notes = document.getElementById('fieldNotes').value.trim() || null;
-
-            if (!editId && !email) {
-                showAlert('userFormAlert', 'Email é obrigatório para novo registro.', 'error');
-                return;
-            }
-
+            const isFamilyFriend = document.getElementById('fieldFamilyFriend').checked;
+            if (!editId && !ip) { showAlert('userFormAlert', 'O endereço IP é obrigatório.', 'error'); return; }
             try {
                 if (editId) {
-                    // Update subscription AND user data (no IP field — IPs managed via key_authorized_ips)
-                    await apiFetch(`/api/admin/subscriptions/${editId}`, {
-                        method: 'PUT',
-                        body: JSON.stringify({
-                            plan,
-                            expires_at: expires,
-                            notes,
-                            user_data: { name, email, role }
-                        })
-                    });
-                    showAlert('userFormAlert', 'Usuário e assinatura atualizados com sucesso!', 'success');
+                    await apiFetch(`/api/admin/subscriptions/${editId}`, { method: 'PUT', body: JSON.stringify({ plan, status, expires_at: expires, notes, is_family_friend: isFamilyFriend }) });
+                    showAlert('userFormAlert', 'Assinatura atualizada com sucesso!', 'success');
                 } else {
-                    // Create new — find user by email first
-                    const users = await apiFetch(`/api/admin/users/search?q=${encodeURIComponent(email)}`);
-                    const userId = users?.[0]?.id || null;
-                    await apiFetch('/api/admin/subscriptions', {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            ip: '0.0.0.0',
-                            user_id: userId,
-                            plan,
-                            status: 'active',
-                            expires_at: expires,
-                            notes
-                        })
-                    });
-                    showAlert('userFormAlert', `Registro adicionado com sucesso!`, 'success');
+                    await apiFetch('/api/admin/subscriptions', { method: 'POST', body: JSON.stringify({ ip, plan, status, expires_at: expires, notes, is_family_friend: isFamilyFriend }) });
+                    showAlert('userFormAlert', `IP ${ip} adicionado com sucesso!`, 'success');
                 }
-                setTimeout(() => { closeUserModal(); loadSubscriptions(); }, 800);
+                resetUserForm(); loadSubscriptions();
             } catch (e) { showAlert('userFormAlert', e.message, 'error'); }
         }
 
@@ -1569,105 +901,51 @@
             try { await apiFetch(`/api/admin/subscriptions/${id}`, { method: 'DELETE' }); loadSubscriptions(); } catch (e) { alert(e.message); }
         }
 
-        // --- PASSWORD MODAL SYSTEM (overlay on top of userModal) ---
-        let pendingPasswordAction = null;
-
-        function openPasswordModal(type, subId, icon, title, message) {
-            pendingPasswordAction = { type, subId };
-            const modal = document.getElementById('passwordConfirmModal');
-            document.getElementById('pwdModalIcon').innerHTML = icon;
-            document.getElementById('pwdModalTitle').textContent = title;
-            document.getElementById('pwdModalMessage').textContent = message;
-            document.getElementById('pwdModalInput').value = '';
-            document.getElementById('pwdModalError').style.display = 'none';
-            modal.style.display = 'flex';
-            setTimeout(() => document.getElementById('pwdModalInput').focus(), 100);
-        }
-
-        function closePasswordModal() {
-            document.getElementById('passwordConfirmModal').style.display = 'none';
-            pendingPasswordAction = null;
-        }
-
-        async function submitPasswordModal() {
-            const pwd = document.getElementById('pwdModalInput').value.trim();
-            const errEl = document.getElementById('pwdModalError');
-            if (!pwd) {
-                errEl.textContent = 'Digite a senha de administrador.';
-                errEl.style.display = 'block';
-                return;
-            }
-            if (!pendingPasswordAction) { closePasswordModal(); return; }
-            const { type, subId } = pendingPasswordAction;
-            const btn = document.getElementById('pwdModalSubmitBtn');
-            btn.disabled = true;
-            btn.textContent = 'Processando...';
-            errEl.style.display = 'none';
+        // ---- ACTIVATIONS ----
+        async function loadActivations() {
             try {
-                if (type === 'reset') {
-                    await apiFetch(`/api/admin/subscriptions/${subId}/reset`, {
-                        method: 'POST',
-                        body: JSON.stringify({ admin_password: pwd })
-                    });
-                    closePasswordModal();
-                    alert('\u2705 Conta resetada com sucesso!');
-                    closeUserModal();
-                    loadSubscriptions();
-                } else if (type === 'delete') {
-                    await apiFetch(`/api/admin/subscriptions/${subId}/delete-complete`, {
-                        method: 'DELETE',
-                        body: JSON.stringify({ admin_password: pwd })
-                    });
-                    closePasswordModal();
-                    alert('\u2705 Usu\u00e1rio deletado permanentemente.');
-                    closeUserModal();
-                    loadSubscriptions();
-                }
+                allActivations = await apiFetch('/api/admin/activations');
+                const tbody = document.getElementById('activationsTableBody');
+                if (!allActivations.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Nenhum pedido de ativação pendente.</td></tr>'; return; }
+                tbody.innerHTML = allActivations.map(a => `
+                    <tr>
+                        <td class="mono">#${a.id}</td>
+                        <td class="mono">${a.ip}</td>
+                        <td style="font-size:13px;">${a.user_email || '—'}</td>
+                        <td>${badgeForPlan(a.plan)}</td>
+                        <td>${badgeForStatus(a.status)}</td>
+                        <td class="mono" style="font-size:12px;">${formatDate(a.created_at)}</td>
+                        <td class="mono" style="font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;">${a.api_key ? a.api_key.slice(0,16)+'...' : '—'}</td>
+                        <td class="actions">
+                            ${a.status === 'pending' ? `
+                                <button class="btn btn-success btn-sm" onclick="approveActivation(${a.id})">Aprovar</button>
+                                <button class="btn btn-danger btn-sm" onclick="rejectActivation(${a.id})">Recusar</button>
+                            ` : '<span style="color:var(--text-muted);font-size:12px;">Processado</span>'}
+                        </td>
+                    </tr>
+                `).join('');
             } catch (e) {
-                errEl.textContent = e.message || 'Erro desconhecido.';
-                errEl.style.display = 'block';
-                btn.disabled = false;
-                btn.textContent = 'Confirmar';
+                document.getElementById('activationsTableBody').innerHTML = `<tr><td colspan="8" class="empty-state" style="color:var(--accent-red);">${e.message}</td></tr>`;
             }
         }
 
-        // Enter/Escape key support for password modal + Drag & Drop init
-        document.addEventListener('DOMContentLoaded', () => {
-            const pwdInput = document.getElementById('pwdModalInput');
-            if (pwdInput) pwdInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') submitPasswordModal();
-                if (e.key === 'Escape') closePasswordModal();
-            });
-            // Init drag & drop after DOM is ready
-            initAffiliateDragDrop();
-        });
-
-        // --- DANGER ZONE: Reset & Delete User (uses password modal overlay) ---
-        function resetUserAccount() {
-            const subId = document.getElementById('editId').value;
-            if (!subId) { alert('Nenhum usu\u00e1rio selecionado'); return; }
-            openPasswordModal(
-                'reset', subId,
-                '&#128260;',
-                'Resetar Conta do Usu\u00e1rio',
-                'Isso vai resetar completamente a conta (plano, IP, chaves API). O usu\u00e1rio permanecer\u00e1 no sistema mas sem acesso. Digite a senha de administrador para confirmar.'
-            );
+        async function approveActivation(id) {
+            if (!confirm('Aprovar esta ativação? Isso liberará a chave API e gateway para o usuário.')) return;
+            try {
+                const result = await apiFetch(`/api/admin/activations/${id}/approve`, { method: 'POST' });
+                alert(`Ativado! API Key: ${result.apiKey}\nGateway: ${result.gatewayUrl}`);
+                loadActivations(); loadDashboard();
+            } catch (e) { alert(e.message); }
         }
 
-        function deleteUserCompletely() {
-            const subId = document.getElementById('editId').value;
-            if (!subId) { alert('Nenhum usu\u00e1rio selecionado'); return; }
-            openPasswordModal(
-                'delete', subId,
-                '&#128465;&#65039;',
-                'Deletar Usu\u00e1rio Permanentemente',
-                'Isso vai DELETAR o usu\u00e1rio e TODOS os dados associados (assinaturas, chaves API, hist\u00f3rico). Esta a\u00e7\u00e3o N\u00c3O pode ser desfeita. Digite a senha de administrador para confirmar.'
-            );
+        async function rejectActivation(id) {
+            const notes = prompt('Motivo da recusa (opcional):');
+            try {
+                await apiFetch(`/api/admin/activations/${id}/reject`, { method: 'POST', body: JSON.stringify({ notes }) });
+                loadActivations(); loadDashboard();
+            } catch (e) { alert(e.message); }
         }
 
-
-
-        
         // ---- AFFILIATES ----
         async function loadAffiliates() {
             try {
@@ -1692,21 +970,15 @@
                     const arrow = level > 0 ? '<span style="color:var(--accent-orange);margin-right:8px;">↳</span>' : '';
                     const parentInfo = a.parent_affiliate_id && affiliateMap[a.parent_affiliate_id]
                         ? `<br><span style="font-size:10px;color:var(--text-muted);">Sub de: ${affiliateMap[a.parent_affiliate_id].code}</span>` : '';
-                    // Supabase retorna users como objeto aninhado { email, name }
-                    const userEmail = (a.users && a.users.email) || a.user_email || '—';
-                    const userName = (a.users && a.users.name) || a.user_name || '';
-                    // UUIDs precisam de aspas nos handlers onclick
-                    const idStr = JSON.stringify(a.id);
-                    const parentIdStr = a.parent_affiliate_id ? JSON.stringify(a.parent_affiliate_id) : 'null';
 
                     html += `
-                        <tr draggable="true" data-affiliate-id="${a.id}">
-                            <td class="mono" style="font-size:11px;">#${String(a.id).slice(0,8)}</td>
+                        <tr draggable="true" data-affiliate-id="${a.id}" ondragstart="handleDragStart(event, ${a.id})" ondragover="handleDragOver(event)" ondrop="handleDrop(event, ${a.id})" ondragleave="handleDragLeave(event)" style="cursor:move;">
+                            <td class="mono">#${a.id}</td>
                             <td style="font-size:13px;padding-left:${indent}px;">
-                                ${arrow}<strong>${escAdmin(userEmail)}</strong>${parentInfo}<br>
-                                <span style="font-size:11px;color:var(--text-muted);padding-left:${indent + (level > 0 ? 20 : 0)}px;">${escAdmin(userName)}</span>
+                                ${arrow}${a.user_email || '—'}${parentInfo}<br>
+                                <span style="font-size:11px;color:var(--text-muted);padding-left:${indent + (level > 0 ? 20 : 0)}px;">${a.user_name || ''}</span>
                             </td>
-                            <td class="mono" style="font-size:12px;">${escAdmin(a.code)}</td>
+                            <td class="mono" style="font-size:12px;">${a.code}</td>
                             <td>
                                 <span class="badge badge-pro">${a.commission_pct}%</span>
                                 ${a.parent_affiliate_id ? `<br><span style="font-size:10px;color:var(--accent-teal);">Mãe recebe: ${affiliateMap[a.parent_affiliate_id]?.commission_pct || 0}%</span>` : ''}
@@ -1715,9 +987,8 @@
                             <td class="mono">${a.paid_referrals || 0}</td>
                             <td class="mono">R$ ${(a.total_commission_base || 0).toFixed(2)}</td>
                             <td class="actions">
-                                <button class="btn btn-secondary btn-sm" draggable="false" onclick='editAffiliateCommission(${idStr}, ${a.commission_pct}, ${parentIdStr})'>Editar %</button>
-                                <button class="btn btn-sm" draggable="false" style="background:var(--accent-teal);color:#000;font-weight:600;" onclick='showSubAffiliateModal(${idStr})'>Sub ↓</button>
-                                <button class="btn btn-danger btn-sm" draggable="false" onclick='removeAffiliate(${idStr})'>Remover</button>
+                                <button class="btn btn-secondary btn-sm" onclick="editAffiliateCommission(${a.id}, ${a.commission_pct}, ${a.parent_affiliate_id || 'null'})">Editar %</button>
+                                <button class="btn btn-danger btn-sm" onclick="removeAffiliate(${a.id})">Remover</button>
                             </td>
                         </tr>
                     `;
@@ -1727,238 +998,44 @@
                 rootAffiliates.forEach(a => renderAffiliate(a, 0));
                 tbody.innerHTML = html;
             } catch (e) {
-                document.getElementById('affiliatesTableBody').innerHTML = `<tr><td colspan="8" class="empty-state" style="color:var(--accent-red);">${escAdmin(e.message)}</td></tr>`;
+                document.getElementById('affiliatesTableBody').innerHTML = `<tr><td colspan="8" class="empty-state" style="color:var(--accent-red);">${e.message}</td></tr>`;
             }
         }
 
-        // --- DRAG & DROP: Event Delegation na tabela de afiliados ---
         let draggedAffiliateId = null;
-        function initAffiliateDragDrop() {
-            const table = document.getElementById('affiliatesTable');
-            if (!table) return;
-
-            table.addEventListener('dragstart', (e) => {
-                const tr = e.target.closest('tr[data-affiliate-id]');
-                if (!tr) return;
-                draggedAffiliateId = tr.dataset.affiliateId;
-                tr.classList.add('dragging');
-                e.dataTransfer.effectAllowed = 'move';
-                e.dataTransfer.setData('text/plain', draggedAffiliateId);
-            });
-
-            table.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                e.dataTransfer.dropEffect = 'move';
-                const tr = e.target.closest('tr[data-affiliate-id]');
-                if (!tr || tr.dataset.affiliateId === draggedAffiliateId) return;
-                table.querySelectorAll('tr.drag-over').forEach(r => r.classList.remove('drag-over'));
-                tr.classList.add('drag-over');
-            });
-
-            table.addEventListener('dragleave', (e) => {
-                const tr = e.target.closest('tr[data-affiliate-id]');
-                if (tr && !tr.contains(e.relatedTarget)) tr.classList.remove('drag-over');
-            });
-
-            table.addEventListener('drop', async (e) => {
-                e.preventDefault();
-                const tr = e.target.closest('tr[data-affiliate-id]');
-                table.querySelectorAll('tr.drag-over, tr.dragging').forEach(r => {
-                    r.classList.remove('drag-over', 'dragging');
-                });
-                if (!tr || !draggedAffiliateId) { draggedAffiliateId = null; return; }
-                const targetAffiliateId = tr.dataset.affiliateId;
-                if (draggedAffiliateId === targetAffiliateId) { draggedAffiliateId = null; return; }
-
-                const draggedAff = allAffiliates.find(a => String(a.id) === String(draggedAffiliateId));
-                const targetAff = allAffiliates.find(a => String(a.id) === String(targetAffiliateId));
-                if (!draggedAff || !targetAff) { draggedAffiliateId = null; return; }
-
-                // Prevent circular: can't make a parent a child of its own sub
-                if (String(targetAff.parent_affiliate_id) === String(draggedAffiliateId)) {
-                    showAlert('affFormAlert', 'Não é possível tornar um afiliado pai subafiliado do próprio filho.', 'error');
-                    draggedAffiliateId = null;
-                    return;
-                }
-
-                const draggedLabel = draggedAff.user_email || draggedAff.code;
-                const targetLabel = targetAff.user_email || targetAff.code;
-                if (!confirm(`Tornar "${draggedLabel}" subafiliado de "${targetLabel}"?\n\n• ${draggedLabel} mantém sua comissão de ${draggedAff.commission_pct}%\n• ${targetLabel} recebe comissão em cima das vendas de ${draggedLabel}`)) {
-                    draggedAffiliateId = null;
-                    return;
-                }
-
-                try {
-                    await apiFetch(`/api/admin/affiliates/${draggedAffiliateId}/sub-affiliate`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ parent_affiliate_id: targetAffiliateId })
-                    });
-                    showAlert('affFormAlert', `✅ ${draggedAff.code} agora é subafiliado de ${targetAff.code}`, 'success');
-                    loadAffiliates();
-                } catch (err) {
-                    showAlert('affFormAlert', `Erro: ${err.message}`, 'error');
-                }
-                draggedAffiliateId = null;
-            });
-
-            table.addEventListener('dragend', (e) => {
-                const tr = e.target.closest('tr[data-affiliate-id]');
-                if (tr) tr.classList.remove('dragging');
-                table.querySelectorAll('tr.drag-over').forEach(r => r.classList.remove('drag-over'));
-                draggedAffiliateId = null;
-            });
+        function handleDragStart(event, affiliateId) {
+            draggedAffiliateId = affiliateId;
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', affiliateId);
+            event.target.style.opacity = '0.5';
         }
-
-        // --- SUB-AFFILIATE MODAL: selecionar afiliado pai via dropdown ---
-        function showSubAffiliateModal(affiliateId) {
-            const aff = allAffiliates.find(a => String(a.id) === String(affiliateId));
-            if (!aff) { showAlert('affFormAlert', 'Afiliado não encontrado.', 'error'); return; }
-
-            // Build options: all affiliates except self and its own children (prevent circular)
-            const childIds = new Set();
-            function collectChildren(id) {
-                allAffiliates.filter(a => String(a.parent_affiliate_id) === String(id)).forEach(c => {
-                    childIds.add(String(c.id));
-                    collectChildren(c.id);
-                });
-            }
-            collectChildren(affiliateId);
-
-            const options = allAffiliates
-                .filter(a => String(a.id) !== String(affiliateId) && !childIds.has(String(a.id)))
-                .map(a => `<option value="${a.id}" ${String(a.id) === String(aff.parent_affiliate_id) ? 'selected' : ''}>${a.user_email || a.code} (${a.code}) — ${a.commission_pct}%</option>`)
-                .join('');
-
-            const currentParent = aff.parent_affiliate_id
-                ? allAffiliates.find(a => String(a.id) === String(aff.parent_affiliate_id))
-                : null;
-            const currentParentLabel = currentParent ? `${currentParent.user_email || currentParent.code} (${currentParent.code})` : 'Nenhum (afiliado raiz)';
-
-            const modalHtml = `
-                <div id="subAffModal" style="position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:var(--space-md);">
-                    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-xl);max-width:480px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
-                        <h3 style="margin:0 0 var(--space-md);color:var(--text-primary);font-size:18px;">🔗 Tornar Sub-Afiliado</h3>
-                        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:var(--space-lg);">
-                            Afiliado: <strong style="color:var(--accent-orange);">${escAdmin(aff.user_email || aff.code)}</strong> (${escAdmin(aff.code)})<br>
-                            Comissão atual: <strong>${aff.commission_pct}%</strong><br>
-                            Pai atual: <strong style="color:var(--accent-teal);">${escAdmin(currentParentLabel)}</strong>
-                        </p>
-                        <label style="display:block;font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:var(--space-xs);">Selecionar novo afiliado pai</label>
-                        <select id="subAffParentSelect" style="width:100%;padding:var(--space-sm) var(--space-md);background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-md);color:var(--text-primary);font-size:14px;margin-bottom:var(--space-md);">
-                            <option value="">— Nenhum (remover vínculo, tornar raiz) —</option>
-                            ${options}
-                        </select>
-                        <div id="subAffPreview" style="background:var(--bg-secondary);border-radius:var(--radius-md);padding:var(--space-sm) var(--space-md);margin-bottom:var(--space-lg);font-size:12px;color:var(--text-muted);min-height:40px;"></div>
-                        <div style="display:flex;gap:var(--space-sm);justify-content:flex-end;">
-                            <button onclick="document.getElementById('subAffModal').remove()" style="padding:var(--space-sm) var(--space-lg);background:transparent;border:1px solid var(--border);border-radius:var(--radius-md);color:var(--text-secondary);cursor:pointer;font-size:13px;">Cancelar</button>
-                            <button onclick="confirmSubAffiliate('${affiliateId}')" style="padding:var(--space-sm) var(--space-lg);background:var(--accent-teal);border:none;border-radius:var(--radius-md);color:#000;font-weight:700;cursor:pointer;font-size:13px;">Confirmar</button>
-                        </div>
-                    </div>
-                </div>`;
-
-            // Remove existing modal if any
-            const existing = document.getElementById('subAffModal');
-            if (existing) existing.remove();
-
-            document.body.insertAdjacentHTML('beforeend', modalHtml);
-
-            // Live preview on select change
-            const sel = document.getElementById('subAffParentSelect');
-            const preview = document.getElementById('subAffPreview');
-            function updatePreview() {
-                const val = sel.value;
-                if (!val) {
-                    preview.innerHTML = `ℹ️ <strong>${escAdmin(aff.user_email || aff.code)}</strong> será removido como subafiliado e voltará a ser afiliado raiz.`;
-                    return;
-                }
-                const parent = allAffiliates.find(a => String(a.id) === String(val));
-                if (!parent) { preview.innerHTML = ''; return; }
-                preview.innerHTML = `
-                    ✅ <strong>${escAdmin(aff.user_email || aff.code)}</strong> será subafiliado de <strong style="color:var(--accent-teal);">${escAdmin(parent.user_email || parent.code)}</strong><br>
-                    • ${escAdmin(aff.user_email || aff.code)} mantém comissão de <strong>${aff.commission_pct}%</strong> sobre suas vendas<br>
-                    • ${escAdmin(parent.user_email || parent.code)} recebe <strong>${parent.commission_pct}%</strong> em cima das vendas de ${escAdmin(aff.user_email || aff.code)}
-                `;
-            }
-            sel.addEventListener('change', updatePreview);
-            updatePreview();
-        }
-
-        async function confirmSubAffiliate(affiliateId) {
-            const sel = document.getElementById('subAffParentSelect');
-            if (!sel) return;
-            const parentId = sel.value || null;
-            const aff = allAffiliates.find(a => String(a.id) === String(affiliateId));
-
+        function handleDragOver(event) { event.preventDefault(); event.dataTransfer.dropEffect = 'move'; event.currentTarget.style.background = 'rgba(255, 85, 0, 0.15)'; }
+        function handleDragLeave(event) { event.currentTarget.style.background = ''; }
+        async function handleDrop(event, targetAffiliateId) {
+            event.preventDefault();
+            event.currentTarget.style.background = '';
+            event.currentTarget.style.opacity = '1';
+            if (draggedAffiliateId === targetAffiliateId) { draggedAffiliateId = null; return; }
+            const draggedAff = allAffiliates.find(a => a.id === draggedAffiliateId);
+            const targetAff = allAffiliates.find(a => a.id === targetAffiliateId);
+            if (!draggedAff || !targetAff) { draggedAffiliateId = null; return; }
+            if (!confirm(`Tornar ${draggedAff.user_email || draggedAff.code} subafiliado de ${targetAff.user_email || targetAff.code}?`)) { draggedAffiliateId = null; return; }
             try {
-                if (!parentId) {
-                    // Remove sub-affiliate link
-                    await apiFetch(`/api/admin/affiliates/${affiliateId}/sub-affiliate`, { method: 'DELETE' });
-                    showAlert('affFormAlert', `✅ ${aff?.code || 'Afiliado'} removido como subafiliado — agora é raiz.`, 'success');
-                } else {
-                    await apiFetch(`/api/admin/affiliates/${affiliateId}/sub-affiliate`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ parent_affiliate_id: parentId })
-                    });
-                    const parent = allAffiliates.find(a => String(a.id) === String(parentId));
-                    showAlert('affFormAlert', `✅ ${aff?.code} agora é subafiliado de ${parent?.code}`, 'success');
-                }
-                const modal = document.getElementById('subAffModal');
-                if (modal) modal.remove();
+                await apiFetch(`/api/admin/affiliates/${draggedAffiliateId}/sub-affiliate`, { method: 'POST', body: JSON.stringify({ parent_affiliate_id: targetAffiliateId }) });
+                showAlert('affFormAlert', `${draggedAff.code} agora é subafiliado de ${targetAff.code}`, 'success');
                 loadAffiliates();
-            } catch (err) {
-                showAlert('affFormAlert', `Erro: ${err.message}`, 'error');
-            }
-        }
-
-        async function searchUserByEmail() {
-            const emailInput = document.getElementById('affEmail');
-            const email = emailInput ? emailInput.value.trim() : '';
-            const foundDiv = document.getElementById('affUserFound');
-            const foundInfo = document.getElementById('affUserFoundInfo');
-            if (!email || email.length < 2) { showAlert('affFormAlert', 'Digite pelo menos 2 caracteres do email.', 'error'); return; }
-            try {
-                const results = await apiFetch(`/api/admin/users/search?email=${encodeURIComponent(email)}`);
-                if (!results || results.length === 0) {
-                    showAlert('affFormAlert', 'Nenhum usuário encontrado com este email.', 'error');
-                    if (foundDiv) foundDiv.style.display = 'none';
-                    return;
-                }
-                // Se encontrou exatamente 1, auto-selecionar
-                if (results.length === 1) {
-                    const u = results[0];
-                    const planNames = { mensal: 'Mensal', trimestral: 'Trimestral', anual: 'Anual', free: 'Free' };
-                    if (foundInfo) foundInfo.innerHTML = `✅ <strong>${escAdmin(u.name) || 'Sem nome'}</strong> — ${escAdmin(u.email)} — Plano: ${planNames[u.plan] || u.plan || 'Free'}`;
-                    if (foundDiv) foundDiv.style.display = 'block';
-                    emailInput.value = u.email;
-                    showAlert('affFormAlert', '', 'success');
-                } else {
-                    // Múltiplos resultados — mostrar lista
-                    let html = results.map(u => {
-                        const planNames = { mensal: 'Mensal', trimestral: 'Trimestral', anual: 'Anual', free: 'Free' };
-                        const safeEmail = escAdmin(u.email).replace(/'/g, "\\'");
-                        const safeName = escAdmin(u.name || 'Sem nome');
-                        const safeNameAttr = safeName.replace(/'/g, "\\'");
-                        return `<div style="cursor:pointer;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.05);" onclick="document.getElementById('affEmail').value='${safeEmail}';document.getElementById('affUserFoundInfo').innerHTML='✅ <strong>${safeNameAttr}</strong> — ${safeEmail} — Plano: ${planNames[u.plan]||u.plan||'Free'}';showAlert('affFormAlert','','success');">
-                            <strong>${safeName}</strong> — ${escAdmin(u.email)} — ${planNames[u.plan] || u.plan || 'Free'}
-                        </div>`;
-                    }).join('');
-                    if (foundInfo) foundInfo.innerHTML = `${results.length} usuários encontrados — clique para selecionar:<br>${html}`;
-                    if (foundDiv) foundDiv.style.display = 'block';
-                }
-            } catch (e) { showAlert('affFormAlert', e.message, 'error'); if (foundDiv) foundDiv.style.display = 'none'; }
+            } catch (e) { showAlert('affFormAlert', e.message, 'error'); }
+            draggedAffiliateId = null;
         }
 
         async function addAffiliate() {
-            const email = document.getElementById('affEmail').value.trim();
+            const userId = document.getElementById('affUserId').value;
             const commission = parseFloat(document.getElementById('affCommission').value) || 10;
-            if (!email) { showAlert('affFormAlert', 'Email do usuário é obrigatório.', 'error'); return; }
+            if (!userId) { showAlert('affFormAlert', 'ID do usuário é obrigatório.', 'error'); return; }
             try {
-                const result = await apiFetch('/api/admin/affiliates', { method: 'POST', body: JSON.stringify({ email, commission_pct: commission }) });
+                const result = await apiFetch('/api/admin/affiliates', { method: 'POST', body: JSON.stringify({ user_id: parseInt(userId), commission_pct: commission }) });
                 showAlert('affFormAlert', `Afiliado criado! Código: ${result.code}`, 'success');
-                document.getElementById('affEmail').value = '';
-                document.getElementById('affUserFound').style.display = 'none';
+                document.getElementById('affUserId').value = '';
                 loadAffiliates();
             } catch (e) { showAlert('affFormAlert', e.message, 'error'); }
         }
@@ -1982,15 +1059,12 @@
                         product_mensal_id: document.getElementById('kirvanoProductMensal').value,
                         product_trimestral_id: document.getElementById('kirvanoProductTrimestral').value,
                         product_anual_id: document.getElementById('kirvanoProductAnual').value,
-                        product_ip_adicional_id: document.getElementById('kirvanoProductIpAdicional').value,
                         checkout_mensal_url: document.getElementById('kirvanoCheckoutMensal').value,
                         checkout_trimestral_url: document.getElementById('kirvanoCheckoutTrimestral').value,
-                        checkout_anual_url: document.getElementById('kirvanoCheckoutAnual').value,
-                        checkout_ip_adicional_url: document.getElementById('kirvanoCheckoutIpAdicional').value
+                        checkout_anual_url: document.getElementById('kirvanoCheckoutAnual').value
                     })
                 });
                 showAlert('webhookFormAlert', 'Configuração salva com sucesso!', 'success');
-                await loadWebhookConfig();
             } catch (e) { showAlert('webhookFormAlert', e.message, 'error'); }
         }
 
@@ -2003,31 +1077,22 @@
 
         async function loadWebhookLogs() {
             try {
-                const allLogs = await apiFetch('/api/admin/webhook-logs');
-                const logs = allLogs.slice(0, 10);
+                const logs = await apiFetch('/api/admin/webhook-logs');
                 const tbody = document.getElementById('webhookLogsBody');
                 if (!logs.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhum log registrado.</td></tr>'; return; }
-                tbody.innerHTML = logs.map(log => {
-                    const evt = log.event || log.event_type || '—';
-                    const badgeClass = evt === 'SALE_APPROVED' ? 'badge-pro' : evt === 'SALE_REFUSED' ? 'badge-danger' : 'badge-warning';
-                    // Extract info from payload if columns don't exist
-                    const p = typeof log.payload === 'string' ? JSON.parse(log.payload) : (log.payload || {});
-                    const email = log.customer_email || p.customer?.email || '—';
-                    const ip = log.customer_ip || p.ip || '—';
-                    const status = log.status || p.status || '—';
-                    const plan = log.plan || (p.products?.[0]?.offer_name) || '—';
-                    return `<tr>
+                tbody.innerHTML = logs.map(log => `
+                    <tr>
                         <td class="mono" style="font-size:12px;">${new Date(log.created_at).toLocaleString('pt-BR')}</td>
-                        <td><span class="badge ${badgeClass}">${escAdmin(evt)}</span></td>
-                        <td>${escAdmin(status)}</td>
-                        <td style="font-size:13px;">${escAdmin(email)}</td>
-                        <td class="mono" style="font-size:12px;">${escAdmin(ip)}</td>
-                        <td>${escAdmin(plan)}</td>
-                        <td style="font-size:11px;color:var(--text-muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;">${escAdmin(JSON.stringify(p).substring(0, 100))}...</td>
-                    </tr>`;
-                }).join('');
+                        <td><span class="badge ${log.event === 'SALE_APPROVED' ? 'badge-pro' : log.event === 'SALE_REFUSED' ? 'badge-danger' : 'badge-warning'}">${log.event}</span></td>
+                        <td>${log.status || '—'}</td>
+                        <td style="font-size:13px;">${log.customer_email || '—'}</td>
+                        <td class="mono" style="font-size:12px;">${log.customer_ip || '—'}</td>
+                        <td>${log.plan || '—'}</td>
+                        <td style="font-size:11px;color:var(--text-muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;">${JSON.stringify(log.payload || {}).substring(0, 100)}...</td>
+                    </tr>
+                `).join('');
             } catch (e) {
-                document.getElementById('webhookLogsBody').innerHTML = `<tr><td colspan="7" class="empty-state" style="color:var(--accent-red);">${escAdmin(e.message)}</td></tr>`;
+                document.getElementById('webhookLogsBody').innerHTML = `<tr><td colspan="7" class="empty-state" style="color:var(--accent-red);">${e.message}</td></tr>`;
             }
         }
 
@@ -2114,21 +1179,20 @@
                 if (!expired.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Nenhum plano expirado. Tudo em dia!</td></tr>'; return; }
                 tbody.innerHTML = expired.map(s => {
                     const daysExpired = Math.floor((now - new Date(s.expires_at)) / (1000*60*60*24));
-                    const safeIp = escAdmin(s.ip).replace(/'/g, "\\'");
                     return `<tr>
-                        <td class="mono">${escAdmin(s.ip)}</td>
+                        <td class="mono">${s.ip}</td>
                         <td>${badgeForPlan(s.plan)}</td>
-                        <td style="font-size:13px;color:var(--text-secondary);">${escAdmin(s.user_email) || '—'}</td>
+                        <td style="font-size:13px;color:var(--text-secondary);">${s.user_email || '—'}</td>
                         <td class="mono" style="font-size:12px;">${formatDate(s.expires_at)}</td>
                         <td><span class="badge badge-expired">${daysExpired} dia${daysExpired !== 1 ? 's' : ''}</span></td>
                         <td class="actions">
-                            <button class="btn btn-success btn-sm" onclick="reactivateIp(${s.id},'${safeIp}')">Reativar</button>
-                            <button class="btn btn-danger btn-sm" onclick="deleteSub(${s.id},'${safeIp}')">Remover</button>
+                            <button class="btn btn-success btn-sm" onclick="reactivateIp(${s.id},'${s.ip}')">Reativar</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteSub(${s.id},'${s.ip}')">Remover</button>
                         </td>
                     </tr>`;
                 }).join('');
             } catch (e) {
-                document.getElementById('expiredTableBody').innerHTML = `<tr><td colspan="6" class="empty-state" style="color:var(--accent-red);">${escAdmin(e.message)}</td></tr>`;
+                document.getElementById('expiredTableBody').innerHTML = `<tr><td colspan="6" class="empty-state" style="color:var(--accent-red);">${e.message}</td></tr>`;
             }
         }
 
@@ -2149,10 +1213,35 @@
             try {
                 const subs = await apiFetch('/api/admin/subscriptions');
                 const grouped = {};
-                const planOrder = ['anual', 'trimestral', 'mensal', 'free'];
-                const planColors = { anual: '#FF5500', trimestral: '#00D4FF', mensal: '#00D4FF', free: '#555555' };
-                const planLabels = { anual: 'Anual', trimestral: 'Trimestral', mensal: 'Mensal', free: 'Free' };
+                const planOrder = ['admin', 'anual', 'trimestral', 'mensal', 'free'];
+                const planColors = { admin: '#a855f7', anual: '#FF5500', trimestral: '#00D4FF', mensal: '#00D4FF', free: '#555555' };
+                const planLabels = { admin: 'Admin', anual: 'Anual', trimestral: 'Trimestral', mensal: 'Mensal', free: 'Free' };
                 subs.forEach(s => { if (!grouped[s.plan]) grouped[s.plan] = []; grouped[s.plan].push(s); });
+
+                // Count active IPs per user_id across all plans
+                const userIpCount = {};
+                subs.forEach(s => {
+                    if (s.status === 'active' && s.user_id) {
+                        userIpCount[s.user_id] = (userIpCount[s.user_id] || 0) + 1;
+                    }
+                });
+
+                const renderRow = (s) => {
+                    const email = s.users?.email || s.user_email || '—';
+                    const extraIps = s.user_id && userIpCount[s.user_id] > 1 ? userIpCount[s.user_id] - 1 : 0;
+                    const extraBadge = extraIps > 0
+                        ? ` <span class="badge badge-warning" title="${extraIps} outro(s) IP(s) ativo(s) deste usuário">+${extraIps} IP${extraIps > 1 ? 's' : ''}</span>`
+                        : '';
+                    return `
+                        <tr>
+                            <td class="mono">${s.ip}</td>
+                            <td>${badgeForStatus(s.status)}</td>
+                            <td style="font-size:13px;color:var(--text-secondary);">${email}${extraBadge}</td>
+                            <td class="mono" style="font-size:12px;">${formatDate(s.expires_at)}</td>
+                        </tr>
+                    `;
+                };
+
                 const container = document.getElementById('plansContainer');
                 let html = '';
                 for (const plan of planOrder) {
@@ -2166,17 +1255,9 @@
                             ${ips.length ? `
                                 <div class="table-wrap">
                                     <table>
-                                        <thead><tr><th>IP</th><th>Status</th><th>Usuário</th><th>Expira</th><th>Ações</th></tr></thead>
+                                        <thead><tr><th>IP</th><th>Status</th><th>Usuário</th><th>Expira</th></tr></thead>
                                         <tbody>
-                                            ${ips.map(s => { const safeIp = escAdmin(s.ip).replace(/'/g, "\\'"); return `
-                                                <tr>
-                                                    <td class="mono">${escAdmin(s.ip)}</td>
-                                                    <td>${badgeForStatus(s.status)}</td>
-                                                    <td style="font-size:13px;color:var(--text-secondary);">${escAdmin(s.user_email) || '—'}</td>
-                                                    <td class="mono" style="font-size:12px;">${formatDate(s.expires_at)}</td>
-                                                    <td class="actions"><button class="btn btn-danger btn-sm" onclick="removeIpFromPlan(${s.id},'${safeIp}','${plan}')">Remover IP</button></td>
-                                                </tr>
-                                            `; }).join('')}
+                                            ${ips.map(renderRow).join('')}
                                         </tbody>
                                     </table>
                                 </div>
@@ -2189,20 +1270,12 @@
                     const ips = grouped[plan];
                     html += `
                         <div class="card">
-                            <div class="card-title">${escAdmin(plan)} <span style="font-size:13px;color:var(--text-muted);font-weight:400;">(${ips.length} IP${ips.length !== 1 ? 's' : ''})</span></div>
+                            <div class="card-title">${plan} <span style="font-size:13px;color:var(--text-muted);font-weight:400;">(${ips.length} IP${ips.length !== 1 ? 's' : ''})</span></div>
                             <div class="table-wrap">
                                 <table>
-                                    <thead><tr><th>IP</th><th>Status</th><th>Usuário</th><th>Expira</th><th>Ações</th></tr></thead>
+                                    <thead><tr><th>IP</th><th>Status</th><th>Usuário</th><th>Expira</th></tr></thead>
                                     <tbody>
-                                        ${ips.map(s => { const safeIp2 = escAdmin(s.ip).replace(/'/g, "\\'"); return `
-                                            <tr>
-                                                <td class="mono">${escAdmin(s.ip)}</td>
-                                                <td>${badgeForStatus(s.status)}</td>
-                                                <td style="font-size:13px;color:var(--text-secondary);">${escAdmin(s.user_email) || '—'}</td>
-                                                <td class="mono" style="font-size:12px;">${formatDate(s.expires_at)}</td>
-                                                <td class="actions"><button class="btn btn-danger btn-sm" onclick="removeIpFromPlan(${s.id},'${safeIp2}','${escAdmin(plan)}')">Remover IP</button></td>
-                                            </tr>
-                                        `; }).join('')}
+                                        ${ips.map(renderRow).join('')}
                                     </tbody>
                                 </table>
                             </div>
@@ -2211,13 +1284,8 @@
                 }
                 container.innerHTML = html || '<div class="empty-state">Nenhum IP cadastrado.</div>';
             } catch (e) {
-                document.getElementById('plansContainer').innerHTML = `<div class="empty-state" style="color:var(--accent-red);">${escAdmin(e.message)}</div>`;
+                document.getElementById('plansContainer').innerHTML = `<div class="empty-state" style="color:var(--accent-red);">${e.message}</div>`;
             }
-        }
-
-        async function removeIpFromPlan(id, ip, plan) {
-            if (!confirm(`Remover o IP ${ip} do plano ${plan}? Esta ação não pode ser desfeita.`)) return;
-            try { await apiFetch(`/api/admin/subscriptions/${id}`, { method: 'DELETE' }); loadPlans(); loadDashboard(); } catch (e) { alert(e.message); }
         }
 
         // ---- COUPONS ----
@@ -2234,9 +1302,8 @@
                         isExpired ? '<span class="badge badge-expired">Expirado</span>' :
                         isExhausted ? '<span class="badge badge-suspended">Esgotado</span>' :
                         '<span class="badge badge-suspended">Inativo</span>';
-                    const safeCode = escAdmin(c.code).replace(/'/g, "\\'");
                     return `<tr>
-                        <td class="mono" style="font-weight:700;color:var(--accent-orange);">${escAdmin(c.code)}</td>
+                        <td class="mono" style="font-weight:700;color:var(--accent-orange);">${c.code}</td>
                         <td><span class="badge badge-pro">${c.discount_pct}%</span></td>
                         <td class="mono">${c.uses_count || 0}</td>
                         <td class="mono">${c.max_uses || '∞'}</td>
@@ -2244,12 +1311,12 @@
                         <td>${statusBadge}</td>
                         <td class="actions">
                             <button class="btn btn-secondary btn-sm" onclick="toggleCoupon(${c.id}, ${c.active ? 0 : 1})">${c.active ? 'Desativar' : 'Ativar'}</button>
-                            <button class="btn btn-danger btn-sm" onclick="deleteCoupon(${c.id}, '${safeCode}')">Remover</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteCoupon(${c.id}, '${c.code}')">Remover</button>
                         </td>
                     </tr>`;
                 }).join('');
             } catch (e) {
-                document.getElementById('couponsTableBody').innerHTML = `<tr><td colspan="7" class="empty-state" style="color:var(--accent-red);">${escAdmin(e.message)}</td></tr>`;
+                document.getElementById('couponsTableBody').innerHTML = `<tr><td colspan="7" class="empty-state" style="color:var(--accent-red);">${e.message}</td></tr>`;
             }
         }
 
@@ -2280,6 +1347,48 @@
         async function deleteCoupon(id, code) {
             if (!confirm(`Remover o cupom ${code}?`)) return;
             try { await apiFetch(`/api/admin/coupons/${id}`, { method: 'DELETE' }); loadCoupons(); } catch (e) { alert(e.message); }
+        }
+
+        // ---- IP CHANGE REQUESTS ----
+        async function loadIpChanges() {
+            try {
+                const requests = await apiFetch('/api/admin/ip-changes');
+                const pendingCount = requests.filter(r => r.status === 'pending').length;
+                const badge = document.getElementById('ipChangeCount');
+                if (badge) { badge.textContent = pendingCount; badge.style.display = pendingCount > 0 ? 'inline' : 'none'; }
+                const tbody = document.getElementById('ipChangesTableBody');
+                if (!requests.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhuma solicitação</td></tr>'; return; }
+                tbody.innerHTML = requests.map(r => {
+                    const statusBadge = r.status === 'pending' ? '<span class="badge badge-pending">Pendente</span>' :
+                        r.status === 'approved' ? '<span class="badge badge-approved">Aprovado</span>' :
+                        '<span class="badge badge-rejected">Rejeitado</span>';
+                    const actions = r.status === 'pending' ?
+                        `<button class="btn btn-success btn-sm" onclick="approveIpChange(${r.id})">Aprovar</button>
+                         <button class="btn btn-danger btn-sm" onclick="rejectIpChange(${r.id})">Rejeitar</button>` :
+                        '<span style="color:var(--text-muted);font-size:12px;">—</span>';
+                    return `<tr>
+                        <td class="mono" style="font-size:12px;">#${r.id}</td>
+                        <td style="font-size:13px;">${r.user_email || '—'}</td>
+                        <td class="mono" style="font-size:12px;">${r.old_ip}</td>
+                        <td class="mono" style="font-size:12px;color:var(--accent-orange);">${r.new_ip}</td>
+                        <td class="mono" style="font-size:12px;">${formatDate(r.created_at)}</td>
+                        <td>${statusBadge}</td>
+                        <td class="actions">${actions}</td>
+                    </tr>`;
+                }).join('');
+            } catch (e) {
+                document.getElementById('ipChangesTableBody').innerHTML = '<tr><td colspan="7" class="empty-state">Erro ao carregar</td></tr>';
+            }
+        }
+
+        async function approveIpChange(id) {
+            if (!confirm('Aprovar esta alteração de IP?')) return;
+            try { await apiFetch(`/api/admin/ip-changes/${id}/approve`, { method: 'POST' }); loadIpChanges(); loadDashboard(); } catch (e) { alert(e.message); }
+        }
+
+        async function rejectIpChange(id) {
+            const notes = prompt('Motivo da recusa (opcional):');
+            try { await apiFetch(`/api/admin/ip-changes/${id}/reject`, { method: 'POST', body: JSON.stringify({ notes }) }); loadIpChanges(); } catch (e) { alert(e.message); }
         }
 
         // ---- NOTIFICATIONS BROADCAST ----
