@@ -1346,7 +1346,7 @@ app.post('/api/admin/subscriptions/:id/reset', adminAuth, async (req, res) => {
     const { error: insertErr } = await supabase.from('users').insert({
       id: newUserId, email: oldUser.email, name: oldUser.name,
       role: oldUser.role || 'user', plan: 'free', plan_expires_at: null,
-      created_at: new Date().toISOString(), updated_at: new Date().toISOString()
+      created_at: new Date().toISOString()
     });
     if (insertErr) return res.status(500).json({ error: 'Falha ao criar novo registro: ' + insertErr.message });
     await supabase.from('users').delete().eq('id', oldUserId);
