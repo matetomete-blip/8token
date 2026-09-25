@@ -1265,8 +1265,11 @@ app.post('/api/admin/affiliates', adminAuth, async (req, res) => {
   const code = 'aff_' + crypto.randomBytes(6).toString('hex');
   const { data } = await supabase.from('affiliates').insert({ user_id, commission_pct: commission_pct || 10, code }).select().single();
 
-  // Atualizar role do usuário para affiliate
-  await supabase.from('users').update({ role: 'affiliate' }).eq('id', user_id);
+  // Atualizar role do usuário para affiliate — mas NUNCA sobrescrever admin
+  const { data: currentUser } = await supabase.from('users').select('role').eq('id', user_id).single();
+  if (currentUser && currentUser.role !== 'admin') {
+    await supabase.from('users').update({ role: 'affiliate' }).eq('id', user_id);
+  }
 
   await supabase.from('notifications').insert({ user_id, title: 'Você é Afiliado!', message: `Parabéns! Comissão: ${commission_pct || 10}%. Código: ${code}`, type: 'success' });
   res.json(data);
