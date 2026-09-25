@@ -408,7 +408,7 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 Minha Conta
             </button>
-            <button class="sidebar-link" id="sidebarAffiliateLink" style="display:none;" onclick="window.location.href='affiliate.html'">
+            <button class="sidebar-link" onclick="window.location.href='affiliate.html'">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                 Afiliados
             </button>
@@ -546,54 +546,53 @@
                             <div id="ipAuthorizeFeedback" style="display:none;font-size:13px;margin-top:var(--space-sm);line-height:1.5;"></div>
                         </div>
 
-                        <!-- IP Adicional (Casa/Trabalho) -->
+                        <!-- IPs Adicionais -->
                         <div style="border-top:1px solid var(--border);padding-top:var(--space-lg);">
-                            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-sm);margin-bottom:var(--space-sm);">
-                                <div class="kpi-label" style="margin-bottom:0;">IP Adicional (Casa/Trabalho)</div>
-                                <div id="ipAdditionalExpires" style="display:none;font-size:11px;color:var(--accent-amber);font-family:var(--font-mono);"></div>
+                            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-sm);margin-bottom:var(--space-md);">
+                                <div class="kpi-label" style="margin-bottom:0;">IPs Adicionais</div>
+                                <div id="ipAdditionalCount" style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono);"></div>
                             </div>
 
-                            <!-- Estado: Não comprado -->
-                            <div id="ipAdditionalNotPurchased">
-                                <button class="btn-upgrade" onclick="buyAdditionalIp()" style="font-size:13px;height:40px;padding:0 var(--space-lg);width:100%;">
+                            <!-- Lista de IPs adicionais comprados -->
+                            <div id="ipAdditionalList" style="display:flex;flex-direction:column;gap:var(--space-sm);margin-bottom:var(--space-md);"></div>
+
+                            <!-- Botão: Autorizar mais um IP (aparece se tem pelo menos 1 comprado) -->
+                            <div id="ipAdditionalAuthorizeSection" style="display:none;margin-bottom:var(--space-sm);">
+                                <button class="btn-upgrade" onclick="authorizeNewAdditionalIp()" style="font-size:13px;height:40px;padding:0 var(--space-lg);width:100%;">
+                                    + Autorizar mais um IP
+                                </button>
+                            </div>
+
+                            <!-- Botão: Comprar IP adicional (sempre visível) -->
+                            <div id="ipAdditionalBuySection">
+                                <button class="btn-upgrade btn-secondary" onclick="buyAdditionalIp()" style="font-size:13px;height:40px;padding:0 var(--space-lg);width:100%;border-color:var(--accent-orange);color:var(--accent-orange);">
                                     Comprar IP Adicional — R$ 74,90/mês
                                 </button>
-                                <div style="font-size:12px;color:var(--text-muted);margin-top:var(--space-sm);text-align:center;">
-                                    +1 IP extra para alternar entre casa e trabalho
+                                <div style="font-size:11px;color:var(--text-muted);margin-top:var(--space-xs);text-align:center;">
+                                    Compre quantos IPs extras precisar (casa, trabalho, celular...)
                                 </div>
                             </div>
 
-                            <!-- Estado: Comprado, gerenciável -->
-                            <div id="ipAdditionalPurchased" style="display:none;">
-                                <div id="ipAdditionalContainer" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:var(--space-md);">
-                                    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-sm);">
-                                        <div>
-                                            <div style="font-size:12px;color:var(--text-muted);margin-bottom:2px;">IP Liberado</div>
-                                            <div id="ipAdditionalValue" style="font-family:var(--font-mono);font-size:15px;font-weight:600;color:var(--accent-green);">Carregando...</div>
-                                        </div>
-                                        <div id="ipAdditionalActions" style="display:flex;gap:var(--space-sm);"></div>
-                                    </div>
+                            <!-- Formulário inline para adicionar/editar IP adicional -->
+                            <div id="ipAdditionalForm" style="display:none;margin-top:var(--space-md);padding:var(--space-md);background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);">
+                                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:var(--space-sm);">Digite o IP que deseja autorizar:</div>
+                                <div style="display:flex;align-items:stretch;gap:var(--space-sm);flex-wrap:wrap;">
+                                    <input type="text" id="ipAdditionalInput" placeholder="Ex.: 189.45.12.34" autocomplete="off" spellcheck="false"
+                                        style="flex:1;min-width:180px;height:36px;padding:0 var(--space-md);font-family:var(--font-mono);font-size:13px;color:var(--text-primary);background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-sm);outline:none;transition:border-color var(--transition);"
+                                        onfocus="this.style.borderColor='var(--accent-orange)'" onblur="this.style.borderColor='var(--border)'">
+                                    <button class="btn-upgrade" id="ipAdditionalSaveBtn" onclick="saveAdditionalIp()" style="height:36px;padding:0 var(--space-md);font-size:12px;">Salvar</button>
+                                    <button class="btn-upgrade btn-secondary" onclick="toggleAdditionalIpForm()" style="height:36px;padding:0 var(--space-md);font-size:12px;">Cancelar</button>
                                 </div>
-                                <!-- Formulário inline para definir/trocar IP adicional -->
-                                <div id="ipAdditionalForm" style="display:none;margin-top:var(--space-md);">
-                                    <div style="display:flex;align-items:stretch;gap:var(--space-sm);flex-wrap:wrap;">
-                                        <input type="text" id="ipAdditionalInput" placeholder="Ex.: 189.45.12.34" autocomplete="off" spellcheck="false"
-                                            style="flex:1;min-width:180px;height:36px;padding:0 var(--space-md);font-family:var(--font-mono);font-size:13px;color:var(--text-primary);background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);outline:none;transition:border-color var(--transition);"
-                                            onfocus="this.style.borderColor='var(--accent-orange)'" onblur="this.style.borderColor='var(--border)'">
-                                        <button class="btn-upgrade" id="ipAdditionalSaveBtn" onclick="saveAdditionalIp()" style="height:36px;padding:0 var(--space-md);font-size:12px;">Salvar</button>
-                                        <button class="btn-upgrade btn-secondary" onclick="toggleAdditionalIpForm()" style="height:36px;padding:0 var(--space-md);font-size:12px;">Cancelar</button>
-                                    </div>
-                                    <div id="ipAdditionalFeedback" style="display:none;font-size:12px;margin-top:var(--space-xs);"></div>
-                                </div>
+                                <div id="ipAdditionalFeedback" style="display:none;font-size:12px;margin-top:var(--space-xs);"></div>
                             </div>
                         </div>
 
-                        <!-- Solicitar Alteração (IP Principal) -->
-                        <div style="border-top:1px solid var(--border);padding-top:var(--space-lg);">
-                            <button class="btn-upgrade btn-secondary" id="ipChangeToggleBtn" onclick="toggleIpChangeForm()" style="height:36px;padding:0 var(--space-md);font-size:13px;width:100%;">Solicitar Alteração</button>
+                        <!-- Solicitar Alteração (IP Principal) — só aparece se tem IP adicional pago -->
+                        <div id="ipChangeSection" style="display:none;border-top:1px solid var(--border);padding-top:var(--space-lg);">
+                            <button class="btn-upgrade btn-secondary" id="ipChangeToggleBtn" onclick="toggleIpChangeForm()" style="height:36px;padding:0 var(--space-md);font-size:13px;width:100%;">Solicitar Alteração do IP Principal</button>
                             <div id="ipChangeForm" style="display:none;margin-top:var(--space-md);">
                                 <div style="font-size:13px;color:var(--text-secondary);margin-bottom:var(--space-sm);line-height:1.5;">
-                                    Digite o novo IP que deseja autorizar. A alteração entra em fila para aprovação do admin.
+                                    Digite o novo IP principal que deseja autorizar. A alteração entra em fila para aprovação do admin.
                                 </div>
                                 <div style="display:flex;align-items:stretch;gap:var(--space-sm);flex-wrap:wrap;">
                                     <input type="text" id="ipChangeInput" placeholder="Ex.: 189.45.12.34" autocomplete="off" spellcheck="false"
@@ -857,38 +856,53 @@
                     }
                 }
 
-                // IP Adicional
-                const notPurchasedEl = document.getElementById('ipAdditionalNotPurchased');
-                const purchasedEl = document.getElementById('ipAdditionalPurchased');
-                const additionalValueEl = document.getElementById('ipAdditionalValue');
-                const additionalActionsEl = document.getElementById('ipAdditionalActions');
-                const additionalExpiresEl = document.getElementById('ipAdditionalExpires');
+                // IPs Adicionais — múltiplos containers
+                const ipAdditionalList = document.getElementById('ipAdditionalList');
+                const ipAdditionalAuthorizeSection = document.getElementById('ipAdditionalAuthorizeSection');
+                const ipChangeSection = document.getElementById('ipChangeSection');
+                const ipAdditionalCount = document.getElementById('ipAdditionalCount');
 
-                if (data.has_additional_ip) {
-                    if (notPurchasedEl) notPurchasedEl.style.display = 'none';
-                    if (purchasedEl) purchasedEl.style.display = 'block';
-                    if (additionalValueEl) {
-                        additionalValueEl.textContent = data.additional_ip || 'Não definido';
-                        additionalValueEl.style.color = data.additional_ip ? 'var(--accent-green)' : 'var(--text-muted)';
+                // Get additional IPs array from response (fallback to single IP for backward compat)
+                const additionalIps = data.additional_ips || (data.has_additional_ip && data.additional_ip ? [{ ip: data.additional_ip, expires_at: data.additional_ip_expires_at }] : []);
+
+                // Render list of additional IP containers
+                if (ipAdditionalList) {
+                    ipAdditionalList.innerHTML = '';
+                    if (additionalIps.length > 0) {
+                        additionalIps.forEach((ipData, index) => {
+                            const container = document.createElement('div');
+                            container.style.cssText = 'background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:var(--space-md);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-sm);';
+                            container.innerHTML = `
+                                <div>
+                                    <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">IP Adicional #${index + 1}</div>
+                                    <div style="font-family:var(--font-mono);font-size:14px;font-weight:600;color:${ipData.ip ? 'var(--accent-green)' : 'var(--text-muted)'};">${ipData.ip || 'Não definido'}</div>
+                                    ${ipData.expires_at ? `<div style="font-size:10px;color:var(--accent-amber);margin-top:2px;">Vence em ${new Date(ipData.expires_at).toLocaleDateString('pt-BR')}</div>` : ''}
+                                </div>
+                                <div style="display:flex;gap:var(--space-xs);">
+                                    <button class="btn-upgrade btn-secondary" onclick="editAdditionalIp(${index}, '${ipData.ip || ''}')" style="height:28px;padding:0 10px;font-size:11px;">Editar</button>
+                                    <button class="btn-upgrade btn-secondary" onclick="removeAdditionalIpByIndex(${index})" style="height:28px;padding:0 10px;font-size:11px;border-color:var(--accent-red);color:var(--accent-red);">Excluir</button>
+                                </div>
+                            `;
+                            ipAdditionalList.appendChild(container);
+                        });
+                    } else {
+                        ipAdditionalList.innerHTML = '<div style="text-align:center;padding:var(--space-md);color:var(--text-muted);font-size:12px;">Nenhum IP adicional comprado ainda</div>';
                     }
-                    if (additionalExpiresEl) {
-                        if (data.additional_ip_expires_at) {
-                            const expDate = new Date(data.additional_ip_expires_at);
-                            additionalExpiresEl.textContent = 'Vence em ' + expDate.toLocaleDateString('pt-BR');
-                            additionalExpiresEl.style.display = 'block';
-                        } else {
-                            additionalExpiresEl.style.display = 'none';
-                        }
-                    }
-                    if (additionalActionsEl) {
-                        additionalActionsEl.innerHTML =
-                            '<button class="btn-upgrade btn-secondary" onclick="toggleAdditionalIpForm()" style="height:30px;padding:0 10px;font-size:11px;">Editar</button>' +
-                            '<button class="btn-upgrade btn-secondary" onclick="removeAdditionalIp()" style="height:30px;padding:0 10px;font-size:11px;border-color:var(--accent-red);color:var(--accent-red);">Excluir</button>';
-                    }
-                } else {
-                    if (notPurchasedEl) notPurchasedEl.style.display = 'block';
-                    if (purchasedEl) purchasedEl.style.display = 'none';
-                    if (additionalExpiresEl) additionalExpiresEl.style.display = 'none';
+                }
+
+                // Update count badge
+                if (ipAdditionalCount) {
+                    ipAdditionalCount.textContent = additionalIps.length > 0 ? `${additionalIps.length} IP${additionalIps.length !== 1 ? 's' : ''} ativo${additionalIps.length !== 1 ? 's' : ''}` : '';
+                }
+
+                // Show/hide "Autorizar mais um IP" button (only if has at least 1 purchased)
+                if (ipAdditionalAuthorizeSection) {
+                    ipAdditionalAuthorizeSection.style.display = additionalIps.length > 0 ? 'block' : 'none';
+                }
+
+                // Show/hide "Solicitar Alteração" section (only if has at least 1 additional IP paid)
+                if (ipChangeSection) {
+                    ipChangeSection.style.display = additionalIps.length > 0 ? 'block' : 'none';
                 }
             } catch (e) {
                 console.error('Load IP info error:', e);
@@ -1099,14 +1113,7 @@
                         if (sidebarAdminLink) sidebarAdminLink.style.display = 'flex';
                     }
 
-                    // Show affiliate link if user is an affiliate (source of truth: affiliates table)
-                    try {
-                        const affRes = await fetch('/api/affiliate/me', { credentials: 'include' });
-                        if (affRes.ok) {
-                            const sidebarAffiliateLink = document.getElementById('sidebarAffiliateLink');
-                            if (sidebarAffiliateLink) sidebarAffiliateLink.style.display = 'flex';
-                        }
-                    } catch (e) { /* not an affiliate — link stays hidden */ }
+                    // Affiliate link is always visible in sidebar (no conditional hiding)
                 }
             } catch (e) { console.error('Profile/Admin load error:', e); }
         }
@@ -1116,9 +1123,24 @@
         async function authorizeCurrentIp() {
             const btn = document.getElementById('btnAuthorizeCurrentIp');
             const feedback = document.getElementById('ipAuthorizeFeedback');
+            // Block if no active plan
+            const token = localStorage.getItem('8token_token');
+            if (!token) { if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-red)'; feedback.textContent = 'Faça login primeiro.'; } return; }
+            try {
+                const profileRes = await fetch(API_BASE + '/api/user/profile', { headers: { 'Authorization': 'Bearer ' + token } });
+                if (profileRes.ok) {
+                    const profile = await profileRes.json();
+                    const hasPlan = profile.plan && profile.plan !== 'free';
+                    const planActive = hasPlan && (!profile.plan_expires_at || new Date(profile.plan_expires_at) > new Date());
+                    if (!planActive) {
+                        if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-amber)'; feedback.textContent = '⚠ Você precisa ter um plano ativo para liberar um IP.'; }
+                        if (btn) { btn.disabled = false; btn.textContent = 'Liberar este IP'; }
+                        return;
+                    }
+                }
+            } catch (e) { /* proceed — server will also validate */ }
             if (btn) { btn.disabled = true; btn.textContent = 'Liberando...'; }
             try {
-                const token = localStorage.getItem('8token_token');
                 const res = await fetch(API_BASE + '/api/user/authorize-current-ip', {
                     method: 'POST',
                     headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
@@ -1154,19 +1176,28 @@
             }
         }
 
-        // Save additional IP
+        // Save additional IP (supports multiple IPs via editingIndex)
         async function saveAdditionalIp() {
             const input = document.getElementById('ipAdditionalInput');
             const saveBtn = document.getElementById('ipAdditionalSaveBtn');
             const feedback = document.getElementById('ipAdditionalFeedback');
+            const form = document.getElementById('ipAdditionalForm');
             const ip = input ? input.value.trim() : '';
+            const editingIndex = form ? parseInt(form.dataset.editingIndex || '-1') : -1;
+
             if (!ip) { if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-red)'; feedback.textContent = 'Digite um IP válido.'; } return; }
             if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(ip)) { if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-red)'; feedback.textContent = 'Formato de IP inválido.'; } return; }
             if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Salvando...'; }
             try {
                 const token = localStorage.getItem('8token_token');
-                const res = await fetch(API_BASE + '/api/user/additional-ip', {
-                    method: 'PUT',
+                // Use POST for new IP, PUT for edit
+                const method = editingIndex >= 0 ? 'PUT' : 'POST';
+                const url = editingIndex >= 0
+                    ? API_BASE + '/api/user/additional-ip/' + editingIndex
+                    : API_BASE + '/api/user/additional-ip';
+
+                const res = await fetch(url, {
+                    method: method,
                     headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
                     body: JSON.stringify({ ip })
                 });
@@ -1185,7 +1216,45 @@
             }
         }
 
-        // Remove additional IP
+        // Authorize new additional IP (opens form for user to enter IP)
+        function authorizeNewAdditionalIp() {
+            const form = document.getElementById('ipAdditionalForm');
+            const input = document.getElementById('ipAdditionalInput');
+            const feedback = document.getElementById('ipAdditionalFeedback');
+            if (!form) return;
+            form.style.display = 'block';
+            if (input) { input.value = ''; setTimeout(() => input.focus(), 50); }
+            if (feedback) feedback.style.display = 'none';
+            // Store editing index as -1 for new IP
+            form.dataset.editingIndex = '-1';
+        }
+
+        // Edit specific additional IP by index
+        function editAdditionalIp(index, currentIp) {
+            const form = document.getElementById('ipAdditionalForm');
+            const input = document.getElementById('ipAdditionalInput');
+            const feedback = document.getElementById('ipAdditionalFeedback');
+            if (!form) return;
+            form.style.display = 'block';
+            if (input) { input.value = currentIp || ''; setTimeout(() => input.focus(), 50); }
+            if (feedback) feedback.style.display = 'none';
+            form.dataset.editingIndex = String(index);
+        }
+
+        // Remove additional IP by index
+        async function removeAdditionalIpByIndex(index) {
+            if (!confirm('Excluir este IP adicional?')) return;
+            try {
+                const token = localStorage.getItem('8token_token');
+                const res = await fetch(API_BASE + '/api/user/additional-ip/' + index, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) { loadIpInfo(); } else { alert('Erro ao remover IP adicional.'); }
+            } catch (e) { alert('Erro de conexão.'); }
+        }
+
+        // Legacy remove function (kept for backward compat)
         async function removeAdditionalIp() {
             if (!confirm('Excluir o IP adicional?')) return;
             try {
