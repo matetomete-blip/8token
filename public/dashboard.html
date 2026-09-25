@@ -464,8 +464,7 @@
                 </div>
             </div>
 
-            <!-- Plano Atual + IP Autorizado — side by side -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md); align-items: stretch;">
+            <!-- Plano Atual -->
             <div class="dash-section" id="planCardContainer" style="margin-bottom: 0; display: flex; flex-direction: column;">
                 <div class="dash-section-title">Plano Atual</div>
                 <div class="card plan-card" id="planCardInner" style="flex: 1; display: flex; flex-direction: column; justify-content: space-between; transition: border-color 0.3s, box-shadow 0.3s; position: relative; overflow: hidden;">
@@ -527,95 +526,26 @@
                 </div>
             </div>
 
-            <div class="dash-section" style="margin-bottom: 0;">
-                <div class="dash-section-title">IP Autorizado</div>
-                    <div class="card" style="display:flex; flex-direction:column; gap:var(--space-lg);">
-                        <!-- IP Principal -->
-                        <div>
-                            <div class="kpi-label">IP Autorizado</div>
-                            <div class="ip-display" id="ipMainValue">Carregando...</div>
-                            <span class="status-badge" id="ipStatusBadge" style="background:rgba(122,117,117,0.15);color:var(--text-muted);">Carregando...</span>
-                            <div id="ipPendingChange" style="display:none;font-size:12px;color:var(--accent-amber);margin-top:4px;"></div>
-                        </div>
-
-                        <!-- IP Atual da Rede -->
-                        <div style="border-top:1px solid var(--border);padding-top:var(--space-lg);">
-                            <div class="kpi-label">IP atual da rede</div>
-                            <div id="ipCurrentNetwork" style="font-family:var(--font-mono);font-size:16px;color:var(--accent-blue);margin:var(--space-xs) 0;">Carregando...</div>
-                            <button class="btn-upgrade" id="btnAuthorizeCurrentIp" onclick="authorizeCurrentIp()" style="height:36px;padding:0 var(--space-md);font-size:13px;display:none;">Liberar este IP</button>
-                            <div id="ipAuthorizeFeedback" style="display:none;font-size:13px;margin-top:var(--space-sm);line-height:1.5;"></div>
-                        </div>
-
-                        <!-- IPs Adicionais -->
-                        <div style="border-top:1px solid var(--border);padding-top:var(--space-lg);">
-                            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-sm);margin-bottom:var(--space-md);">
-                                <div class="kpi-label" style="margin-bottom:0;">IPs Adicionais</div>
-                                <div id="ipAdditionalCount" style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono);"></div>
-                            </div>
-
-                            <!-- Lista de IPs adicionais comprados -->
-                            <div id="ipAdditionalList" style="display:flex;flex-direction:column;gap:var(--space-sm);margin-bottom:var(--space-md);"></div>
-
-                            <!-- Botão: Autorizar mais um IP (aparece se tem pelo menos 1 comprado) -->
-                            <div id="ipAdditionalAuthorizeSection" style="display:none;margin-bottom:var(--space-sm);">
-                                <button class="btn-upgrade" onclick="authorizeNewAdditionalIp()" style="font-size:13px;height:40px;padding:0 var(--space-lg);width:100%;">
-                                    + Autorizar mais um IP
-                                </button>
-                            </div>
-
-                            <!-- Botão: Comprar IP adicional (sempre visível) -->
-                            <div id="ipAdditionalBuySection">
-                                <button class="btn-upgrade btn-secondary" onclick="buyAdditionalIp()" style="font-size:13px;height:40px;padding:0 var(--space-lg);width:100%;border-color:var(--accent-orange);color:var(--accent-orange);">
-                                    Comprar IP Adicional — R$ 74,90/mês
-                                </button>
-                                <div style="font-size:11px;color:var(--text-muted);margin-top:var(--space-xs);text-align:center;">
-                                    Compre quantos IPs extras precisar (casa, trabalho, celular...)
-                                </div>
-                            </div>
-
-                            <!-- Formulário inline para adicionar/editar IP adicional -->
-                            <div id="ipAdditionalForm" style="display:none;margin-top:var(--space-md);padding:var(--space-md);background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);">
-                                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:var(--space-sm);">Digite o IP que deseja autorizar:</div>
-                                <div style="display:flex;align-items:stretch;gap:var(--space-sm);flex-wrap:wrap;">
-                                    <input type="text" id="ipAdditionalInput" placeholder="Ex.: 189.45.12.34" autocomplete="off" spellcheck="false"
-                                        style="flex:1;min-width:180px;height:36px;padding:0 var(--space-md);font-family:var(--font-mono);font-size:13px;color:var(--text-primary);background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-sm);outline:none;transition:border-color var(--transition);"
-                                        onfocus="this.style.borderColor='var(--accent-orange)'" onblur="this.style.borderColor='var(--border)'">
-                                    <button class="btn-upgrade" id="ipAdditionalSaveBtn" onclick="saveAdditionalIp()" style="height:36px;padding:0 var(--space-md);font-size:12px;">Salvar</button>
-                                    <button class="btn-upgrade btn-secondary" onclick="toggleAdditionalIpForm()" style="height:36px;padding:0 var(--space-md);font-size:12px;">Cancelar</button>
-                                </div>
-                                <div id="ipAdditionalFeedback" style="display:none;font-size:12px;margin-top:var(--space-xs);"></div>
-                            </div>
-                        </div>
-
-                        <!-- Solicitar Alteração (IP Principal) — só aparece se tem IP adicional pago -->
-                        <div id="ipChangeSection" style="display:none;border-top:1px solid var(--border);padding-top:var(--space-lg);">
-                            <button class="btn-upgrade btn-secondary" id="ipChangeToggleBtn" onclick="toggleIpChangeForm()" style="height:36px;padding:0 var(--space-md);font-size:13px;width:100%;">Solicitar Alteração do IP Principal</button>
-                            <div id="ipChangeForm" style="display:none;margin-top:var(--space-md);">
-                                <div style="font-size:13px;color:var(--text-secondary);margin-bottom:var(--space-sm);line-height:1.5;">
-                                    Digite o novo IP principal que deseja autorizar. A alteração entra em fila para aprovação do admin.
-                                </div>
-                                <div style="display:flex;align-items:stretch;gap:var(--space-sm);flex-wrap:wrap;">
-                                    <input type="text" id="ipChangeInput" placeholder="Ex.: 189.45.12.34" autocomplete="off" spellcheck="false"
-                                        style="flex:1;min-width:200px;height:40px;padding:0 var(--space-md);font-family:var(--font-mono);font-size:14px;color:var(--text-primary);background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);outline:none;transition:border-color var(--transition);"
-                                        onfocus="this.style.borderColor='var(--accent-orange)'" onblur="this.style.borderColor='var(--border)'">
-                                    <button class="btn-upgrade" id="ipChangeSubmitBtn" onclick="submitIpChange()" style="height:40px;padding:0 var(--space-lg);font-size:13px;">Enviar Solicitação</button>
-                                    <button class="btn-upgrade btn-secondary" onclick="toggleIpChangeForm()" style="height:40px;padding:0 var(--space-md);font-size:13px;">Cancelar</button>
-                                </div>
-                                <div id="ipChangeFeedback" style="display:none;font-size:13px;margin-top:var(--space-sm);line-height:1.5;"></div>
-                            </div>
-                        </div>
+            <!-- Chaves de API — seção unificada (chave + IPs autorizados) -->
+            <div class="dash-section" id="apiKeysSection" style="margin-bottom: 0;">
+                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-sm);margin-bottom:var(--space-md);">
+                    <div class="dash-section-title" style="margin-bottom:0;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-orange)" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+                        Chaves de API
+                    </div>
+                    <div id="apiKeyGenRow" style="display:none;align-items:center;gap:var(--space-sm);">
+                        <input type="text" id="apiKeyNameInput" placeholder="Nome da chave" maxlength="40"
+                            style="height:36px;padding:0 var(--space-md);font-size:13px;color:var(--text-primary);background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);outline:none;width:180px;transition:border-color var(--transition);"
+                            onfocus="this.style.borderColor='var(--accent-orange)'" onblur="this.style.borderColor='var(--border)'">
+                        <button class="btn-upgrade" id="btnGenerateKey" onclick="generateApiKey()" style="height:36px;padding:0 var(--space-md);font-size:13px;display:inline-flex;align-items:center;gap:6px;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            Gerar
+                        </button>
                     </div>
                 </div>
-            </div>
 
-            <!-- API Keys Section -->
-            <div class="dash-section" id="apiKeysSection">
-                <div class="dash-section-title">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-orange)" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
-                    Chave API
-                </div>
-
-                <div class="card api-locked" id="apiLocked" style="flex-direction:column;align-items:flex-start;gap:var(--space-md);">
+                <!-- Estado: Sem plano ativo -->
+                <div class="card" id="apiLocked" style="flex-direction:column;align-items:flex-start;gap:var(--space-md);">
                     <div style="display:flex;align-items:center;gap:var(--space-sm);color:var(--accent-amber);">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                         <strong style="font-size:15px;color:var(--text-primary);">Acesso exclusivo para assinantes</strong>
@@ -626,31 +556,30 @@
                     <a href="index.html#precos" class="btn-upgrade" style="height:40px;padding:0 var(--space-lg);font-size:14px;">Ver planos e assinar</a>
                 </div>
 
+                <!-- Estado: Com plano ativo -->
                 <div id="apiUnlocked" style="display:none;">
-                    <div class="api-keys-list">
-                        <div class="api-key-item">
-                            <div class="api-key-info">
-                                <div class="api-key-name">Chave de acesso (Bearer)</div>
-                                <div class="api-key-value" id="apiKeyValue" style="user-select:all;">gcli_••••••••••••••••••••••••••••</div>
-                            </div>
-                            <div class="api-key-actions">
-                                <button class="btn-icon" onclick="copyApiKey()" title="Copiar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
-                            </div>
-                        </div>
-                        <div class="api-key-item">
-                            <div class="api-key-info">
-                                <div class="api-key-name">Endpoint Base (Gateway URL)</div>
-                                <div class="api-key-value" id="gatewayUrlValue" style="user-select:all;color:var(--accent-blue);">https://api.8token.ai/v1</div>
-                            </div>
-                            <div class="api-key-actions">
-                                <button class="btn-icon" onclick="copyGatewayUrl()" title="Copiar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
-                            </div>
+                    <!-- Gateway URL -->
+                    <div class="card" style="margin-bottom:var(--space-md);">
+                        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:var(--space-xs);">Gateway URL</div>
+                        <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-md);flex-wrap:wrap;">
+                            <div id="gatewayUrlValue" style="font-family:var(--font-mono);font-size:15px;color:var(--accent-blue);user-select:all;word-break:break-all;">https://8token.tech/v1</div>
+                            <button class="btn-icon" onclick="copyGatewayUrl()" title="Copiar" style="flex-shrink:0;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2z"/></svg>
+                                <span style="font-size:12px;margin-left:4px;">Copiar</span>
+                            </button>
                         </div>
                     </div>
-                    <button class="btn-generate" onclick="regenerateApiKey()">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-                        Gerar Nova Chave
-                    </button>
+
+                    <!-- Container dinâmico de chaves -->
+                    <div id="apiKeysContainer"></div>
+
+                    <!-- Mensagem quando não tem chave -->
+                    <div id="apiNoKeyMsg" style="display:none;text-align:center;padding:var(--space-xl);color:var(--text-muted);font-size:14px;">
+                        Nenhuma chave gerada ainda. Clique em <strong>+ Gerar</strong> para criar sua primeira chave.
+                    </div>
+
+                    <!-- Feedback global -->
+                    <div id="apiKeyFeedback" style="display:none;font-size:13px;margin-top:var(--space-sm);line-height:1.5;"></div>
                 </div>
             </div>
 
@@ -773,148 +702,241 @@
         }
         if (localStorage.getItem('8token_token')) { loadDashNotifications(); setInterval(loadDashNotifications, 60000); }
 
-        // ---- IP & PLAN LOGIC (Preserved from original) ----
-        // ---- IP BLOCK LOGIC ----
-        let currentNetworkIp = null;
-        let authorizedIp = null;
+        // ---- UNIFIED API KEYS + IPS SECTION ----
+        let _currentNetworkIp = null;
 
-        async function loadIpInfo() {
+        async function detectCurrentIp() {
             try {
                 const token = localStorage.getItem('8token_token');
-                if (!token) {
-                    const ipMainEl = document.getElementById('ipMainValue');
-                    const statusBadge = document.getElementById('ipStatusBadge');
-                    const currentIpEl = document.getElementById('ipCurrentNetwork');
-                    if (ipMainEl) ipMainEl.textContent = 'Faça login';
-                    if (statusBadge) statusBadge.textContent = 'Não autenticado';
-                    if (currentIpEl) currentIpEl.textContent = 'Faça login';
+                if (!token) return;
+                const res = await fetch(API_BASE + '/api/user/current-ip', { headers: { 'Authorization': 'Bearer ' + token } });
+                if (res.ok) { const d = await res.json(); _currentNetworkIp = d.ip || null; }
+            } catch (_) {}
+        }
+        detectCurrentIp();
+
+        // Load and render the unified API keys section
+        async function loadApiKeysSection() {
+            const token = localStorage.getItem('8token_token');
+            if (!token) return;
+            const headers = { 'Authorization': 'Bearer ' + token };
+            const container = document.getElementById('apiKeysContainer');
+            const noKeyMsg = document.getElementById('apiNoKeyMsg');
+            const genRow = document.getElementById('apiKeyGenRow');
+            if (!container) return;
+            try {
+                const [keysRes, gwRes] = await Promise.all([
+                    fetch(API_BASE + '/api/keys', { headers }),
+                    fetch(API_BASE + '/api/user/gateway-url', { headers })
+                ]);
+                // Gateway URL
+                if (gwRes.ok) {
+                    const gwData = await gwRes.json();
+                    const gwEl = document.getElementById('gatewayUrlValue');
+                    if (gwEl && gwData.gateway_url) gwEl.textContent = gwData.gateway_url;
+                }
+                let keys = [];
+                if (keysRes.ok) keys = await keysRes.json();
+                const activeKeys = (keys || []).filter(k => !k.revoked);
+
+                // Show/hide generate row (only if no active key)
+                if (genRow) genRow.style.display = activeKeys.length === 0 ? 'flex' : 'none';
+
+                if (activeKeys.length === 0) {
+                    container.innerHTML = '';
+                    if (noKeyMsg) noKeyMsg.style.display = 'block';
                     return;
                 }
-                const headers = { 'Authorization': 'Bearer ' + token };
-                const controller = new AbortController();
-                const timeout = setTimeout(() => controller.abort(), 8000);
+                if (noKeyMsg) noKeyMsg.style.display = 'none';
 
-                // Fetch IP info and current network IP in parallel with timeout
-                const [ipRes, currentIpRes] = await Promise.all([
-                    fetch(API_BASE + '/api/user/ip-info', { headers, signal: controller.signal }),
-                    fetch(API_BASE + '/api/user/current-ip', { headers, signal: controller.signal })
-                ]);
-                clearTimeout(timeout);
+                // Render each key card with its authorized IPs
+                container.innerHTML = activeKeys.map(key => {
+                    const ips = key.authorized_ips || [];
+                    const maskedKey = key.full_key
+                        ? key.full_key.slice(0, 12) + '••••••••' + key.full_key.slice(-4)
+                        : (key.key_prefix || '8tk_') + '••••••••' + (key.key_suffix || '');
+                    const createdDate = key.created_at ? new Date(key.created_at).toLocaleDateString('pt-BR') : '—';
+                    const isCurrentIpAuthorized = _currentNetworkIp && ips.some(r => r.ip === _currentNetworkIp);
 
-                const data = ipRes.ok ? await ipRes.json() : {};
-                const currentIpData = currentIpRes.ok ? await currentIpRes.json() : {};
-
-                currentNetworkIp = currentIpData.ip || null;
-                authorizedIp = data.ip || null;
-
-                // IP Autorizado
-                const ipMainEl = document.getElementById('ipMainValue');
-                const statusBadge = document.getElementById('ipStatusBadge');
-                if (ipMainEl) ipMainEl.textContent = authorizedIp || 'Nenhum IP cadastrado';
-
-                if (statusBadge) {
-                    const status = data.status || 'unknown';
-                    let color = 'var(--text-muted)', bg = 'rgba(122,117,117,0.15)', label = status;
-                    if (status === 'active') { color = 'var(--accent-green)'; bg = 'rgba(0,255,148,0.1)'; label = 'Ativo'; }
-                    else if (status === 'expired') { color = 'var(--accent-red)'; bg = 'rgba(255,51,51,0.1)'; label = 'Expirado'; }
-                    else if (status === 'suspended') { color = 'var(--accent-amber)'; bg = 'rgba(245,158,11,0.1)'; label = 'Suspenso'; }
-                    statusBadge.style.color = color; statusBadge.style.background = bg; statusBadge.textContent = label;
-                }
-
-                // Pending change
-                const pendingEl = document.getElementById('ipPendingChange');
-                if (pendingEl && data.pending_ip_change) {
-                    pendingEl.style.display = 'block';
-                    pendingEl.textContent = '⏳ Alteração pendente para ' + data.pending_ip_change.new_ip;
-                } else if (pendingEl) {
-                    pendingEl.style.display = 'none';
-                }
-
-                // IP Atual da Rede
-                const currentIpEl = document.getElementById('ipCurrentNetwork');
-                const authorizeBtn = document.getElementById('btnAuthorizeCurrentIp');
-                const authorizeFeedback = document.getElementById('ipAuthorizeFeedback');
-                if (currentIpEl) currentIpEl.textContent = currentNetworkIp || 'Não detectado';
-                if (authorizeBtn && authorizeFeedback) {
-                    authorizeFeedback.style.display = 'none';
-                    if (currentNetworkIp && authorizedIp && currentNetworkIp === authorizedIp) {
-                        authorizeBtn.style.display = 'inline-flex';
-                        authorizeBtn.textContent = 'IP da rede liberado!';
-                        authorizeBtn.disabled = true;
-                        authorizeBtn.style.background = '#1a8a4a';
-                        authorizeBtn.style.borderColor = '#1a8a4a';
-                        authorizeBtn.style.color = '#fff';
-                        authorizeBtn.style.boxShadow = 'none';
-                    } else if (currentNetworkIp) {
-                        authorizeBtn.style.display = 'inline-flex';
-                        authorizeBtn.textContent = 'Liberar este IP';
-                        authorizeBtn.disabled = false;
-                        authorizeBtn.style.background = '';
-                        authorizeBtn.style.borderColor = '';
-                    } else {
-                        authorizeBtn.style.display = 'none';
-                    }
-                }
-
-                // IPs Adicionais — múltiplos containers
-                const ipAdditionalList = document.getElementById('ipAdditionalList');
-                const ipAdditionalAuthorizeSection = document.getElementById('ipAdditionalAuthorizeSection');
-                const ipChangeSection = document.getElementById('ipChangeSection');
-                const ipAdditionalCount = document.getElementById('ipAdditionalCount');
-
-                // Get additional IPs array from response (fallback to single IP for backward compat)
-                const additionalIps = data.additional_ips || (data.has_additional_ip && data.additional_ip ? [{ ip: data.additional_ip, expires_at: data.additional_ip_expires_at }] : []);
-
-                // Render list of additional IP containers
-                if (ipAdditionalList) {
-                    ipAdditionalList.innerHTML = '';
-                    if (additionalIps.length > 0) {
-                        additionalIps.forEach((ipData, index) => {
-                            const container = document.createElement('div');
-                            container.style.cssText = 'background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:var(--space-md);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-sm);';
-                            container.innerHTML = `
-                                <div>
-                                    <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">IP Adicional #${index + 1}</div>
-                                    <div style="font-family:var(--font-mono);font-size:14px;font-weight:600;color:${ipData.ip ? 'var(--accent-green)' : 'var(--text-muted)'};">${ipData.ip || 'Não definido'}</div>
-                                    ${ipData.expires_at ? `<div style="font-size:10px;color:var(--accent-amber);margin-top:2px;">Vence em ${new Date(ipData.expires_at).toLocaleDateString('pt-BR')}</div>` : ''}
+                    const ipRows = ips.length > 0
+                        ? ips.map(ipRow => `
+                            <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-sm);padding:var(--space-sm) var(--space-md);background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-sm);flex-wrap:wrap;">
+                                <div style="display:flex;align-items:center;gap:var(--space-sm);min-width:0;">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-blue)" stroke-width="2" style="flex-shrink:0;"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4m-7.07-3.93l2.83-2.83m8.48-8.48l2.83-2.83M2 12h4m12 0h4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83"/></svg>
+                                    <div style="min-width:0;">
+                                        <div style="font-family:var(--font-mono);font-size:14px;font-weight:600;color:var(--text-primary);">${ipRow.ip}</div>
+                                    </div>
                                 </div>
-                                <div style="display:flex;gap:var(--space-xs);">
-                                    <button class="btn-upgrade btn-secondary" onclick="editAdditionalIp(${index}, '${ipData.ip || ''}')" style="height:28px;padding:0 10px;font-size:11px;">Editar</button>
-                                    <button class="btn-upgrade btn-secondary" onclick="removeAdditionalIpByIndex(${index})" style="height:28px;padding:0 10px;font-size:11px;border-color:var(--accent-red);color:var(--accent-red);">Excluir</button>
+                                <div style="display:flex;align-items:center;gap:var(--space-xs);flex-shrink:0;">
+                                    <span style="font-size:11px;font-weight:600;color:var(--accent-green);background:rgba(34,197,94,0.1);padding:2px 8px;border-radius:var(--radius-pill);">liberado</span>
+                                    <button class="btn-icon danger" onclick="removeAuthorizedIp('${key.id}','${ipRow.id}')" title="Remover IP" style="width:28px;height:28px;">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6m4-6v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                                    </button>
                                 </div>
-                            `;
-                            ipAdditionalList.appendChild(container);
-                        });
-                    } else {
-                        ipAdditionalList.innerHTML = '<div style="text-align:center;padding:var(--space-md);color:var(--text-muted);font-size:12px;">Nenhum IP adicional comprado ainda</div>';
-                    }
-                }
+                            </div>`).join('')
+                        : '<div style="text-align:center;padding:var(--space-md);color:var(--text-muted);font-size:13px;">Nenhum IP autorizado ainda. Libere sua rede atual abaixo.</div>';
 
-                // Update count badge
-                if (ipAdditionalCount) {
-                    ipAdditionalCount.textContent = additionalIps.length > 0 ? `${additionalIps.length} IP${additionalIps.length !== 1 ? 's' : ''} ativo${additionalIps.length !== 1 ? 's' : ''}` : '';
-                }
-
-                // Show/hide "Autorizar mais um IP" button (only if has at least 1 purchased)
-                if (ipAdditionalAuthorizeSection) {
-                    ipAdditionalAuthorizeSection.style.display = additionalIps.length > 0 ? 'block' : 'none';
-                }
-
-                // Show/hide "Solicitar Alteração" section (only if has at least 1 additional IP paid)
-                if (ipChangeSection) {
-                    ipChangeSection.style.display = additionalIps.length > 0 ? 'block' : 'none';
-                }
+                    return `
+                    <div class="card" style="margin-bottom:var(--space-md);padding:0;overflow:hidden;">
+                        <!-- Key header -->
+                        <div style="display:flex;align-items:center;justify-content:space-between;padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border);flex-wrap:wrap;gap:var(--space-sm);">
+                            <div style="display:flex;align-items:center;gap:var(--space-sm);min-width:0;">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-orange)" stroke-width="2" style="flex-shrink:0;"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+                                <div style="min-width:0;">
+                                    <div style="font-size:15px;font-weight:700;color:var(--text-primary);">${key.name || 'Minha chave'}</div>
+                                    <div style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted);margin-top:1px;">${maskedKey} · CRIADA EM ${createdDate}</div>
+                                </div>
+                            </div>
+                            <div style="display:flex;gap:var(--space-xs);flex-shrink:0;">
+                                <button class="btn-icon" onclick="copyKeyValue('${(key.full_key || '').replace(/'/g, "\\'")}')" title="Copiar chave" style="width:32px;height:32px;">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                                </button>
+                                <button class="btn-icon danger" onclick="deleteApiKey('${key.id}')" title="Excluir chave" style="width:32px;height:32px;">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6m4-6v6"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                        <!-- IPs autorizados -->
+                        <div style="padding:var(--space-md) var(--space-lg);">
+                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-xs);">
+                                <div style="font-size:14px;font-weight:700;color:var(--text-primary);">IPs autorizados</div>
+                                <span style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono);">${ips.length}/5 redes</span>
+                            </div>
+                            <p style="font-size:12px;color:var(--text-muted);line-height:1.5;margin:0 0 var(--space-md);">Libere um IP para autorizar a rede. Se o IP mudar dentro do mesmo provedor, a API continua funcionando.</p>
+                            <div style="display:flex;flex-direction:column;gap:var(--space-sm);margin-bottom:var(--space-md);">
+                                ${ipRows}
+                            </div>
+                            <!-- Rede atual status -->
+                            ${_currentNetworkIp ? `
+                            <div style="display:flex;align-items:center;gap:var(--space-sm);padding:var(--space-sm) var(--space-md);background:${isCurrentIpAuthorized ? 'rgba(34,197,94,0.06)' : 'var(--bg-secondary)'};border:1px solid ${isCurrentIpAuthorized ? 'rgba(34,197,94,0.2)' : 'var(--border)'};border-radius:var(--radius-sm);margin-bottom:var(--space-md);flex-wrap:wrap;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${isCurrentIpAuthorized ? 'var(--accent-green)' : 'var(--text-muted)'}" stroke-width="2" style="flex-shrink:0;">${isCurrentIpAuthorized ? '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>' : '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>'}</svg>
+                                <span style="font-size:13px;color:${isCurrentIpAuthorized ? 'var(--accent-green)' : 'var(--text-secondary)'};">${isCurrentIpAuthorized ? 'Rede atual liberada' : 'Rede atual não liberada'}</span>
+                                <span style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted);margin-left:auto;">${_currentNetworkIp}</span>
+                            </div>` : ''}
+                            <!-- Actions: Liberar este IP + Comprar IP Adicional -->
+                            <div style="display:flex;gap:var(--space-sm);flex-wrap:wrap;">
+                                ${isCurrentIpAuthorized
+                                    ? `<button disabled style="height:36px;padding:0 var(--space-md);font-size:13px;border-radius:var(--radius-sm);border:1px solid rgba(34,197,94,0.3);background:rgba(34,197,94,0.08);color:var(--accent-green);cursor:default;display:inline-flex;align-items:center;gap:6px;">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                        IP da rede liberado
+                                    </button>`
+                                    : `<button class="btn-upgrade" onclick="authorizeIpForKey('${key.id}')" style="height:36px;padding:0 var(--space-md);font-size:13px;display:inline-flex;align-items:center;gap:6px;">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                        Liberar este IP
+                                    </button>`
+                                }
+                                <button class="btn-upgrade btn-secondary" onclick="buyAdditionalIp()" style="height:36px;padding:0 var(--space-md);font-size:13px;border-color:var(--accent-orange);color:var(--accent-orange);display:inline-flex;align-items:center;gap:6px;">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                                    Comprar IP Adicional — R$ 74,90/mês
+                                </button>
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('');
             } catch (e) {
-                console.error('Load IP info error:', e);
-                const ipMainEl = document.getElementById('ipMainValue');
-                const statusBadge = document.getElementById('ipStatusBadge');
-                const currentIpEl = document.getElementById('ipCurrentNetwork');
-                if (ipMainEl) ipMainEl.textContent = 'Erro ao carregar';
-                if (statusBadge) { statusBadge.textContent = 'Erro'; statusBadge.style.color = 'var(--accent-red)'; }
-                if (currentIpEl) currentIpEl.textContent = 'Erro ao detectar';
+                console.error('Load API keys section error:', e);
+                container.innerHTML = '<div style="text-align:center;padding:var(--space-lg);color:var(--accent-red);font-size:13px;">Erro ao carregar chaves. Tente recarregar a página.</div>';
             }
         }
-        loadIpInfo();
+
+        // Generate a new API key (max 1 active)
+        async function generateApiKey() {
+            const btn = document.getElementById('btnGenerateKey');
+            const nameInput = document.getElementById('apiKeyNameInput');
+            const feedback = document.getElementById('apiKeyFeedback');
+            const name = nameInput ? nameInput.value.trim() : 'Minha chave';
+            if (btn) { btn.disabled = true; btn.innerHTML = 'Gerando...'; }
+            try {
+                const token = localStorage.getItem('8token_token');
+                const res = await fetch(API_BASE + '/api/keys', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: name || 'Minha chave' })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-green)'; feedback.textContent = 'Chave gerada! Copiada para a área de transferência.'; }
+                    if (nameInput) nameInput.value = '';
+                    if (data.key) navigator.clipboard.writeText(data.key).catch(() => {});
+                    await loadApiKeysSection();
+                } else {
+                    if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-red)'; feedback.textContent = data.error || 'Erro ao gerar chave.'; }
+                }
+            } catch (e) {
+                if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-red)'; feedback.textContent = 'Erro de conexão.'; }
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Gerar'; }
+            }
+        }
+
+        // Delete an API key (removes all authorized IPs via CASCADE)
+        async function deleteApiKey(keyId) {
+            if (!confirm('Excluir esta chave? Todos os IPs autorizados serão removidos junto.')) return;
+            try {
+                const token = localStorage.getItem('8token_token');
+                const res = await fetch(API_BASE + '/api/keys/' + keyId, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) {
+                    await loadApiKeysSection();
+                } else {
+                    const data = await res.json().catch(() => ({}));
+                    alert(data.error || 'Erro ao excluir chave.');
+                }
+            } catch (e) { alert('Erro de conexão.'); }
+        }
+
+        // Authorize current network IP for a specific key
+        async function authorizeIpForKey(keyId) {
+            const feedback = document.getElementById('apiKeyFeedback');
+            try {
+                const token = localStorage.getItem('8token_token');
+                const res = await fetch(API_BASE + '/api/keys/' + keyId + '/authorize-ip', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ use_current: true })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-green)'; feedback.textContent = 'IP da rede atual liberado com sucesso!'; }
+                    await detectCurrentIp();
+                    await loadApiKeysSection();
+                } else {
+                    if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-red)'; feedback.textContent = data.error || 'Erro ao liberar IP.'; }
+                }
+            } catch (e) {
+                if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-red)'; feedback.textContent = 'Erro de conexão.'; }
+            }
+        }
+
+        // Remove an authorized IP from a key
+        async function removeAuthorizedIp(keyId, ipId) {
+            if (!confirm('Remover este IP autorizado?')) return;
+            try {
+                const token = localStorage.getItem('8token_token');
+                const res = await fetch(API_BASE + '/api/keys/' + keyId + '/authorized-ips/' + ipId, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) {
+                    await loadApiKeysSection();
+                } else {
+                    alert('Erro ao remover IP.');
+                }
+            } catch (e) { alert('Erro de conexão.'); }
+        }
+
+        // Copy key value to clipboard
+        function copyKeyValue(val) {
+            navigator.clipboard.writeText(val).then(() => {
+                const feedback = document.getElementById('apiKeyFeedback');
+                if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-green)'; feedback.textContent = 'Chave copiada!'; setTimeout(() => { feedback.style.display = 'none'; }, 2000); }
+            });
+        }
+
+        // Buy additional IP — redirects to checkout (existing logic)
+        function buyAdditionalIp() { window.location.href = 'checkout-ip.html'; }
 
         // ---- PROFILE & ADMIN LOGIC ----
         async function loadProfileAndAdmin() {
@@ -1068,38 +1090,14 @@
                     const apiLocked = document.getElementById('apiLocked');
                     const apiUnlocked = document.getElementById('apiUnlocked');
                     const nowDate = new Date();
-                    // Plan is active if: hasPlan AND (no expiry date set = unlimited/admin-granted, OR expiry is in the future)
                     const planActiveAndNotExpired = hasPlan && (!profile.plan_expires_at || new Date(profile.plan_expires_at) > nowDate);
 
                     if (planActiveAndNotExpired) {
                         if (apiLocked) apiLocked.style.display = 'none';
                         if (apiUnlocked) apiUnlocked.style.display = 'block';
-                        // Load real API keys and gateway URL
-                        try {
-                            const [keysRes, gwRes] = await Promise.all([
-                                fetch(API_BASE + '/api/keys', { headers }),
-                                fetch(API_BASE + '/api/user/gateway-url', { headers })
-                            ]);
-                            if (keysRes.ok) {
-                                const keys = await keysRes.json();
-                                const activeKeys = (keys || []).filter(k => !k.revoked);
-                                const apiKeyValueEl = document.getElementById('apiKeyValue');
-                                if (apiKeyValueEl) {
-                                    if (activeKeys.length > 0 && activeKeys[0].full_key) {
-                                        apiKeyValueEl.textContent = activeKeys[0].full_key;
-                                    } else if (activeKeys.length > 0) {
-                                        apiKeyValueEl.textContent = (activeKeys[0].key_prefix || '8tk_') + '••••••••' + (activeKeys[0].key_suffix || '');
-                                    } else {
-                                        apiKeyValueEl.textContent = 'Nenhuma chave gerada ainda';
-                                    }
-                                }
-                            }
-                            if (gwRes.ok) {
-                                const gwData = await gwRes.json();
-                                const gwEl = document.getElementById('gatewayUrlValue');
-                                if (gwEl && gwData.gateway_url) gwEl.textContent = gwData.gateway_url;
-                            }
-                        } catch (e) { console.error('API keys/gateway load error:', e); }
+                        // Load unified API keys + IPs section
+                        await detectCurrentIp();
+                        await loadApiKeysSection();
                     } else {
                         if (apiLocked) apiLocked.style.display = 'flex';
                         if (apiUnlocked) apiUnlocked.style.display = 'none';
@@ -1119,193 +1117,14 @@
         }
         loadProfileAndAdmin();
 
-        // Authorize current network IP as main IP
-        async function authorizeCurrentIp() {
-            const btn = document.getElementById('btnAuthorizeCurrentIp');
-            const feedback = document.getElementById('ipAuthorizeFeedback');
-            // Block if no active plan
-            const token = localStorage.getItem('8token_token');
-            if (!token) { if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-red)'; feedback.textContent = 'Faça login primeiro.'; } return; }
-            try {
-                const profileRes = await fetch(API_BASE + '/api/user/profile', { headers: { 'Authorization': 'Bearer ' + token } });
-                if (profileRes.ok) {
-                    const profile = await profileRes.json();
-                    const hasPlan = profile.plan && profile.plan !== 'free';
-                    const planActive = hasPlan && (!profile.plan_expires_at || new Date(profile.plan_expires_at) > new Date());
-                    if (!planActive) {
-                        if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-amber)'; feedback.textContent = '⚠ Você precisa ter um plano ativo para liberar um IP.'; }
-                        if (btn) { btn.disabled = false; btn.textContent = 'Liberar este IP'; }
-                        return;
-                    }
-                }
-            } catch (e) { /* proceed — server will also validate */ }
-            if (btn) { btn.disabled = true; btn.textContent = 'Liberando...'; }
-            try {
-                const res = await fetch(API_BASE + '/api/user/authorize-current-ip', {
-                    method: 'POST',
-                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-green)'; feedback.textContent = data.message || 'IP liberado com sucesso!'; }
-                    loadIpInfo();
-                } else {
-                    if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-red)'; feedback.textContent = data.error || 'Erro ao liberar IP.'; }
-                }
-            } catch (e) {
-                if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-red)'; feedback.textContent = 'Erro de conexão.'; }
-            } finally {
-                if (btn) { btn.disabled = false; btn.textContent = 'Liberar este IP'; }
-            }
-        }
-
-        // Buy additional IP — redirect to checkout
-        function buyAdditionalIp() { window.location.href = 'checkout-ip.html'; }
-
-        // Toggle additional IP edit form
-        function toggleAdditionalIpForm() {
-            const form = document.getElementById('ipAdditionalForm');
-            const feedback = document.getElementById('ipAdditionalFeedback');
-            if (!form) return;
-            const willShow = form.style.display === 'none';
-            form.style.display = willShow ? 'block' : 'none';
-            if (willShow) {
-                const input = document.getElementById('ipAdditionalInput');
-                if (input) { input.value = ''; setTimeout(() => input.focus(), 50); }
-                if (feedback) feedback.style.display = 'none';
-            }
-        }
-
-        // Save additional IP (supports multiple IPs via editingIndex)
-        async function saveAdditionalIp() {
-            const input = document.getElementById('ipAdditionalInput');
-            const saveBtn = document.getElementById('ipAdditionalSaveBtn');
-            const feedback = document.getElementById('ipAdditionalFeedback');
-            const form = document.getElementById('ipAdditionalForm');
-            const ip = input ? input.value.trim() : '';
-            const editingIndex = form ? parseInt(form.dataset.editingIndex || '-1') : -1;
-
-            if (!ip) { if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-red)'; feedback.textContent = 'Digite um IP válido.'; } return; }
-            if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(ip)) { if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-red)'; feedback.textContent = 'Formato de IP inválido.'; } return; }
-            if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Salvando...'; }
-            try {
-                const token = localStorage.getItem('8token_token');
-                // Use POST for new IP, PUT for edit
-                const method = editingIndex >= 0 ? 'PUT' : 'POST';
-                const url = editingIndex >= 0
-                    ? API_BASE + '/api/user/additional-ip/' + editingIndex
-                    : API_BASE + '/api/user/additional-ip';
-
-                const res = await fetch(url, {
-                    method: method,
-                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ip })
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-green)'; feedback.textContent = 'IP adicional salvo!'; }
-                    loadIpInfo();
-                    setTimeout(toggleAdditionalIpForm, 1200);
-                } else {
-                    if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-red)'; feedback.textContent = data.error || 'Erro ao salvar IP.'; }
-                }
-            } catch (e) {
-                if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-red)'; feedback.textContent = 'Erro de conexão.'; }
-            } finally {
-                if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Salvar'; }
-            }
-        }
-
-        // Authorize new additional IP (opens form for user to enter IP)
-        function authorizeNewAdditionalIp() {
-            const form = document.getElementById('ipAdditionalForm');
-            const input = document.getElementById('ipAdditionalInput');
-            const feedback = document.getElementById('ipAdditionalFeedback');
-            if (!form) return;
-            form.style.display = 'block';
-            if (input) { input.value = ''; setTimeout(() => input.focus(), 50); }
-            if (feedback) feedback.style.display = 'none';
-            // Store editing index as -1 for new IP
-            form.dataset.editingIndex = '-1';
-        }
-
-        // Edit specific additional IP by index
-        function editAdditionalIp(index, currentIp) {
-            const form = document.getElementById('ipAdditionalForm');
-            const input = document.getElementById('ipAdditionalInput');
-            const feedback = document.getElementById('ipAdditionalFeedback');
-            if (!form) return;
-            form.style.display = 'block';
-            if (input) { input.value = currentIp || ''; setTimeout(() => input.focus(), 50); }
-            if (feedback) feedback.style.display = 'none';
-            form.dataset.editingIndex = String(index);
-        }
-
-        // Remove additional IP by index
-        async function removeAdditionalIpByIndex(index) {
-            if (!confirm('Excluir este IP adicional?')) return;
-            try {
-                const token = localStorage.getItem('8token_token');
-                const res = await fetch(API_BASE + '/api/user/additional-ip/' + index, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (res.ok) { loadIpInfo(); } else { alert('Erro ao remover IP adicional.'); }
-            } catch (e) { alert('Erro de conexão.'); }
-        }
-
-        // Legacy remove function (kept for backward compat)
-        async function removeAdditionalIp() {
-            if (!confirm('Excluir o IP adicional?')) return;
-            try {
-                const token = localStorage.getItem('8token_token');
-                const res = await fetch(API_BASE + '/api/user/additional-ip', {
-                    method: 'DELETE',
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (res.ok) { loadIpInfo(); } else { alert('Erro ao remover IP adicional.'); }
-            } catch (e) { alert('Erro de conexão.'); }
-        }
-
-        function toggleIpChangeForm() {
-            const form = document.getElementById('ipChangeForm'); const btn = document.getElementById('ipChangeToggleBtn'); const feedback = document.getElementById('ipChangeFeedback');
-            if (!form) return;
-            const willShow = form.style.display === 'none';
-            form.style.display = willShow ? 'block' : 'none';
-            if (btn) btn.textContent = willShow ? 'Cancelar' : 'Solicitar Alteração';
-            if (willShow) { const input = document.getElementById('ipChangeInput'); if (input) { input.value = ''; setTimeout(() => input.focus(), 50); } if (feedback) feedback.style.display = 'none'; }
-        }
-        function showIpFeedback(msg, ok) {
-            const feedback = document.getElementById('ipChangeFeedback'); if (!feedback) return;
-            feedback.style.display = 'block'; feedback.style.color = ok ? 'var(--accent-green)' : 'var(--accent-red)'; feedback.textContent = msg;
-        }
-        async function submitIpChange() {
-            const input = document.getElementById('ipChangeInput'); const submitBtn = document.getElementById('ipChangeSubmitBtn'); const newIp = input ? input.value.trim() : '';
-            if (!newIp) { showIpFeedback('Digite um IP válido.', false); return; }
-            if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(newIp)) { showIpFeedback('Formato inválido.', false); return; }
-            if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Enviando...'; }
-            try {
-                const token = localStorage.getItem('8token_token');
-                const res = await fetch(API_BASE + '/api/user/change-ip', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ new_ip: newIp.trim() }) });
-                const data = await res.json();
-                if (res.ok) { showIpFeedback(data.message || 'Solicitação enviada.', true); if (input) input.value = ''; loadIpInfo(); setTimeout(toggleIpChangeForm, 1800); } else { showIpFeedback(data.error || 'Erro.', false); }
-            } catch (e) { showIpFeedback('Erro de conexão.', false); }
-            finally { if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Enviar Solicitação'; } }
-        }
-
-        // ---- API KEY LOGIC ----
-        function copyApiKey() {
-            const val = document.getElementById('apiKeyValue').textContent;
-            navigator.clipboard.writeText(val).then(() => alert('Chave copiada!'));
-        }
+        // Copy gateway URL to clipboard (used by the unified section's Copiar button)
         function copyGatewayUrl() {
-            const val = document.getElementById('gatewayUrlValue').textContent;
-            navigator.clipboard.writeText(val).then(() => alert('URL copiada!'));
-        }
-        function regenerateApiKey() {
-            if(confirm('Gerar nova chave? A antiga será invalidada.')) {
-                alert('Funcionalidade de regeneração requer backend integration.');
-            }
+            const el = document.getElementById('gatewayUrlValue');
+            if (!el) return;
+            navigator.clipboard.writeText(el.textContent).then(() => {
+                const feedback = document.getElementById('apiKeyFeedback');
+                if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-green)'; feedback.textContent = 'URL do gateway copiada!'; setTimeout(() => { feedback.style.display = 'none'; }, 2000); }
+            });
         }
 
         // ---- USAGE STATS (real-time metrics from /api/user/usage-stats) ----

@@ -450,17 +450,7 @@
                 </div>
             </div>
 
-            <!-- TAB: ACTIVATIONS -->
-            <div class="tab-panel" id="tab-activations">
-                <p style="color:var(--text-secondary);font-size:14px;margin-bottom:var(--space-lg);">Pedidos de ativação de IP gerados quando um usuário completa a compra. Aprovar libera a chave API e URL do gateway para o usuário.</p>
-                <div class="table-wrap">
-                    <table>
-                        <thead><tr><th>ID</th><th>IP</th><th>Usuário</th><th>Plano</th><th>Status</th><th>Criado</th><th>API Key</th><th>Ações</th></tr></thead>
-                        <tbody id="activationsTableBody"><tr><td colspan="8" class="empty-state">Carregando...</td></tr></tbody>
-                    </table>
-                </div>
-            </div>
-
+            
             <!-- TAB: COUPONS -->
             <div class="tab-panel" id="tab-coupons">
                 <div class="card">
@@ -817,7 +807,6 @@
             }
             if (name === 'dashboard') loadDashboard();
             if (name === 'users') loadSubscriptions();
-            if (name === 'activations') loadActivations();
             if (name === 'affiliates') loadAffiliates();
             if (name === 'notifications') loadNotifStats();
             if (name === 'plans') loadPlans();
