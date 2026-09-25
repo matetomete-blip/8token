@@ -1054,7 +1054,8 @@
                     const apiLocked = document.getElementById('apiLocked');
                     const apiUnlocked = document.getElementById('apiUnlocked');
                     const nowDate = new Date();
-                    const planActiveAndNotExpired = hasPlan && profile.plan_expires_at && new Date(profile.plan_expires_at) > nowDate;
+                    // Plan is active if: hasPlan AND (no expiry date set = unlimited/admin-granted, OR expiry is in the future)
+                    const planActiveAndNotExpired = hasPlan && (!profile.plan_expires_at || new Date(profile.plan_expires_at) > nowDate);
 
                     if (planActiveAndNotExpired) {
                         if (apiLocked) apiLocked.style.display = 'none';

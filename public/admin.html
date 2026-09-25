@@ -761,6 +761,7 @@
                     document.getElementById('kirvanoProductMensal').value = config.product_mensal_id || '';
                     document.getElementById('kirvanoProductTrimestral').value = config.product_trimestral_id || '';
                     document.getElementById('kirvanoProductAnual').value = config.product_anual_id || '';
+                    document.getElementById('kirvanoProductIpAdicional').value = config.product_ip_adicional_id || '';
                     document.getElementById('kirvanoCheckoutMensal').value = config.checkout_mensal_url || '';
                     document.getElementById('kirvanoCheckoutTrimestral').value = config.checkout_trimestral_url || '';
                     document.getElementById('kirvanoCheckoutAnual').value = config.checkout_anual_url || '';
@@ -1380,9 +1381,11 @@
                         product_mensal_id: document.getElementById('kirvanoProductMensal').value,
                         product_trimestral_id: document.getElementById('kirvanoProductTrimestral').value,
                         product_anual_id: document.getElementById('kirvanoProductAnual').value,
+                        product_ip_adicional_id: document.getElementById('kirvanoProductIpAdicional').value,
                         checkout_mensal_url: document.getElementById('kirvanoCheckoutMensal').value,
                         checkout_trimestral_url: document.getElementById('kirvanoCheckoutTrimestral').value,
-                        checkout_anual_url: document.getElementById('kirvanoCheckoutAnual').value
+                        checkout_anual_url: document.getElementById('kirvanoCheckoutAnual').value,
+                        checkout_ip_adicional_url: document.getElementById('kirvanoCheckoutIpAdicional').value
                     })
                 });
                 showAlert('webhookFormAlert', 'Configuração salva com sucesso!', 'success');
