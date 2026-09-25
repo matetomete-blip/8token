@@ -1239,13 +1239,35 @@ app.get('/api/admin/affiliates', adminAuth, async (req, res) => {
   res.json(data || []);
 });
 
+// Busca usuários por email (para cadastro de afiliados)
+app.get('/api/admin/users/search', adminAuth, async (req, res) => {
+  const { email } = req.query;
+  if (!email || email.trim().length < 2) return res.status(400).json({ error: 'Digite pelo menos 2 caracteres' });
+  const { data } = await supabase.from('users').select('id, email, name, plan, created_at').ilike('email', `%${email.trim()}%`).limit(10);
+  res.json(data || []);
+});
+
 app.post('/api/admin/affiliates', adminAuth, async (req, res) => {
-  const { user_id, commission_pct } = req.body;
-  if (!user_id) return res.status(400).json({ error: 'user_id é obrigatório' });
+  let { user_id, email, commission_pct } = req.body;
+
+  // Se email foi fornecido em vez de user_id, buscar o usuário
+  if (!user_id && email) {
+    const { data: user } = await supabase.from('users').select('id').eq('email', email.trim()).single();
+    if (!user) return res.status(404).json({ error: 'Usuário com este email não encontrado. O usuário precisa ter conta primeiro.' });
+    user_id = user.id;
+  }
+
+  if (!user_id) return res.status(400).json({ error: 'Email ou ID do usuário é obrigatório' });
+
   const { data: existing } = await supabase.from('affiliates').select('id').eq('user_id', user_id).single();
   if (existing) return res.status(409).json({ error: 'Usuário já é afiliado' });
+
   const code = 'aff_' + crypto.randomBytes(6).toString('hex');
   const { data } = await supabase.from('affiliates').insert({ user_id, commission_pct: commission_pct || 10, code }).select().single();
+
+  // Atualizar role do usuário para affiliate
+  await supabase.from('users').update({ role: 'affiliate' }).eq('id', user_id);
+
   await supabase.from('notifications').insert({ user_id, title: 'Você é Afiliado!', message: `Parabéns! Comissão: ${commission_pct || 10}%. Código: ${code}`, type: 'success' });
   res.json(data);
 });

@@ -408,7 +408,7 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 Minha Conta
             </button>
-            <button class="sidebar-link" onclick="window.location.href='affiliate.html'">
+            <button class="sidebar-link" id="sidebarAffiliateLink" style="display:none;" onclick="window.location.href='affiliate.html'">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                 Afiliados
             </button>
@@ -468,7 +468,7 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md); align-items: stretch;">
             <div class="dash-section" id="planCardContainer" style="margin-bottom: 0; display: flex; flex-direction: column;">
                 <div class="dash-section-title">Plano Atual</div>
-                <div class="card plan-card" id="planCardInner" style="flex: 1; display: flex; flex-direction: column; justify-content: space-between; transition: border-color 0.3s, box-shadow 0.3s;">
+                <div class="card plan-card" id="planCardInner" style="flex: 1; display: flex; flex-direction: column; justify-content: space-between; transition: border-color 0.3s, box-shadow 0.3s; position: relative; overflow: hidden;">
                     <!-- Estado: Sem plano -->
                     <div id="planCardEmpty" style="text-align:center;padding:var(--space-xl) 0; flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;">
                         <div style="font-size:40px;margin-bottom:var(--space-sm);">📋</div>
@@ -477,31 +477,33 @@
                         <a href="index.html#pricing" class="btn-upgrade" style="display:inline-flex;height:40px;padding:0 var(--space-lg);font-size:14px;">Ver planos e assinar</a>
                     </div>
                     <!-- Estado: Com plano -->
-                    <div id="planCardActive" style="display:none; flex: 1; display: flex; flex-direction: column; justify-content: space-between;">
+                    <div id="planCardActive" style="display:none; flex: 1; display: flex; flex-direction: column; justify-content: space-between; padding: var(--space-md);">
                         <div>
-                            <div class="plan-info">
-                                <div class="plan-name">
-                                    <span id="planCardName">—</span>
-                                    <span class="plan-badge" id="planCardBadge" style="display:none;"></span>
+                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-sm);">
+                                <div class="plan-name" style="margin:0;">
+                                    <span id="planCardName" style="font-size:20px;font-weight:700;">—</span>
+                                    <span class="plan-badge" id="planCardBadge" style="display:none;margin-left:8px;"></span>
                                 </div>
-                                <div class="plan-details">
-                                    Claude Opus 5, Sonnet 5, Fable 5.1 e GLM 5.3 · Uso ilimitado
+                                <div style="display:flex;align-items:center;gap:6px;">
+                                    <div style="width:8px;height:8px;border-radius:50%;background:var(--accent-green);box-shadow:0 0 8px var(--accent-green);" id="planStatusDot"></div>
+                                    <span style="font-size:12px;font-weight:600;color:var(--accent-green);" id="planStatusText">Ativo</span>
                                 </div>
                             </div>
-                            <div style="margin-top: var(--space-md); padding: var(--space-sm); background: var(--bg-secondary); border-radius: var(--radius-sm); border-left: 3px solid var(--accent-green);">
-                                <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">Status</div>
-                                <div style="font-size: 14px; font-weight: 600; color: var(--accent-green);" id="planStatusText">Ativo</div>
-                                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;" id="planExpiryText">Expira em —</div>
+                            <div class="plan-details" style="font-size:12px;color:var(--text-secondary);margin-bottom:var(--space-md);line-height:1.5;">
+                                Claude Opus 5, Sonnet 5, Fable 5.1 e GLM 5.3 · Uso ilimitado
+                            </div>
+                            <div style="display:flex;align-items:center;justify-content:space-between;padding:var(--space-sm);background:rgba(255,255,255,0.03);border-radius:var(--radius-sm);border:1px solid var(--border);">
+                                <div>
+                                    <div style="font-size:11px;color:var(--text-muted);margin-bottom:2px;">Expira em</div>
+                                    <div style="font-size:13px;font-weight:600;color:var(--text-primary);" id="planExpiryText">—</div>
+                                </div>
+                                <div style="text-align:right;">
+                                    <div class="plan-price-value" id="planCardPrice" style="font-size:18px;margin:0;">—</div>
+                                    <div class="plan-price-period" id="planCardPeriod" style="font-size:11px;margin:0;"></div>
+                                </div>
                             </div>
                         </div>
-                        <div style="margin-top: var(--space-lg);">
-                            <div class="plan-price">
-                                <div class="plan-price-value" id="planCardPrice">—</div>
-                                <div class="plan-price-period" id="planCardPeriod"></div>
-                                <div class="plan-renewal" id="planCardRenewal"></div>
-                            </div>
-                            <a href="account.html" class="btn-upgrade btn-secondary" style="display:inline-flex;height:36px;padding:0 var(--space-md);font-size:13px;text-align:center; width: 100%; justify-content: center; margin-top: var(--space-sm);">Gerenciar Plano</a>
-                        </div>
+                        <a href="account.html" class="btn-upgrade btn-secondary" style="display:inline-flex;height:36px;padding:0 var(--space-md);font-size:13px;text-align:center; width: 100%; justify-content: center; margin-top: var(--space-md);">Gerenciar Plano</a>
                     </div>
                 </div>
             </div>
@@ -954,6 +956,7 @@
 
                         // Update plan status and expiry with responsive border glow
                         const planStatusText = document.getElementById('planStatusText');
+                        const planStatusDot = document.getElementById('planStatusDot');
                         const planExpiryText = document.getElementById('planExpiryText');
                         const planCardInner = document.getElementById('planCardInner');
 
@@ -963,16 +966,20 @@
                             const diffTime = expDate - now;
                             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-                            // Update status text
+                            // Update status dot and text
                             if (planStatusText) {
                                 planStatusText.textContent = 'Ativo';
                                 planStatusText.style.color = 'var(--accent-green)';
+                            }
+                            if (planStatusDot) {
+                                planStatusDot.style.background = 'var(--accent-green)';
+                                planStatusDot.style.boxShadow = '0 0 8px var(--accent-green)';
                             }
 
                             // Update expiry text
                             if (planExpiryText) {
                                 if (diffDays > 0) {
-                                    planExpiryText.textContent = `Expira em ${diffDays} dia${diffDays !== 1 ? 's' : ''} (${expDate.toLocaleDateString('pt-BR')})`;
+                                    planExpiryText.textContent = `${diffDays} dia${diffDays !== 1 ? 's' : ''} (${expDate.toLocaleDateString('pt-BR')})`;
                                 } else {
                                     planExpiryText.textContent = 'Expirado';
                                     planExpiryText.style.color = 'var(--accent-red)';
@@ -980,23 +987,37 @@
                             }
 
                             // Apply responsive border glow based on days remaining
-                            let borderColor, glowColor;
+                            let borderColor, glowColor, dotColor;
                             if (diffDays > 15) {
                                 // Green: more than 15 days
                                 borderColor = 'var(--accent-green)';
-                                glowColor = 'rgba(34, 197, 94, 0.3)';
+                                glowColor = 'rgba(34, 197, 94, 0.25)';
+                                dotColor = 'var(--accent-green)';
                             } else if (diffDays > 5) {
                                 // Orange: 5-15 days
                                 borderColor = 'var(--accent-orange)';
-                                glowColor = 'rgba(249, 115, 22, 0.3)';
+                                glowColor = 'rgba(249, 115, 22, 0.25)';
+                                dotColor = 'var(--accent-orange)';
                             } else {
                                 // Red: less than 5 days
                                 borderColor = 'var(--accent-red)';
-                                glowColor = 'rgba(239, 68, 68, 0.3)';
+                                glowColor = 'rgba(239, 68, 68, 0.25)';
+                                dotColor = 'var(--accent-red)';
                             }
 
                             planCardInner.style.borderColor = borderColor;
-                            planCardInner.style.boxShadow = `0 0 20px ${glowColor}, inset 0 0 20px ${glowColor}`;
+                            planCardInner.style.boxShadow = `0 0 20px ${glowColor}, inset 0 0 15px ${glowColor}`;
+
+                            // Update dot color to match border
+                            if (planStatusDot) {
+                                planStatusDot.style.background = dotColor;
+                                planStatusDot.style.boxShadow = `0 0 8px ${dotColor}`;
+                            }
+                            if (planStatusText && diffDays <= 5) {
+                                planStatusText.style.color = 'var(--accent-red)';
+                            } else if (planStatusText && diffDays <= 15) {
+                                planStatusText.style.color = 'var(--accent-orange)';
+                            }
                         }
                     } else {
                         if (planCardEmpty) planCardEmpty.style.display = 'block';
@@ -1017,6 +1038,15 @@
                         if (adminLink) adminLink.style.display = 'inline-flex';
                         if (sidebarAdminLink) sidebarAdminLink.style.display = 'flex';
                     }
+
+                    // Show affiliate link if user is an affiliate (source of truth: affiliates table)
+                    try {
+                        const affRes = await fetch('/api/affiliate/me', { credentials: 'include' });
+                        if (affRes.ok) {
+                            const sidebarAffiliateLink = document.getElementById('sidebarAffiliateLink');
+                            if (sidebarAffiliateLink) sidebarAffiliateLink.style.display = 'flex';
+                        }
+                    } catch (e) { /* not an affiliate — link stays hidden */ }
                 }
             } catch (e) { console.error('Profile/Admin load error:', e); }
         }

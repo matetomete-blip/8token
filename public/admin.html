@@ -431,7 +431,7 @@
                     </div>
                     <div class="form-row">
                         <div class="form-group"><label class="form-label">Plano</label><select id="fieldPlan" class="form-select"><option value="free">Free</option><option value="mensal">Mensal</option><option value="trimestral">Trimestral</option><option value="anual">Anual</option></select></div>
-                        <div class="form-group"><label class="form-label">Status</label><select id="fieldStatus" class="form-select"><option value="active">Ativo</option><option value="pending">Pendente</option><option value="suspended">Suspenso</option><option value="expired">Expirado</option></select></div>
+                        <div class="form-group"><label class="form-label">Acesso ao Gateway (IP)</label><select id="fieldStatus" class="form-select"><option value="active">🟢 IP Liberado</option><option value="suspended">🔴 IP Bloqueado</option></select><div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Controla se este IP pode usar os tokens ilimitados. A conta do usuário permanece sempre ativa.</div></div>
                     </div>
                     <div class="form-row">
                         <div class="form-group"><label class="form-label">Expira em</label><input type="datetime-local" id="fieldExpires" class="form-input"></div>
@@ -540,8 +540,17 @@
                     <div class="card-title">Cadastrar Afiliado</div>
                     <div id="affFormAlert" class="alert"></div>
                     <div class="form-row">
-                        <div class="form-group"><label class="form-label">ID do Usuário *</label><input type="number" id="affUserId" class="form-input" placeholder="Ex: 1"></div>
+                        <div class="form-group" style="flex:2;">
+                            <label class="form-label">Email do Usuário *</label>
+                            <div style="display:flex;gap:var(--space-sm);">
+                                <input type="email" id="affEmail" class="form-input" placeholder="usuario@exemplo.com" style="flex:1;" onkeydown="if(event.key==='Enter'){event.preventDefault();searchUserByEmail();}">
+                                <button class="btn btn-secondary" onclick="searchUserByEmail()" style="white-space:nowrap;height:38px;padding:0 var(--space-md);font-size:13px;">Buscar</button>
+                            </div>
+                        </div>
                         <div class="form-group"><label class="form-label">Comissão (%) *</label><input type="number" id="affCommission" class="form-input" placeholder="Ex: 10" min="1" max="100" value="10"></div>
+                    </div>
+                    <div id="affUserFound" style="display:none;margin:var(--space-sm) 0;padding:var(--space-sm) var(--space-md);background:rgba(0,255,148,0.08);border:1px solid rgba(0,255,148,0.2);border-radius:var(--radius-sm);font-size:13px;color:var(--accent-green);">
+                        <span id="affUserFoundInfo"></span>
                     </div>
                     <button class="btn btn-primary" onclick="addAffiliate()" style="margin-top:var(--space-sm);">Cadastrar Afiliado</button>
                 </div>
@@ -887,8 +896,8 @@
             return `<span class="badge ${map[role] || 'badge-free'}" style="margin-left:4px;font-size:10px;">${labels[role] || role}</span>`;
         }
         function badgeForStatus(status) {
-            const map = { active: 'badge-active', pending: 'badge-pending', expired: 'badge-expired', suspended: 'badge-suspended', approved: 'badge-approved', rejected: 'badge-rejected', paid: 'badge-active', unpaid: 'badge-pending' };
-            const labels = { active: 'IP Ativo', pending: 'Não Programado', expired: 'Expirado', suspended: 'Desativado', approved: 'Aprovado', rejected: 'Recusado', paid: 'Pago', unpaid: 'Pendente' };
+            const map = { active: 'badge-active', pending: 'badge-pending', expired: 'badge-expired', suspended: 'badge-suspended', approved: 'badge-approved', rejected: 'badge-rejected', paid: 'badge-active', unpaid: 'badge-pending', orphaned: 'badge-expired', duplicate: 'badge-expired' };
+            const labels = { active: '🟢 IP Liberado', pending: '⏳ Pendente', expired: '⏰ Expirado', suspended: '🔴 IP Bloqueado', approved: '✅ Aprovado', rejected: '❌ Recusado', paid: '💰 Pago', unpaid: '⏳ Pendente', orphaned: ' Órfão', duplicate: '📋 Duplicado' };
             return `<span class="badge ${map[status] || 'badge-free'}">${labels[status] || status}</span>`;
         }
         function formatDate(d) {
@@ -1297,14 +1306,50 @@
             draggedAffiliateId = null;
         }
 
-        async function addAffiliate() {
-            const userId = document.getElementById('affUserId').value;
-            const commission = parseFloat(document.getElementById('affCommission').value) || 10;
-            if (!userId) { showAlert('affFormAlert', 'ID do usuário é obrigatório.', 'error'); return; }
+        async function searchUserByEmail() {
+            const emailInput = document.getElementById('affEmail');
+            const email = emailInput ? emailInput.value.trim() : '';
+            const foundDiv = document.getElementById('affUserFound');
+            const foundInfo = document.getElementById('affUserFoundInfo');
+            if (!email || email.length < 2) { showAlert('affFormAlert', 'Digite pelo menos 2 caracteres do email.', 'error'); return; }
             try {
-                const result = await apiFetch('/api/admin/affiliates', { method: 'POST', body: JSON.stringify({ user_id: parseInt(userId), commission_pct: commission }) });
+                const results = await apiFetch(`/api/admin/users/search?email=${encodeURIComponent(email)}`);
+                if (!results || results.length === 0) {
+                    showAlert('affFormAlert', 'Nenhum usuário encontrado com este email.', 'error');
+                    if (foundDiv) foundDiv.style.display = 'none';
+                    return;
+                }
+                // Se encontrou exatamente 1, auto-selecionar
+                if (results.length === 1) {
+                    const u = results[0];
+                    const planNames = { mensal: 'Mensal', trimestral: 'Trimestral', anual: 'Anual', free: 'Free' };
+                    if (foundInfo) foundInfo.innerHTML = `✅ <strong>${u.name || 'Sem nome'}</strong> — ${u.email} — Plano: ${planNames[u.plan] || u.plan || 'Free'}`;
+                    if (foundDiv) foundDiv.style.display = 'block';
+                    emailInput.value = u.email;
+                    showAlert('affFormAlert', '', 'success');
+                } else {
+                    // Múltiplos resultados — mostrar lista
+                    let html = results.map(u => {
+                        const planNames = { mensal: 'Mensal', trimestral: 'Trimestral', anual: 'Anual', free: 'Free' };
+                        return `<div style="cursor:pointer;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.05);" onclick="document.getElementById('affEmail').value='${u.email}';document.getElementById('affUserFoundInfo').innerHTML='✅ <strong>${(u.name||'Sem nome').replace(/'/g,"\\'")}</strong> — ${u.email} — Plano: ${planNames[u.plan]||u.plan||'Free'}';showAlert('affFormAlert','','success');">
+                            <strong>${u.name || 'Sem nome'}</strong> — ${u.email} — ${planNames[u.plan] || u.plan || 'Free'}
+                        </div>`;
+                    }).join('');
+                    if (foundInfo) foundInfo.innerHTML = `${results.length} usuários encontrados — clique para selecionar:<br>${html}`;
+                    if (foundDiv) foundDiv.style.display = 'block';
+                }
+            } catch (e) { showAlert('affFormAlert', e.message, 'error'); if (foundDiv) foundDiv.style.display = 'none'; }
+        }
+
+        async function addAffiliate() {
+            const email = document.getElementById('affEmail').value.trim();
+            const commission = parseFloat(document.getElementById('affCommission').value) || 10;
+            if (!email) { showAlert('affFormAlert', 'Email do usuário é obrigatório.', 'error'); return; }
+            try {
+                const result = await apiFetch('/api/admin/affiliates', { method: 'POST', body: JSON.stringify({ email, commission_pct: commission }) });
                 showAlert('affFormAlert', `Afiliado criado! Código: ${result.code}`, 'success');
-                document.getElementById('affUserId').value = '';
+                document.getElementById('affEmail').value = '';
+                document.getElementById('affUserFound').style.display = 'none';
                 loadAffiliates();
             } catch (e) { showAlert('affFormAlert', e.message, 'error'); }
         }
