@@ -116,8 +116,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// Trust proxy for correct IP behind Vercel
-app.set('trust proxy', true);
+// Trust proxy for correct IP behind Nginx/Vercel — use 1 (first proxy only) to satisfy express-rate-limit v7+
+app.set('trust proxy', 1);
 
 // Middleware: capture real IP
 app.use((req, res, next) => {
