@@ -1343,13 +1343,15 @@ app.post('/api/admin/subscriptions/:id/reset', adminAuth, async (req, res) => {
     const newUserId = crypto.randomUUID();
     const { data: oldUser } = await supabase.from('users').select('*').eq('id', oldUserId).single();
     if (!oldUser) return res.status(404).json({ error: 'Usu\u00e1rio n\u00e3o encontrado na tabela users' });
+    // Delete old user FIRST to free the email unique constraint
+    await supabase.from('users').delete().eq('id', oldUserId);
+    // Now insert new user with same email
     const { error: insertErr } = await supabase.from('users').insert({
       id: newUserId, email: oldUser.email, name: oldUser.name,
       role: oldUser.role || 'user', plan: 'free', plan_expires_at: null,
       created_at: new Date().toISOString()
     });
     if (insertErr) return res.status(500).json({ error: 'Falha ao criar novo registro: ' + insertErr.message });
-    await supabase.from('users').delete().eq('id', oldUserId);
     await supabase.from('ip_subscriptions').update({
       user_id: newUserId, plan: 'free', status: 'pending_ip',
       ip: 'pending-activation', expires_at: null,
@@ -2747,9 +2749,13 @@ function parseSseUsage(fullResponse) {
 }
 
 // --- Proxy routes ---
+const PROXY_TIMEOUT_MS = 60000; // 60s max — evita travamento infinito se upstream não responder
+
 async function proxyRequest(req, res, path) {
   const startTime = Date.now();
   let ttfb = 0; // Time To First Byte — latência real do upstream
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), PROXY_TIMEOUT_MS);
   try {
     const upstream = await fetch(`${GHOSTCLI_BASE_URL}${path}`, {
       method: req.method,
@@ -2758,7 +2764,9 @@ async function proxyRequest(req, res, path) {
         'Authorization': `Bearer ${GHOSTCLI_API_KEY}`,
       },
       body: ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body),
+      signal: controller.signal,
     });
+    clearTimeout(timeoutId);
     ttfb = Date.now() - startTime; // Captura latência real ANTES de qualquer processing
 
     // Forward status and headers
@@ -2802,9 +2810,14 @@ async function proxyRequest(req, res, path) {
       }
     }
   } catch (err) {
+    clearTimeout(timeoutId);
     console.error('[proxy] Error:', err.message);
     if (!res.headersSent) {
-      res.status(502).json({ error: 'Erro ao conectar com o provedor upstream' });
+      if (err.name === 'AbortError') {
+        res.status(504).json({ error: 'Upstream timeout — provedor não respondeu em 60s' });
+      } else {
+        res.status(502).json({ error: 'Erro ao conectar com o provedor upstream' });
+      }
     }
   }
 }
