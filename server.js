@@ -657,7 +657,11 @@ app.get('/api/user/ip-info', authenticateToken, async (req, res) => {
   const primary = subs[0];
   // Collect all unique IPs
   const allIps = subs.map(s => ({ id: s.id, ip: s.ip, plan: s.plan, status: s.status, expires_at: s.expires_at }));
-  const { data: pending } = await supabase.from('ip_change_requests').select('new_ip, created_at').eq('user_id', req.user.id).eq('status', 'pending').single().catch(() => ({ data: null }));
+  let pending = null;
+  try {
+    const { data: pendingData } = await supabase.from('ip_change_requests').select('new_ip, created_at').eq('user_id', req.user.id).eq('status', 'pending').single();
+    pending = pendingData;
+  } catch (e) { /* no pending request */ }
   res.json({
     ip: primary.ip,
     additional_ip: primary.additional_ip,
@@ -676,7 +680,11 @@ app.get('/api/admin/stats', adminAuth, async (req, res) => {
   const { count: totalIps } = await supabase.from('ip_subscriptions').select('*', { count: 'exact', head: true });
   const { count: activeIps } = await supabase.from('ip_subscriptions').select('*', { count: 'exact', head: true }).eq('status', 'active');
   const { count: paidPlans } = await supabase.from('ip_subscriptions').select('*', { count: 'exact', head: true }).neq('plan', 'free').eq('status', 'active');
-  const { data: planBreakdown } = await supabase.rpc('get_plan_breakdown').catch(() => ({ data: [] }));
+  let planBreakdown = [];
+  try {
+    const { data: rpcData } = await supabase.rpc('get_plan_breakdown');
+    planBreakdown = rpcData || [];
+  } catch (e) { /* rpc not available, use fallback */ }
   // Fallback: manual breakdown
   let breakdown = [];
   if (!planBreakdown || !planBreakdown.length) {
