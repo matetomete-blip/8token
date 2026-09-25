@@ -301,13 +301,33 @@ app.post('/api/auth/register', registerLimiter, async (req, res) => {
 
     const displayName = name || email.split('@')[0];
     const passwordHash = await bcrypt.hash(password, 12);
-    const userId = crypto.randomUUID();
 
-    // Create in custom users table — role is separate from plan
+    // Step 1: Create user in Supabase Auth (so they appear in Authentication → Users)
+    let authUserId;
+    try {
+      const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true, // Auto-confirm email
+        user_metadata: { name: displayName }
+      });
+      if (authError) {
+        console.error('[register] Supabase Auth createUser error:', authError.message);
+        // Continue with custom UUID if Auth fails (non-fatal)
+        authUserId = crypto.randomUUID();
+      } else {
+        authUserId = authUser.user.id;
+      }
+    } catch (authErr) {
+      console.error('[register] Supabase Auth exception:', authErr.message);
+      authUserId = crypto.randomUUID();
+    }
+
+    // Step 2: Create in custom users table using the same ID from Supabase Auth
     const role = email === 'matetomete@gmail.com' ? 'admin' : 'user';
     const plan = 'free';
     const { data: newUser, error } = await supabase.from('users').insert({
-      id: userId,
+      id: authUserId,
       email,
       password_hash: passwordHash,
       name: displayName,
@@ -328,8 +348,8 @@ app.post('/api/auth/register', registerLimiter, async (req, res) => {
     // Auto-create ip_subscriptions entry so the user appears in admin panel immediately
     try {
       await supabase.from('ip_subscriptions').insert({
-        ip: 'pending-' + userId.slice(0, 8),
-        user_id: userId,
+        ip: 'pending-' + authUserId.slice(0, 8),
+        user_id: authUserId,
         plan: 'free',
         status: 'pending',
         notes: 'Conta criada via registro automático'
@@ -399,20 +419,85 @@ app.post('/api/auth/google', async (req, res) => {
     const { email, name, picture, sub: googleId } = payload;
     if (!email) return res.status(400).json({ error: 'Email não encontrado no token Google' });
 
+    // Check if user exists in custom table (by google_id or email for auto-linking)
     let { data: user } = await supabase.from('users').select('*').or(`google_id.eq.${googleId},email.eq.${email}`).single();
 
     if (!user) {
-      const { data: newUser } = await supabase.from('users').insert({ email, name, google_id: googleId, avatar_url: picture, plan: 'free' }).select().single();
-      user = newUser;
-    } else if (!user.google_id) {
-      await supabase.from('users').update({ google_id: googleId, avatar_url: picture, name: user.name || name }).eq('id', user.id);
-      user.name = user.name || name;
-    }
+      // Step 1: Create in Supabase Auth first (so they appear in Authentication → Users)
+      let authUserId;
+      try {
+        const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
+          email,
+          password: crypto.randomUUID() + crypto.randomUUID(), // Random password for Google-only users
+          email_confirm: true,
+          user_metadata: { name, picture, provider: 'google' },
+          app_metadata: { provider: 'google', providers: ['google'] }
+        });
+        if (authError) {
+          console.error('[google-auth] Supabase Auth createUser error:', authError.message);
+          authUserId = crypto.randomUUID();
+        } else {
+          authUserId = authUser.user.id;
+        }
+      } catch (authErr) {
+        console.error('[google-auth] Supabase Auth exception:', authErr.message);
+        authUserId = crypto.randomUUID();
+      }
 
-    // Auto-promote matetomete@gmail.com to admin role via Google login too
-    if (email === 'matetomete@gmail.com' && user.role !== 'admin') {
-      await supabase.from('users').update({ role: 'admin' }).eq('id', user.id);
-      user.role = 'admin';
+      // Step 2: Create in custom users table with same ID
+      const { data: newUser } = await supabase.from('users').insert({
+        id: authUserId,
+        email,
+        name,
+        google_id: googleId,
+        avatar_url: picture,
+        plan: 'free',
+        role: email === 'matetomete@gmail.com' ? 'admin' : 'user'
+      }).select().single();
+      user = newUser;
+
+      // Auto-create ip_subscriptions entry
+      try {
+        await supabase.from('ip_subscriptions').insert({
+          ip: 'pending-' + authUserId.slice(0, 8),
+          user_id: authUserId,
+          plan: 'free',
+          status: 'pending',
+          notes: 'Conta criada via Google OAuth'
+        });
+      } catch (ipErr) {
+        console.error('Auto-create ip_subscription warning (Google):', ipErr.message);
+      }
+    } else {
+      // User exists — link Google account if not already linked
+      if (!user.google_id) {
+        await supabase.from('users').update({
+          google_id: googleId,
+          avatar_url: picture,
+          name: user.name || name
+        }).eq('id', user.id);
+        user.name = user.name || name;
+
+        // Also link in Supabase Auth if the auth user exists
+        try {
+          const { data: authUsers } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+          const existingAuthUser = authUsers?.users?.find(u => u.email === email);
+          if (existingAuthUser) {
+            await supabase.auth.admin.updateUserById(existingAuthUser.id, {
+              user_metadata: { ...existingAuthUser.user_metadata, picture, provider: 'google' },
+              app_metadata: { ...existingAuthUser.app_metadata, provider: 'google', providers: [...(existingAuthUser.app_metadata?.providers || []), 'google'] }
+            });
+          }
+        } catch (linkErr) {
+          console.error('[google-auth] Link Supabase Auth warning:', linkErr.message);
+        }
+      }
+
+      // Auto-promote matetomete@gmail.com to admin role via Google login too
+      if (email === 'matetomete@gmail.com' && user.role !== 'admin') {
+        await supabase.from('users').update({ role: 'admin' }).eq('id', user.id);
+        user.role = 'admin';
+      }
     }
 
     const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { algorithm: 'HS256', expiresIn: '30d' });
@@ -494,6 +579,15 @@ app.put('/api/user/password', authenticateToken, async (req, res) => {
   }
   const hash = await bcrypt.hash(newPassword, 12);
   await supabase.from('users').update({ password_hash: hash }).eq('id', req.user.id);
+
+  // Also update password in Supabase Auth so user can login with email/password
+  try {
+    await supabase.auth.admin.updateUserById(req.user.id, { password: newPassword });
+  } catch (authErr) {
+    console.error('[password] Supabase Auth update warning:', authErr.message);
+    // Non-fatal — custom table is already updated
+  }
+
   res.json({ success: true });
 });
 
@@ -3376,7 +3470,12 @@ app.use(express.static(publicDir));
 
 // SPA-style routes for frontend pages
 app.get('/account', (req, res) => res.sendFile(path.join(publicDir, 'account.html')));
-app.get('/admin', (req, res) => res.sendFile(path.join(publicDir, 'admin.html')));
+app.get('/admin', (req, res) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    res.sendFile(path.join(publicDir, 'admin.html'));
+});
 app.get('/dashboard', (req, res) => res.sendFile(path.join(publicDir, 'dashboard.html')));
 app.get('/login', (req, res) => res.sendFile(path.join(publicDir, 'login.html')));
 app.get('/docs', (req, res) => res.sendFile(path.join(publicDir, 'docs.html')));
