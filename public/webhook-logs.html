@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Logs do Webhook — 8Token Admin</title>
+<style>
+:root {
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #141414;
+  --bg-card: #1a1a1a;
+  --bg-hover: #222;
+  --text-primary: #f0f0f0;
+  --text-secondary: #888;
+  --accent-orange: #ff5500;
+  --accent-orange-dim: rgba(255,85,0,0.15);
+  --border: #2a2a2a;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --green: #22c55e;
+  --red: #ef4444;
+  --yellow: #eab308;
+  --blue: #3b82f6;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  min-height: 100vh;
+  padding: var(--space-lg);
+}
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-lg);
+}
+.header h1 {
+  font-size: 22px;
+  font-weight: 700;
+}
+.back-link {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-orange);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1px solid rgba(255,85,0,0.3);
+  border-radius: var(--radius-sm);
+  transition: all 0.2s;
+}
+.back-link:hover { background: rgba(255,85,0,0.1); }
+
+.filters {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-lg);
+  padding: var(--space-md);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.filter-group label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.filter-group input,
+.filter-group select {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  padding: 8px 12px;
+  font-size: 13px;
+  min-width: 160px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.filter-group input:focus,
+.filter-group select:focus {
+  border-color: var(--accent-orange);
+}
+.filter-actions {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-sm);
+  margin-left: auto;
+}
+.btn {
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+.btn-primary {
+  background: var(--accent-orange);
+  color: #fff;
+}
+.btn-primary:hover { background: #e64d00; }
+.btn-secondary {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+.btn-secondary:hover { border-color: var(--text-secondary); color: var(--text-primary); }
+
+.stats {
+  display: flex;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  min-width: 120px;
+}
+.stat-card .label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+.stat-card .value {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.table-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+thead th {
+  background: var(--bg-secondary);
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+tbody td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: var(--bg-hover); }
+
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.badge-event {
+  background: var(--accent-orange-dim);
+  color: var(--accent-orange);
+}
+.badge-success { background: rgba(34,197,94,0.15); color: var(--green); }
+.badge-pending { background: rgba(234,179,8,0.15); color: var(--yellow); }
+.badge-error   { background: rgba(239,68,68,0.15); color: var(--red); }
+.badge-info    { background: rgba(59,130,246,0.15); color: var(--blue); }
+.badge-neutral { background: rgba(255,255,255,0.08); color: var(--text-secondary); }
+
+.details-cell {
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: monospace;
+  font-size: 11px;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.details-cell:hover { color: var(--text-primary); white-space: normal; word-break: break-all; }
+
+.empty-state {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-secondary);
+}
+
+.pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--space-md);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.pagination button {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+.pagination button:hover:not(:disabled) { border-color: var(--accent-orange); color: var(--accent-orange); }
+.pagination button:disabled { opacity: 0.3; cursor: default; }
+
+.loading { text-align:center; padding:40px; color:var(--text-secondary); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📋 Logs do Webhook</h1>
+  <a href="admin.html#webhook" class="back-link">← Voltar ao Admin</a>
+</div>
+
+<div class="stats" id="statsRow">
+  <div class="stat-card"><div class="label">Total</div><div class="value" id="statTotal">—</div></div>
+  <div class="stat-card"><div class="label">Sucesso</div><div class="value" style="color:var(--green)" id="statSuccess">—</div></div>
+  <div class="stat-card"><div class="label">Pendente</div><div class="value" style="color:var(--yellow)" id="statPending">—</div></div>
+  <div class="stat-card"><div class="label">Erro</div><div class="value" style="color:var(--red)" id="statError">—</div></div>
+</div>
+
+<div class="filters">
+  <div class="filter-group">
+    <label>Evento</label>
+    <select id="filterEvent">
+      <option value="">Todos</option>
+      <option value="SALE_APPROVED">SALE_APPROVED</option>
+      <option value="PAYMENT_CONFIRMED">PAYMENT_CONFIRMED</option>
+      <option value="SUBSCRIPTION_CREATED">SUBSCRIPTION_CREATED</option>
+      <option value="INVOICE_PAID">INVOICE_PAID</option>
+      <option value="PIX_GENERATED">PIX_GENERATED</option>
+      <option value="TEST_EVENT">TEST_EVENT</option>
+      <option value="payment_success">payment_success</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>Status</label>
+    <select id="filterStatus">
+      <option value="">Todos</option>
+      <option value="APPROVED">APPROVED</option>
+      <option value="PENDING">PENDING</option>
+      <option value="test_ok">test_ok</option>
+      <option value="error">Erro</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>Email</label>
+    <input type="text" id="filterEmail" placeholder="buscar email...">
+  </div>
+  <div class="filter-group">
+    <label>Data início</label>
+    <input type="date" id="filterDateFrom">
+  </div>
+  <div class="filter-group">
+    <label>Data fim</label>
+    <input type="date" id="filterDateTo">
+  </div>
+  <div class="filter-actions">
+    <button class="btn btn-secondary" onclick="clearFilters()">Limpar</button>
+    <button class="btn btn-primary" onclick="applyFilters()">Filtrar</button>
+  </div>
+</div>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Data/Hora</th>
+        <th>Evento</th>
+        <th>Status</th>
+        <th>Email</th>
+        <th>IP</th>
+        <th>Plano</th>
+        <th>Detalhes</th>
+      </tr>
+    </thead>
+    <tbody id="logsBody">
+      <tr><td colspan="7" class="loading">Carregando...</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="pagination">
+  <span id="pageInfo">—</span>
+  <div style="display:flex;gap:8px;">
+    <button id="btnPrev" onclick="prevPage()" disabled>← Anterior</button>
+    <button id="btnNext" onclick="nextPage()">Próxima →</button>
+  </div>
+</div>
+
+<script>
+const API = window.location.origin;
+let allLogs = [];
+let filteredLogs = [];
+let currentPage = 1;
+const PAGE_SIZE = 25;
+
+async function apiFetch(path) {
+  const r = await fetch(API + path, { credentials: 'include' });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.json();
+}
+
+function statusBadge(status) {
+  if (!status || status === '—') return '<span class="badge badge-neutral">—</span>';
+  const s = status.toLowerCase();
+  if (s === 'approved' || s === 'test_ok' || s === 'success') return `<span class="badge badge-success">${status}</span>`;
+  if (s === 'pending') return `<span class="badge badge-pending">${status}</span>`;
+  if (s === 'error' || s === 'failed') return `<span class="badge badge-error">${status}</span>`;
+  return `<span class="badge badge-info">${status}</span>`;
+}
+
+function eventBadge(event) {
+  if (!event || event === '—') return '<span class="badge badge-neutral">—</span>';
+  return `<span class="badge badge-event">${event}</span>`;
+}
+
+function formatDate(iso) {
+  if (!iso) return '—';
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  } catch { return iso; }
+}
+
+function renderLogs() {
+  const tbody = document.getElementById('logsBody');
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const page = filteredLogs.slice(start, start + PAGE_SIZE);
+
+  if (!page.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhum log encontrado com esses filtros.</td></tr>';
+  } else {
+    tbody.innerHTML = page.map(log => `
+      <tr>
+        <td style="white-space:nowrap">${formatDate(log.created_at || log.timestamp)}</td>
+        <td>${eventBadge(log.event_type || log.event)}</td>
+        <td>${statusBadge(log.status)}</td>
+        <td>${log.email || '—'}</td>
+        <td style="font-family:monospace;font-size:12px">${log.ip_address || log.ip || '—'}</td>
+        <td>${log.plan_name || log.plan || '—'}</td>
+        <td class="details-cell" title="${(log.raw_payload || log.details || '').replace(/"/g,'&quot;')}">${log.raw_payload || log.details || '—'}</td>
+      </tr>
+    `).join('');
+  }
+
+  const totalPages = Math.ceil(filteredLogs.length / PAGE_SIZE) || 1;
+  document.getElementById('pageInfo').textContent = `Página ${currentPage} de ${totalPages} — ${filteredLogs.length} registro(s)`;
+  document.getElementById('btnPrev').disabled = currentPage <= 1;
+  document.getElementById('btnNext').disabled = currentPage >= totalPages;
+}
+
+function updateStats() {
+  document.getElementById('statTotal').textContent = allLogs.length;
+  document.getElementById('statSuccess').textContent = allLogs.filter(l => {
+    const s = (l.status||'').toLowerCase();
+    return s === 'approved' || s === 'test_ok' || s === 'success';
+  }).length;
+  document.getElementById('statPending').textContent = allLogs.filter(l => (l.status||'').toLowerCase() === 'pending').length;
+  document.getElementById('statError').textContent = allLogs.filter(l => {
+    const s = (l.status||'').toLowerCase();
+    return s === 'error' || s === 'failed';
+  }).length;
+}
+
+function applyFilters() {
+  const ev    = document.getElementById('filterEvent').value;
+  const st    = document.getElementById('filterStatus').value;
+  const email = document.getElementById('filterEmail').value.toLowerCase().trim();
+  const from  = document.getElementById('filterDateFrom').value;
+  const to    = document.getElementById('filterDateTo').value;
+
+  filteredLogs = allLogs.filter(log => {
+    if (ev && (log.event_type || log.event) !== ev) return false;
+    if (st) {
+      const s = (log.status||'').toLowerCase();
+      if (st === 'error') { if (s !== 'error' && s !== 'failed') return false; }
+      else if (s !== st.toLowerCase()) return false;
+    }
+    if (email && !(log.email||'').toLowerCase().includes(email)) return false;
+    if (from) {
+      const d = new Date(log.created_at || log.timestamp);
+      if (d < new Date(from)) return false;
+    }
+    if (to) {
+      const d = new Date(log.created_at || log.timestamp);
+      const end = new Date(to); end.setHours(23,59,59);
+      if (d > end) return false;
+    }
+    return true;
+  });
+
+  currentPage = 1;
+  renderLogs();
+}
+
+function clearFilters() {
+  document.getElementById('filterEvent').value = '';
+  document.getElementById('filterStatus').value = '';
+  document.getElementById('filterEmail').value = '';
+  document.getElementById('filterDateFrom').value = '';
+  document.getElementById('filterDateTo').value = '';
+  filteredLogs = [...allLogs];
+  currentPage = 1;
+  renderLogs();
+}
+
+function prevPage() { if (currentPage > 1) { currentPage--; renderLogs(); } }
+function nextPage() {
+  const totalPages = Math.ceil(filteredLogs.length / PAGE_SIZE);
+  if (currentPage < totalPages) { currentPage++; renderLogs(); }
+}
+
+async function loadAll() {
+  try {
+    allLogs = await apiFetch('/api/admin/webhook-logs');
+    filteredLogs = [...allLogs];
+    updateStats();
+    renderLogs();
+  } catch(e) {
+    document.getElementById('logsBody').innerHTML = `<tr><td colspan="7" class="empty-state">Erro ao carregar: ${e.message}</td></tr>`;
+  }
+}
+
+loadAll();
+setInterval(loadAll, 10000);
+</script>
+</body>
+</html>

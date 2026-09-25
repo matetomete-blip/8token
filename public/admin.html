@@ -1469,7 +1469,8 @@
 
         async function loadWebhookLogs() {
             try {
-                const logs = await apiFetch('/api/admin/webhook-logs');
+                const allLogs = await apiFetch('/api/admin/webhook-logs');
+                const logs = allLogs.slice(0, 10);
                 const tbody = document.getElementById('webhookLogsBody');
                 if (!logs.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhum log registrado.</td></tr>'; return; }
                 tbody.innerHTML = logs.map(log => {
