@@ -14,7 +14,16 @@ const { OAuth2Client } = require('google-auth-library');
 const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
 const { Agent: UndiciAgent } = require('undici');
-const { authenticator: totpVerify } = require('otplib');
+const { verifySync: totpVerifySync } = require('otplib');
+function totpVerify({ token, secret }) {
+  try {
+    const result = totpVerifySync({ token: String(token).trim(), secret });
+    return result && result.valid === true;
+  } catch (e) {
+    console.error('TOTP verify error:', e.message);
+    return false;
+  }
+}
 
 // Keep-alive dispatcher para fetch upstream — evita handshake TLS repetido (economiza 100-300ms/req)
 const keepAliveDispatcher = new UndiciAgent({
