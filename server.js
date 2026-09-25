@@ -14,6 +14,7 @@ const { OAuth2Client } = require('google-auth-library');
 const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
 const { Agent: UndiciAgent } = require('undici');
+const { authenticator: totpVerify } = require('otplib');
 
 // Keep-alive dispatcher para fetch upstream — evita handshake TLS repetido (economiza 100-300ms/req)
 const keepAliveDispatcher = new UndiciAgent({
