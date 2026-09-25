@@ -568,6 +568,8 @@
                     <div class="card-title">Configuração do Webhook Kirvano</div>
                     <p style="color:var(--text-secondary);font-size:13px;margin-bottom:var(--space-lg);line-height:1.6;">Configure aqui a URL do webhook e o token secreto que a Kirvano usará para notificar o 8Token sobre vendas aprovadas, recusadas ou chargebacks. Copie a URL abaixo e cole no painel da Kirvano em <strong>Configurações → Webhooks</strong>.</p>
                     <div id="webhookFormAlert" class="alert"></div>
+
+                    <!-- URL do Webhook (read-only) -->
                     <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-lg);margin-bottom:var(--space-lg);">
                         <div style="font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:var(--space-sm);">URL do Webhook (cole na Kirvano)</div>
                         <div style="display:flex;gap:var(--space-sm);align-items:center;">
@@ -575,74 +577,148 @@
                             <button class="btn btn-secondary btn-sm" onclick="copyWebhookUrl()" style="white-space:nowrap;">Copiar</button>
                         </div>
                     </div>
-                    <div class="form-row">
-                        <div class="form-group" style="grid-column: 1 / -1;"><label class="form-label">Token Secreto do Webhook *</label><input type="password" id="webhookToken" class="form-input" placeholder="Token que a Kirvano enviará no header X-Webhook-Secret" style="font-family:var(--font-mono);"><div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Este token deve ser o mesmo configurado no painel da Kirvano. Ele valida que a requisição veio realmente da Kirvano.</div></div>
+
+                    <!-- Blocos de configuração — sempre visíveis, clicáveis para editar -->
+                    <div id="webhookConfigBlocks" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:var(--space-md);margin-bottom:var(--space-lg);">
+                        <!-- Token -->
+                        <div class="wh-block" data-field="token" onclick="editWebhookField('token')" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-lg);cursor:pointer;transition:border-color 0.2s,box-shadow 0.2s;">
+                            <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
+                                <span>Token Secreto</span>
+                                <span style="font-size:10px;color:var(--accent-teal);opacity:0.7;">✎ editar</span>
+                            </div>
+                            <div id="blockToken" style="font-family:var(--font-mono);font-size:14px;color:var(--text-primary);">—</div>
+                            <div id="editToken" style="display:none;margin-top:8px;">
+                                <input type="password" id="webhookToken" class="form-input" placeholder="Token secreto do webhook" style="font-family:var(--font-mono);font-size:13px;width:100%;">
+                                <div style="display:flex;gap:6px;margin-top:6px;">
+                                    <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();saveWebhookConfig()">Salvar</button>
+                                    <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();cancelEditWebhook('token')">Cancelar</button>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Produto Mensal -->
+                        <div class="wh-block" data-field="productMensal" onclick="editWebhookField('productMensal')" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-lg);cursor:pointer;transition:border-color 0.2s,box-shadow 0.2s;">
+                            <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
+                                <span>ID Produto — Mensal</span>
+                                <span style="font-size:10px;color:var(--accent-teal);opacity:0.7;">✎ editar</span>
+                            </div>
+                            <div id="blockProductMensal" style="font-family:var(--font-mono);font-size:13px;color:var(--text-primary);word-break:break-all;">—</div>
+                            <div id="editProductMensal" style="display:none;margin-top:8px;">
+                                <input type="text" id="kirvanoProductMensal" class="form-input" placeholder="ID do produto mensal" style="font-family:var(--font-mono);font-size:13px;width:100%;">
+                                <div style="display:flex;gap:6px;margin-top:6px;">
+                                    <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();saveWebhookConfig()">Salvar</button>
+                                    <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();cancelEditWebhook('productMensal')">Cancelar</button>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Produto Trimestral -->
+                        <div class="wh-block" data-field="productTrimestral" onclick="editWebhookField('productTrimestral')" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-lg);cursor:pointer;transition:border-color 0.2s,box-shadow 0.2s;">
+                            <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
+                                <span>ID Produto — Trimestral</span>
+                                <span style="font-size:10px;color:var(--accent-teal);opacity:0.7;">✎ editar</span>
+                            </div>
+                            <div id="blockProductTrimestral" style="font-family:var(--font-mono);font-size:13px;color:var(--text-primary);word-break:break-all;">—</div>
+                            <div id="editProductTrimestral" style="display:none;margin-top:8px;">
+                                <input type="text" id="kirvanoProductTrimestral" class="form-input" placeholder="ID do produto trimestral" style="font-family:var(--font-mono);font-size:13px;width:100%;">
+                                <div style="display:flex;gap:6px;margin-top:6px;">
+                                    <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();saveWebhookConfig()">Salvar</button>
+                                    <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();cancelEditWebhook('productTrimestral')">Cancelar</button>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Produto Anual -->
+                        <div class="wh-block" data-field="productAnual" onclick="editWebhookField('productAnual')" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-lg);cursor:pointer;transition:border-color 0.2s,box-shadow 0.2s;">
+                            <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
+                                <span>ID Produto — Anual</span>
+                                <span style="font-size:10px;color:var(--accent-teal);opacity:0.7;">✎ editar</span>
+                            </div>
+                            <div id="blockProductAnual" style="font-family:var(--font-mono);font-size:13px;color:var(--text-primary);word-break:break-all;">—</div>
+                            <div id="editProductAnual" style="display:none;margin-top:8px;">
+                                <input type="text" id="kirvanoProductAnual" class="form-input" placeholder="ID do produto anual" style="font-family:var(--font-mono);font-size:13px;width:100%;">
+                                <div style="display:flex;gap:6px;margin-top:6px;">
+                                    <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();saveWebhookConfig()">Salvar</button>
+                                    <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();cancelEditWebhook('productAnual')">Cancelar</button>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Checkout Mensal -->
+                        <div class="wh-block" data-field="checkoutMensal" onclick="editWebhookField('checkoutMensal')" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-lg);cursor:pointer;transition:border-color 0.2s,box-shadow 0.2s;">
+                            <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
+                                <span>Checkout — Mensal</span>
+                                <span style="font-size:10px;color:var(--accent-teal);opacity:0.7;">✎ editar</span>
+                            </div>
+                            <div id="blockCheckoutMensal" style="font-size:12px;color:var(--text-primary);word-break:break-all;">—</div>
+                            <div id="editCheckoutMensal" style="display:none;margin-top:8px;">
+                                <input type="url" id="kirvanoCheckoutMensal" class="form-input" placeholder="https://pay.kirvano.com/checkout/..." style="font-size:13px;width:100%;">
+                                <div style="display:flex;gap:6px;margin-top:6px;">
+                                    <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();saveWebhookConfig()">Salvar</button>
+                                    <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();cancelEditWebhook('checkoutMensal')">Cancelar</button>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Checkout Trimestral -->
+                        <div class="wh-block" data-field="checkoutTrimestral" onclick="editWebhookField('checkoutTrimestral')" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-lg);cursor:pointer;transition:border-color 0.2s,box-shadow 0.2s;">
+                            <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
+                                <span>Checkout — Trimestral</span>
+                                <span style="font-size:10px;color:var(--accent-teal);opacity:0.7;">✎ editar</span>
+                            </div>
+                            <div id="blockCheckoutTrimestral" style="font-size:12px;color:var(--text-primary);word-break:break-all;">—</div>
+                            <div id="editCheckoutTrimestral" style="display:none;margin-top:8px;">
+                                <input type="url" id="kirvanoCheckoutTrimestral" class="form-input" placeholder="https://pay.kirvano.com/checkout/..." style="font-size:13px;width:100%;">
+                                <div style="display:flex;gap:6px;margin-top:6px;">
+                                    <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();saveWebhookConfig()">Salvar</button>
+                                    <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();cancelEditWebhook('checkoutTrimestral')">Cancelar</button>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Checkout Anual -->
+                        <div class="wh-block" data-field="checkoutAnual" onclick="editWebhookField('checkoutAnual')" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-lg);cursor:pointer;transition:border-color 0.2s,box-shadow 0.2s;">
+                            <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
+                                <span>Checkout — Anual</span>
+                                <span style="font-size:10px;color:var(--accent-teal);opacity:0.7;">✎ editar</span>
+                            </div>
+                            <div id="blockCheckoutAnual" style="font-size:12px;color:var(--text-primary);word-break:break-all;">—</div>
+                            <div id="editCheckoutAnual" style="display:none;margin-top:8px;">
+                                <input type="url" id="kirvanoCheckoutAnual" class="form-input" placeholder="https://pay.kirvano.com/checkout/..." style="font-size:13px;width:100%;">
+                                <div style="display:flex;gap:6px;margin-top:6px;">
+                                    <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();saveWebhookConfig()">Salvar</button>
+                                    <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();cancelEditWebhook('checkoutAnual')">Cancelar</button>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- IP Adicional — Produto -->
+                        <div class="wh-block" data-field="productIpAdicional" onclick="editWebhookField('productIpAdicional')" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-lg);cursor:pointer;transition:border-color 0.2s,box-shadow 0.2s;border-left:3px solid var(--accent-orange);">
+                            <div style="font-size:11px;color:var(--accent-orange);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
+                                <span>ID Produto — IP Adicional</span>
+                                <span style="font-size:10px;opacity:0.7;">✎ editar</span>
+                            </div>
+                            <div id="blockProductIpAdicional" style="font-family:var(--font-mono);font-size:13px;color:var(--text-primary);word-break:break-all;">—</div>
+                            <div id="editProductIpAdicional" style="display:none;margin-top:8px;">
+                                <input type="text" id="kirvanoProductIpAdicional" class="form-input" placeholder="ID do produto IP adicional" style="font-family:var(--font-mono);font-size:13px;width:100%;">
+                                <div style="display:flex;gap:6px;margin-top:6px;">
+                                    <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();saveWebhookConfig()">Salvar</button>
+                                    <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();cancelEditWebhook('productIpAdicional')">Cancelar</button>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- IP Adicional — Checkout -->
+                        <div class="wh-block" data-field="checkoutIpAdicional" onclick="editWebhookField('checkoutIpAdicional')" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-lg);cursor:pointer;transition:border-color 0.2s,box-shadow 0.2s;border-left:3px solid var(--accent-orange);">
+                            <div style="font-size:11px;color:var(--accent-orange);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">
+                                <span>Checkout — IP Adicional</span>
+                                <span style="font-size:10px;opacity:0.7;">✎ editar</span>
+                            </div>
+                            <div id="blockCheckoutIpAdicional" style="font-size:12px;color:var(--text-primary);word-break:break-all;">—</div>
+                            <div id="editCheckoutIpAdicional" style="display:none;margin-top:8px;">
+                                <input type="url" id="kirvanoCheckoutIpAdicional" class="form-input" placeholder="https://pay.kirvano.com/checkout/..." style="font-size:13px;width:100%;">
+                                <div style="display:flex;gap:6px;margin-top:6px;">
+                                    <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();saveWebhookConfig()">Salvar</button>
+                                    <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();cancelEditWebhook('checkoutIpAdicional')">Cancelar</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-row">
-                        <div class="form-group"><label class="form-label">ID do Produto — Mensal</label><input type="text" id="kirvanoProductMensal" class="form-input" placeholder="ID do produto mensal na Kirvano" style="font-family:var(--font-mono);font-size:13px;"></div>
-                        <div class="form-group"><label class="form-label">ID do Produto — Trimestral</label><input type="text" id="kirvanoProductTrimestral" class="form-input" placeholder="ID do produto trimestral na Kirvano" style="font-family:var(--font-mono);font-size:13px;"></div>
-                        <div class="form-group"><label class="form-label">ID do Produto — Anual</label><input type="text" id="kirvanoProductAnual" class="form-input" placeholder="ID do produto anual na Kirvano" style="font-family:var(--font-mono);font-size:13px;"></div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group"><label class="form-label">URL Checkout — Mensal</label><input type="url" id="kirvanoCheckoutMensal" class="form-input" placeholder="https://pay.kirvano.com/checkout/..." style="font-size:13px;"></div>
-                        <div class="form-group"><label class="form-label">URL Checkout — Trimestral</label><input type="url" id="kirvanoCheckoutTrimestral" class="form-input" placeholder="https://pay.kirvano.com/checkout/..." style="font-size:13px;"></div>
-                        <div class="form-group"><label class="form-label">URL Checkout — Anual</label><input type="url" id="kirvanoCheckoutAnual" class="form-input" placeholder="https://pay.kirvano.com/checkout/..." style="font-size:13px;"></div>
-                    </div>
-                    <div style="margin-top:var(--space-lg);padding-top:var(--space-lg);border-top:1px solid var(--border);">
-                        <div style="font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent-orange);margin-bottom:var(--space-md);">IP Adicional</div>
-                    </div>
-                    <div class="form-row" style="grid-template-columns: 1fr 1fr;">
-                        <div class="form-group"><label class="form-label">ID do Produto — IP Adicional</label><input type="text" id="kirvanoProductIpAdicional" class="form-input" placeholder="ID do produto IP adicional na Kirvano" style="font-family:var(--font-mono);font-size:13px;"></div>
-                        <div class="form-group"><label class="form-label">URL Checkout — IP Adicional</label><input type="url" id="kirvanoCheckoutIpAdicional" class="form-input" placeholder="https://pay.kirvano.com/checkout/..." style="font-size:13px;"></div>
-                    </div>
-                    <div style="display:flex;gap:var(--space-md);margin-top:var(--space-md);flex-wrap:wrap;">
-                        <button class="btn btn-primary" onclick="saveWebhookConfig()">Salvar Configuração</button>
+
+                    <div style="display:flex;gap:var(--space-md);flex-wrap:wrap;">
                         <button class="btn btn-secondary" onclick="testWebhook()" style="border-color:var(--accent-teal);color:var(--accent-teal);">Testar Webhook</button>
-                    </div>
-                    <!-- Resumo da configuração salva -->
-                    <div id="webhookConfigSummary" style="display:none;margin-top:var(--space-lg);background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-lg);">
-                        <div style="font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent-teal);margin-bottom:var(--space-md);display:flex;align-items:center;gap:8px;">
-                            <span style="width:8px;height:8px;border-radius:50%;background:var(--accent-teal);display:inline-block;"></span>
-                            Configuração Ativa
-                        </div>
-                        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--space-md);">
-                            <div>
-                                <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Token Secreto</div>
-                                <div id="summaryToken" style="font-family:var(--font-mono);font-size:13px;color:var(--text-secondary);">••••••••</div>
-                            </div>
-                            <div>
-                                <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Produto Mensal</div>
-                                <div id="summaryProductMensal" style="font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);word-break:break-all;">—</div>
-                            </div>
-                            <div>
-                                <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Produto Trimestral</div>
-                                <div id="summaryProductTrimestral" style="font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);word-break:break-all;">—</div>
-                            </div>
-                            <div>
-                                <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Produto Anual</div>
-                                <div id="summaryProductAnual" style="font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);word-break:break-all;">—</div>
-                            </div>
-                            <div>
-                                <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Checkout Mensal</div>
-                                <div id="summaryCheckoutMensal" style="font-size:12px;color:var(--text-secondary);word-break:break-all;">—</div>
-                            </div>
-                            <div>
-                                <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Checkout Trimestral</div>
-                                <div id="summaryCheckoutTrimestral" style="font-size:12px;color:var(--text-secondary);word-break:break-all;">—</div>
-                            </div>
-                            <div>
-                                <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Checkout Anual</div>
-                                <div id="summaryCheckoutAnual" style="font-size:12px;color:var(--text-secondary);word-break:break-all;">—</div>
-                            </div>
-                            <div>
-                                <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Produto IP Adicional</div>
-                                <div id="summaryProductIpAdicional" style="font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);word-break:break-all;">—</div>
-                            </div>
-                            <div>
-                                <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Checkout IP Adicional</div>
-                                <div id="summaryCheckoutIpAdicional" style="font-size:12px;color:var(--text-secondary);word-break:break-all;">—</div>
-                            </div>
-                        </div>
                     </div>
                 </div>
                 <div class="card">
@@ -764,36 +840,69 @@
                 const config = await apiFetch('/api/admin/webhook-config');
                 const urlInput = document.getElementById('webhookUrlDisplay');
                 if (urlInput) urlInput.value = window.location.origin + '/api/webhooks/kirvano';
-                if (config.configured) {
-                    document.getElementById('webhookToken').value = config.webhook_token || '';
-                    document.getElementById('kirvanoProductMensal').value = config.product_mensal_id || '';
-                    document.getElementById('kirvanoProductTrimestral').value = config.product_trimestral_id || '';
-                    document.getElementById('kirvanoProductAnual').value = config.product_anual_id || '';
-                    document.getElementById('kirvanoProductIpAdicional').value = config.product_ip_adicional_id || '';
-                    document.getElementById('kirvanoCheckoutMensal').value = config.checkout_mensal_url || '';
-                    document.getElementById('kirvanoCheckoutTrimestral').value = config.checkout_trimestral_url || '';
-                    document.getElementById('kirvanoCheckoutAnual').value = config.checkout_anual_url || '';
-                    document.getElementById('kirvanoCheckoutIpAdicional').value = config.checkout_ip_adicional_url || '';
-                    // Preencher container de resumo (token mascarado)
-                    const summary = document.getElementById('webhookConfigSummary');
-                    if (summary) {
-                        summary.style.display = 'block';
-                        const tk = config.webhook_token || '';
-                        document.getElementById('summaryToken').textContent = tk ? '••••••' + tk.slice(-4) : '—';
-                        document.getElementById('summaryProductMensal').textContent = config.product_mensal_id || '—';
-                        document.getElementById('summaryProductTrimestral').textContent = config.product_trimestral_id || '—';
-                        document.getElementById('summaryProductAnual').textContent = config.product_anual_id || '—';
-                        document.getElementById('summaryProductIpAdicional').textContent = config.product_ip_adicional_id || '—';
-                        document.getElementById('summaryCheckoutMensal').textContent = config.checkout_mensal_url || '—';
-                        document.getElementById('summaryCheckoutTrimestral').textContent = config.checkout_trimestral_url || '—';
-                        document.getElementById('summaryCheckoutAnual').textContent = config.checkout_anual_url || '—';
-                        document.getElementById('summaryCheckoutIpAdicional').textContent = config.checkout_ip_adicional_url || '—';
-                    }
-                } else {
-                    const summary = document.getElementById('webhookConfigSummary');
-                    if (summary) summary.style.display = 'none';
+
+                // Preencher inputs (usados na edição inline)
+                const fields = {
+                    webhookToken: config.webhook_token || '',
+                    kirvanoProductMensal: config.product_mensal_id || '',
+                    kirvanoProductTrimestral: config.product_trimestral_id || '',
+                    kirvanoProductAnual: config.product_anual_id || '',
+                    kirvanoProductIpAdicional: config.product_ip_adicional_id || '',
+                    kirvanoCheckoutMensal: config.checkout_mensal_url || '',
+                    kirvanoCheckoutTrimestral: config.checkout_trimestral_url || '',
+                    kirvanoCheckoutAnual: config.checkout_anual_url || '',
+                    kirvanoCheckoutIpAdicional: config.checkout_ip_adicional_url || ''
+                };
+                for (const [id, val] of Object.entries(fields)) {
+                    const el = document.getElementById(id);
+                    if (el) el.value = val;
+                }
+
+                // Preencher blocos visuais (sempre visíveis)
+                const tk = config.webhook_token || '';
+                const blockData = {
+                    blockToken: tk ? '••••••' + tk.slice(-4) : '—',
+                    blockProductMensal: config.product_mensal_id || '—',
+                    blockProductTrimestral: config.product_trimestral_id || '—',
+                    blockProductAnual: config.product_anual_id || '—',
+                    blockProductIpAdicional: config.product_ip_adicional_id || '—',
+                    blockCheckoutMensal: config.checkout_mensal_url || '—',
+                    blockCheckoutTrimestral: config.checkout_trimestral_url || '—',
+                    blockCheckoutAnual: config.checkout_anual_url || '—',
+                    blockCheckoutIpAdicional: config.checkout_ip_adicional_url || '—'
+                };
+                for (const [id, val] of Object.entries(blockData)) {
+                    const el = document.getElementById(id);
+                    if (el) el.textContent = val;
                 }
             } catch (e) { console.error('Load webhook config error:', e); }
+        }
+
+        function editWebhookField(field) {
+            const blockId = 'block' + field.charAt(0).toUpperCase() + field.slice(1);
+            const editId = 'edit' + field.charAt(0).toUpperCase() + field.slice(1);
+            const blockEl = document.getElementById(blockId);
+            const editEl = document.getElementById(editId);
+            if (blockEl) blockEl.style.display = 'none';
+            if (editEl) {
+                editEl.style.display = 'block';
+                const input = editEl.querySelector('input');
+                if (input) setTimeout(() => input.focus(), 50);
+            }
+            // Highlight the block
+            const parentBlock = document.querySelector(`.wh-block[data-field="${field}"]`);
+            if (parentBlock) parentBlock.style.borderColor = 'var(--accent-teal)';
+        }
+
+        function cancelEditWebhook(field) {
+            const blockId = 'block' + field.charAt(0).toUpperCase() + field.slice(1);
+            const editId = 'edit' + field.charAt(0).toUpperCase() + field.slice(1);
+            const blockEl = document.getElementById(blockId);
+            const editEl = document.getElementById(editId);
+            if (blockEl) blockEl.style.display = '';
+            if (editEl) editEl.style.display = 'none';
+            const parentBlock = document.querySelector(`.wh-block[data-field="${field}"]`);
+            if (parentBlock) parentBlock.style.borderColor = 'var(--border)';
         }
 
         // ---- DASHBOARD ----
@@ -953,8 +1062,8 @@
                         <td style="font-size:13px;color:var(--text-muted);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${(s.notes||'').replace(/"/g,'&quot;')}">${s.notes || '—'}</td>
                         <td class="mono" style="font-size:12px;color:var(--text-muted);">${formatDate(s.updated_at)}</td>
                         <td class="actions">
-                            <button class="btn btn-success btn-sm" onclick="validateSub('${s.id}')">Validar</button>
-                            <button class="btn btn-secondary btn-sm" onclick="invalidateSub('${s.id}')">Desvalidar</button>
+                            <button class="btn btn-success btn-sm" onclick="validateSub('${s.id}')">Ativar IP</button>
+                            <button class="btn btn-secondary btn-sm" onclick="invalidateSub('${s.id}')">Desativar IP</button>
                             <button class="btn btn-primary btn-sm" onclick="openUserModal('${s.id}')">Editar</button>
                             <button class="btn btn-danger btn-sm" onclick="deleteSub('${s.id}','${s.ip}')">Remover</button>
                         </td>
