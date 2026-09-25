@@ -1279,17 +1279,25 @@
                 const logs = await apiFetch('/api/admin/webhook-logs');
                 const tbody = document.getElementById('webhookLogsBody');
                 if (!logs.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhum log registrado.</td></tr>'; return; }
-                tbody.innerHTML = logs.map(log => `
-                    <tr>
+                tbody.innerHTML = logs.map(log => {
+                    const evt = log.event || log.event_type || '—';
+                    const badgeClass = evt === 'SALE_APPROVED' ? 'badge-pro' : evt === 'SALE_REFUSED' ? 'badge-danger' : 'badge-warning';
+                    // Extract info from payload if columns don't exist
+                    const p = typeof log.payload === 'string' ? JSON.parse(log.payload) : (log.payload || {});
+                    const email = log.customer_email || p.customer?.email || '—';
+                    const ip = log.customer_ip || p.ip || '—';
+                    const status = log.status || p.status || '—';
+                    const plan = log.plan || (p.products?.[0]?.offer_name) || '—';
+                    return `<tr>
                         <td class="mono" style="font-size:12px;">${new Date(log.created_at).toLocaleString('pt-BR')}</td>
-                        <td><span class="badge ${log.event === 'SALE_APPROVED' ? 'badge-pro' : log.event === 'SALE_REFUSED' ? 'badge-danger' : 'badge-warning'}">${log.event}</span></td>
-                        <td>${log.status || '—'}</td>
-                        <td style="font-size:13px;">${log.customer_email || '—'}</td>
-                        <td class="mono" style="font-size:12px;">${log.customer_ip || '—'}</td>
-                        <td>${log.plan || '—'}</td>
-                        <td style="font-size:11px;color:var(--text-muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;">${JSON.stringify(log.payload || {}).substring(0, 100)}...</td>
-                    </tr>
-                `).join('');
+                        <td><span class="badge ${badgeClass}">${evt}</span></td>
+                        <td>${status}</td>
+                        <td style="font-size:13px;">${email}</td>
+                        <td class="mono" style="font-size:12px;">${ip}</td>
+                        <td>${plan}</td>
+                        <td style="font-size:11px;color:var(--text-muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;">${JSON.stringify(p).substring(0, 100)}...</td>
+                    </tr>`;
+                }).join('');
             } catch (e) {
                 document.getElementById('webhookLogsBody').innerHTML = `<tr><td colspan="7" class="empty-state" style="color:var(--accent-red);">${e.message}</td></tr>`;
             }

@@ -414,16 +414,21 @@ app.post('/api/webhooks/kirvano', async (req, res) => {
   const event = payload.event;
   console.log(`[Kirvano Webhook] ${event} | sale_id: ${payload.sale_id}`);
 
-  await supabase.from('webhook_logs').insert({
-    event_type: event,
-    event: event,
-    sale_id: payload.sale_id || null,
-    status: payload.status || null,
-    customer_email: payload.customer?.email || null,
-    customer_ip: payload.ip || null,
-    plan: resolvePlanFromKirvano(payload.products) || null,
-    payload: payload
-  });
+  // Insert webhook log — try full columns first, fallback to minimal if table lacks columns
+  const resolvedPlan = resolvePlanFromKirvano(payload.products) || null;
+  const fullRow = {
+    event_type: event, event, sale_id: payload.sale_id || null,
+    status: payload.status || null, customer_email: payload.customer?.email || null,
+    customer_ip: payload.ip || null, plan: resolvedPlan, payload
+  };
+  const { error: fullErr } = await supabase.from('webhook_logs').insert(fullRow);
+  if (fullErr) {
+    console.error('[Webhook Log] Full insert failed, trying minimal:', fullErr.message);
+    const { error: minErr } = await supabase.from('webhook_logs').insert({
+      event_type: event, sale_id: payload.sale_id || null, payload
+    });
+    if (minErr) console.error('[Webhook Log] Minimal insert also failed:', minErr.message);
+  }
 
   if (event === 'SALE_APPROVED') {
     const customerEmail = payload.customer?.email;
