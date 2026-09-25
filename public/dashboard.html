@@ -1031,6 +1031,46 @@
                         }
                     }
 
+                    // ---- API KEY SECTION: unlock when plan is active and not expired ----
+                    const apiLocked = document.getElementById('apiLocked');
+                    const apiUnlocked = document.getElementById('apiUnlocked');
+                    const nowDate = new Date();
+                    const planActiveAndNotExpired = hasPlan && profile.plan_expires_at && new Date(profile.plan_expires_at) > nowDate;
+
+                    if (planActiveAndNotExpired) {
+                        if (apiLocked) apiLocked.style.display = 'none';
+                        if (apiUnlocked) apiUnlocked.style.display = 'block';
+                        // Load real API keys and gateway URL
+                        try {
+                            const [keysRes, gwRes] = await Promise.all([
+                                fetch(API_BASE + '/api/keys', { headers }),
+                                fetch(API_BASE + '/api/user/gateway-url', { headers })
+                            ]);
+                            if (keysRes.ok) {
+                                const keys = await keysRes.json();
+                                const activeKeys = (keys || []).filter(k => !k.revoked);
+                                const apiKeyValueEl = document.getElementById('apiKeyValue');
+                                if (apiKeyValueEl) {
+                                    if (activeKeys.length > 0 && activeKeys[0].full_key) {
+                                        apiKeyValueEl.textContent = activeKeys[0].full_key;
+                                    } else if (activeKeys.length > 0) {
+                                        apiKeyValueEl.textContent = (activeKeys[0].key_prefix || '8tk_') + '••••••••' + (activeKeys[0].key_suffix || '');
+                                    } else {
+                                        apiKeyValueEl.textContent = 'Nenhuma chave gerada ainda';
+                                    }
+                                }
+                            }
+                            if (gwRes.ok) {
+                                const gwData = await gwRes.json();
+                                const gwEl = document.getElementById('gatewayUrlValue');
+                                if (gwEl && gwData.gateway_url) gwEl.textContent = gwData.gateway_url;
+                            }
+                        } catch (e) { console.error('API keys/gateway load error:', e); }
+                    } else {
+                        if (apiLocked) apiLocked.style.display = 'flex';
+                        if (apiUnlocked) apiUnlocked.style.display = 'none';
+                    }
+
                     // Show admin links if user role is admin (cargo separado do plano)
                     if (profile.role === 'admin') {
                         const adminLink = document.getElementById('adminLink');

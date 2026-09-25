@@ -588,6 +588,13 @@
                         <div class="form-group"><label class="form-label">URL Checkout — Trimestral</label><input type="url" id="kirvanoCheckoutTrimestral" class="form-input" placeholder="https://pay.kirvano.com/checkout/..." style="font-size:13px;"></div>
                         <div class="form-group"><label class="form-label">URL Checkout — Anual</label><input type="url" id="kirvanoCheckoutAnual" class="form-input" placeholder="https://pay.kirvano.com/checkout/..." style="font-size:13px;"></div>
                     </div>
+                    <div style="margin-top:var(--space-lg);padding-top:var(--space-lg);border-top:1px solid var(--border);">
+                        <div style="font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent-orange);margin-bottom:var(--space-md);">IP Adicional</div>
+                    </div>
+                    <div class="form-row" style="grid-template-columns: 1fr 1fr;">
+                        <div class="form-group"><label class="form-label">ID do Produto — IP Adicional</label><input type="text" id="kirvanoProductIpAdicional" class="form-input" placeholder="ID do produto IP adicional na Kirvano" style="font-family:var(--font-mono);font-size:13px;"></div>
+                        <div class="form-group"><label class="form-label">URL Checkout — IP Adicional</label><input type="url" id="kirvanoCheckoutIpAdicional" class="form-input" placeholder="https://pay.kirvano.com/checkout/..." style="font-size:13px;"></div>
+                    </div>
                     <div style="display:flex;gap:var(--space-md);margin-top:var(--space-md);flex-wrap:wrap;">
                         <button class="btn btn-primary" onclick="saveWebhookConfig()">Salvar Configuração</button>
                         <button class="btn btn-secondary" onclick="testWebhook()" style="border-color:var(--accent-teal);color:var(--accent-teal);">Testar Webhook</button>
