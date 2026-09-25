@@ -56,6 +56,17 @@ async function sendEmail(to, subject, html) {
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
+// Aggressive no-cache for HTML files — prevents browser from serving stale admin/dashboard pages
+app.use((req, res, next) => {
+  if (req.path.endsWith('.html') || req.path === '/admin' || req.path === '/dashboard') {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    res.set('Surrogate-Control', 'no-store');
+  }
+  next();
+});
+
 // Trust proxy for correct IP behind Vercel
 app.set('trust proxy', true);
 
