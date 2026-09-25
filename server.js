@@ -14,6 +14,8 @@ const { OAuth2Client } = require('google-auth-library');
 const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
 const { Agent: UndiciAgent } = require('undici');
+const { generateSecret, verify: totpVerify, generateURI } = require('otplib');
+const QRCode = require('qrcode');
 
 // Keep-alive dispatcher para fetch upstream — evita handshake TLS repetido (economiza 100-300ms/req)
 const keepAliveDispatcher = new UndiciAgent({
@@ -458,10 +460,37 @@ async function toggleKeyIpAuthorization(keyId, ip, authorize = true) {
   if (!keyId || !ip) return;
   try {
     if (authorize) {
-      await supabase.from('key_authorized_ips').upsert(
-        { api_key_id: keyId, ip },
-        { onConflict: 'api_key_id,ip', ignoreDuplicates: true }
-      );
+      // Buscar user_id da chave para calcular max_ips do plano
+      const { data: keyRow } = await supabase.from('api_keys').select('user_id').eq('id', keyId).single();
+      let maxIps = 1;
+      if (keyRow?.user_id) {
+        const { data: subData } = await supabase.from('ip_subscriptions')
+          .select('has_additional_ip')
+          .eq('user_id', keyRow.user_id)
+          .in('status', ['active', 'pending_ip'])
+          .order('created_at', { ascending: false })
+          .limit(1).single();
+        maxIps = 1 + (subData?.has_additional_ip ? 1 : 0);
+      }
+      // Verificar se já está autorizado (idempotente)
+      const { data: existingIps } = await supabase.from('key_authorized_ips')
+        .select('id, ip, authorized_at').eq('api_key_id', keyId)
+        .order('authorized_at', { ascending: true });
+      const alreadyAuthorized = (existingIps || []).some(r => r.ip === ip);
+      if (!alreadyAuthorized) {
+        const currentCount = (existingIps || []).length;
+        if (currentCount >= maxIps) {
+          const toRemove = currentCount - maxIps + 1;
+          const oldest = (existingIps || []).slice(0, toRemove);
+          for (const old of oldest) {
+            await supabase.from('key_authorized_ips').delete().eq('id', old.id).eq('api_key_id', keyId);
+          }
+        }
+        await supabase.from('key_authorized_ips').upsert(
+          { api_key_id: keyId, ip },
+          { onConflict: 'api_key_id,ip', ignoreDuplicates: true }
+        );
+      }
     } else {
       await supabase.from('key_authorized_ips')
         .delete().eq('api_key_id', keyId).eq('ip', ip);
@@ -556,12 +585,38 @@ app.post('/api/keys/:id/authorize-ip', authenticateToken, async (req, res) => {
   const hasPlan = profile?.plan && profile.plan !== 'free';
   const planActive = hasPlan && (!profile?.plan_expires_at || new Date(profile.plan_expires_at) > new Date());
   if (!planActive) return res.status(403).json({ error: 'Plano ativo necessário para autorizar IPs.' });
-  // Inserir (ignorar duplicata via ON CONFLICT)
-  const { error } = await supabase.from('key_authorized_ips').upsert(
-    { api_key_id: id, ip: targetIp },
-    { onConflict: 'api_key_id,ip', ignoreDuplicates: true }
-  );
-  if (error) return res.status(500).json({ error: 'Erro ao autorizar IP: ' + error.message });
+  // Calcular max_ips do plano (1 base + 1 se comprou IP adicional)
+  const { data: subData } = await supabase.from('ip_subscriptions')
+    .select('has_additional_ip')
+    .eq('user_id', req.user.id)
+    .in('status', ['active', 'pending_ip'])
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+  const maxIps = 1 + (subData?.has_additional_ip ? 1 : 0);
+  // Verificar se o IP já está autorizado (se sim, não faz nada — idempotente)
+  const { data: existingIps } = await supabase.from('key_authorized_ips')
+    .select('id, ip, authorized_at')
+    .eq('api_key_id', id)
+    .order('authorized_at', { ascending: true });
+  const alreadyAuthorized = (existingIps || []).some(r => r.ip === targetIp);
+  if (!alreadyAuthorized) {
+    // Se já atingiu o limite, remover os mais antigos até sobrar vaga
+    const currentCount = (existingIps || []).length;
+    if (currentCount >= maxIps) {
+      const toRemove = currentCount - maxIps + 1; // quantos remover para abrir 1 vaga
+      const oldest = (existingIps || []).slice(0, toRemove);
+      for (const old of oldest) {
+        await supabase.from('key_authorized_ips').delete().eq('id', old.id).eq('api_key_id', id);
+      }
+    }
+    // Inserir o novo IP
+    const { error } = await supabase.from('key_authorized_ips').upsert(
+      { api_key_id: id, ip: targetIp },
+      { onConflict: 'api_key_id,ip', ignoreDuplicates: true }
+    );
+    if (error) return res.status(500).json({ error: 'Erro ao autorizar IP: ' + error.message });
+  }
   // Limpar cache
   try {
     const { data: kh } = await supabase.from('api_keys').select('key_hash').eq('id', id).single();
@@ -2694,21 +2749,58 @@ app.get('/api/admin/crm/ip-history/:user_id', adminAuth, async (req, res) => {
 const GHOSTCLI_BASE_URL = process.env.GHOSTCLI_BASE_URL || 'https://ghostcli.dev/v1';
 const GHOSTCLI_API_KEY = process.env.GHOSTCLI_API_KEY || '';
 
-// --- Cache em memória para validação de chaves (TTL 300s) ---
-const keyCache = new Map(); // keyHash → { userId, revoked, cachedAt }
-const subCache = new Map(); // userId → { ip, additional_ip, has_additional_ip, plan, status, expires_at, cachedAt }
+// --- Cache LRU bounded para validação de chaves (TTL 600s, max 10k entradas) ---
+// Evita crescimento ilimitado de memória sob tráfego intenso com muitas chaves únicas
 const CACHE_TTL_MS = 10 * 60 * 1000; // 600s — reduz queries ao Supabase em 2× (era 300s)
+const CACHE_MAX_SIZE = 10000;
 
-function getCached(map, key) {
-  const entry = map.get(key);
-  if (!entry) return null;
-  if (Date.now() - entry.cachedAt > CACHE_TTL_MS) { map.delete(key); return null; }
-  return entry;
+class LRUCache {
+  constructor(maxSize, ttlMs) {
+    this.maxSize = maxSize;
+    this.ttlMs = ttlMs;
+    this.map = new Map();
+  }
+  get(key) {
+    const entry = this.map.get(key);
+    if (!entry) return null;
+    if (Date.now() - entry.cachedAt > this.ttlMs) { this.map.delete(key); return null; }
+    // Move to end (most recently used)
+    this.map.delete(key);
+    this.map.set(key, entry);
+    return entry;
+  }
+  set(key, value) {
+    // Evict oldest if at capacity
+    if (this.map.size >= this.maxSize && !this.map.has(key)) {
+      const firstKey = this.map.keys().next().value;
+      this.map.delete(firstKey);
+    }
+    this.map.set(key, { ...value, cachedAt: Date.now() });
+  }
+  delete(key) { this.map.delete(key); }
+  clear() { this.map.clear(); }
+  // Cleanup periódico: remove entradas expiradas (chamado via setInterval)
+  cleanup() {
+    const now = Date.now();
+    for (const [key, entry] of this.map) {
+      if (now - entry.cachedAt > this.ttlMs) this.map.delete(key);
+    }
+  }
 }
 
-function setCached(map, key, value) {
-  map.set(key, { ...value, cachedAt: Date.now() });
-}
+const keyCache = new LRUCache(CACHE_MAX_SIZE, CACHE_TTL_MS);
+const subCache = new LRUCache(CACHE_MAX_SIZE, CACHE_TTL_MS);
+
+// Cleanup periódico a cada 60s — remove entradas stale sem esperar acesso
+const cacheCleanupInterval = setInterval(() => {
+  keyCache.cleanup();
+  subCache.cleanup();
+}, 60000);
+// Não impedir graceful shutdown
+if (cacheCleanupInterval.unref) cacheCleanupInterval.unref();
+
+function getCached(cache, key) { return cache.get(key); }
+function setCached(cache, key, value) { cache.set(key, value); }
 
 // Invalidar cache (chamado quando admin revoga chave ou muda IP)
 function invalidateKeyCache(keyHash) { keyCache.delete(keyHash); }
@@ -2895,23 +2987,21 @@ async function proxyRequest(req, res, path) {
       const sseData = parseSseUsage(tailStr);
       if (sseData) trackUsage(req, sseData, ttfb).catch(() => {});
     } else {
-      // Non-streaming: raw pipe evita double parse/serialize JSON
+      // Non-streaming: lê como ArrayBuffer e envia raw buffer (evita double parse/serialize JSON)
+      const buffer = Buffer.from(await upstream.arrayBuffer());
       const contentType = upstream.headers.get('content-type') || '';
       if (contentType.includes('application/json')) {
-        // Pipe direto do body upstream → response (sem parse+stringify intermediário)
-        const { pipeline } = require('node:stream/promises');
-        const { Readable } = require('node:stream');
-        const nodeStream = Readable.fromWeb(upstream.body);
-        await pipeline(nodeStream, res);
-        // Para usage tracking em non-streaming, precisamos ler o body separado
-        // Como já piped, não temos mais acesso — mas usage em non-streaming vem no JSON
-        // Solução: para non-streaming com usage, lemos como buffer primeiro
-        // NOTA: reavaliado abaixo — manter compatibilidade com trackUsage
+        res.set('Content-Type', contentType);
+        res.send(buffer);
+        // Parse apenas para usage tracking (não para resposta)
+        if (upstream.ok) {
+          try {
+            const data = JSON.parse(buffer.toString());
+            trackUsage(req, data, ttfb).catch(() => {});
+          } catch (_) { /* ignore parse errors for usage */ }
+        }
       } else {
-        const { pipeline } = require('node:stream/promises');
-        const { Readable } = require('node:stream');
-        const nodeStream = Readable.fromWeb(upstream.body);
-        await pipeline(nodeStream, res);
+        res.send(buffer);
       }
     }
   } catch (err) {
