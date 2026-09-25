@@ -416,8 +416,9 @@
             </div>
 
             <!-- User Edit Modal (Hidden by default) -->
-            <div id="userModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:1000;backdrop-filter:blur(5px);overflow-y:auto;">
-                <div style="max-width:600px;margin:50px auto;background:var(--bg-card-solid);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-xl);position:relative;">
+            <div id="userModal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.85);backdrop-filter:blur(6px);overflow-y:auto;padding:var(--space-md);">
+                <div style="max-width:640px;margin:0 auto;min-height:100%;display:flex;align-items:flex-start;justify-content:center;padding:var(--space-xl) 0;">
+                <div style="width:100%;background:var(--bg-card-solid);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-xl);position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
                     <button onclick="closeUserModal()" style="position:absolute;top:20px;right:20px;background:none;border:none;color:var(--text-muted);font-size:24px;cursor:pointer;">&times;</button>
                     <h2 id="userModalTitle" style="margin-bottom:var(--space-lg);font-size:20px;">Editar Usuário</h2>
                     <div id="userFormAlert" class="alert"></div>
@@ -485,9 +486,10 @@
                         </div>
                     </div>
                 </div>
-            </div>
+                </div><!-- end flex wrapper -->
+            </div><!-- end userModal overlay -->
 
-            
+
             <!-- TAB: COUPONS -->
             <div class="tab-panel" id="tab-coupons">
                 <div class="card">
@@ -792,6 +794,13 @@
         let allActivations = [];
         let allAffiliates = [];
 
+        // HTML escaping helper to prevent stored XSS
+        function escAdmin(str) {
+            const d = document.createElement('div');
+            d.textContent = str || '';
+            return d.innerHTML;
+        }
+
         function getAdminSecret() {
             let secret = sessionStorage.getItem('8token_admin_secret');
             if (!secret) {
@@ -966,7 +975,7 @@
                 const invHtml = (stats.recentInvoices || []).map(i => `
                     <tr>
                         <td class="mono" style="font-size:12px;">${formatDate(i.created_at)}</td>
-                        <td style="font-size:13px;">${i.user_email || '—'}</td>
+                        <td style="font-size:13px;">${escAdmin(i.user_email) || '—'}</td>
                         <td>${badgeForPlan(i.plan)}</td>
                         <td class="mono">R$ ${(i.amount||0).toFixed(2)}</td>
                         <td>${badgeForStatus(i.status)}</td>
@@ -1075,14 +1084,14 @@
                     html += `<tr data-id="${s.id}" style="${!isMain ? 'background:rgba(255,255,255,0.02);' : ''}">
                         <td style="text-align:center;"><input type="checkbox" class="user-select-cb" value="${s.id}"></td>
                         <td class="mono" style="font-size:11px;color:var(--text-muted);">${isMain ? userIdShort : ''}</td>
-                        <td style="font-size:13px;color:var(--text-secondary);">${isMain ? (g.user_name !== '—' ? g.user_name : g.user_email) : ''}</td>
+                        <td style="font-size:13px;color:var(--text-secondary);">${isMain ? (g.user_name !== '—' ? escAdmin(g.user_name) : escAdmin(g.user_email)) : ''}</td>
                         <td>${isMain ? badgeForRole(g.user_role) : ''}</td>
-                        <td class="mono" style="${!isMain ? 'padding-left:24px;color:var(--accent-blue);' : ''}">${(() => { const ipVal = isMain ? s.ip : '↳ ' + s.ip; const isPending = !s.ip || s.ip === 'pending-activation' || s.ip === 'pending'; return isPending ? '<span style="color:var(--text-muted);font-style:italic;">Sem IP</span>' : ipVal; })()}</td>
+                        <td class="mono" style="${!isMain ? 'padding-left:24px;color:var(--accent-blue);' : ''}">${(() => { const ipVal = isMain ? escAdmin(s.ip) : '↳ ' + escAdmin(s.ip); const isPending = !s.ip || s.ip === 'pending-activation' || s.ip === 'pending'; return isPending ? '<span style="color:var(--text-muted);font-style:italic;">Sem IP</span>' : ipVal; })()}</td>
                         <td>${badgeForPlan(s.plan)}</td>
                         <td>${badgeForStatus(s.status)}</td>
-                        <td style="font-size:13px;color:var(--text-secondary);">${isMain ? g.user_email : ''}</td>
+                        <td style="font-size:13px;color:var(--text-secondary);">${isMain ? escAdmin(g.user_email) : ''}</td>
                         <td class="mono" style="font-size:12px;">${formatDate(s.expires_at)}</td>
-                        <td style="font-size:13px;color:var(--text-muted);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${(s.notes||'').replace(/"/g,'&quot;')}">${s.notes || '—'}</td>
+                        <td style="font-size:13px;color:var(--text-muted);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escAdmin(s.notes||'').replace(/"/g,'&quot;')}">${escAdmin(s.notes) || '—'}</td>
                         <td class="mono" style="font-size:12px;color:var(--text-muted);">${formatDate(s.updated_at)}</td>
                         <td class="actions">
                             <button class="btn btn-primary btn-sm" onclick="openUserModal('${s.id}')">Editar</button>
@@ -1415,7 +1424,7 @@
                 allSubs = await apiFetch('/api/admin/subscriptions');
                 filterUsersTable();
             } catch (e) {
-                document.getElementById('usersTableBody').innerHTML = `<tr><td colspan="8" class="empty-state" style="color:var(--accent-red);">${e.message}</td></tr>`;
+                document.getElementById('usersTableBody').innerHTML = `<tr><td colspan="8" class="empty-state" style="color:var(--accent-red);">${escAdmin(e.message)}</td></tr>`;
                 if (e.message.includes('Acesso negado')) sessionStorage.removeItem('8token_admin_secret');
             }
         }
@@ -1496,24 +1505,18 @@
             try { await apiFetch(`/api/admin/subscriptions/${id}`, { method: 'DELETE' }); loadSubscriptions(); } catch (e) { alert(e.message); }
         }
 
-        // --- DANGER ZONE: Reset & Delete User (password protected) ---
-        const DANGER_PASSWORD = '0258';
+        // --- DANGER ZONE: Reset & Delete User (double-confirm, no visible password) ---
 
         async function resetUserAccount() {
             const subId = document.getElementById('editId').value;
             if (!subId) { alert('Nenhum usuário selecionado'); return; }
 
-            const pwd = prompt('Digite a senha de administrador para resetar a conta (0258):');
-            if (pwd !== DANGER_PASSWORD) { alert('Senha incorreta'); return; }
-
-            if (!confirm('⚠️ ATENÇÃO: Isso vai resetar completamente a conta do usuário (plano, IP, chaves API). O usuário permanecerá no sistema mas sem acesso. Continuar?')) return;
+            if (!confirm('⚠️ ATENÇÃO: Isso vai resetar completamente a conta do usuário (plano, IP, chaves API). O usuário permanecerá no sistema mas sem acesso.\n\nTem certeza absoluta?')) return;
+            if (!confirm('CONFIRMAÇÃO FINAL: Realmente resetar esta conta? Esta ação não pode ser desfeita.')) return;
 
             try {
-                const result = await apiFetch(`/api/admin/users/${subId}/reset`, {
-                    method: 'POST',
-                    body: JSON.stringify({ password: pwd })
-                });
-                alert('✅ Conta resetada com sucesso! O usuário agora está sem plano/IP ativo.');
+                await apiFetch(`/api/admin/subscriptions/${subId}/reset`, { method: 'POST' });
+                alert('✅ Conta resetada com sucesso!');
                 closeUserModal();
                 loadSubscriptions();
             } catch (e) { alert('Erro ao resetar: ' + e.message); }
@@ -1523,17 +1526,12 @@
             const subId = document.getElementById('editId').value;
             if (!subId) { alert('Nenhum usuário selecionado'); return; }
 
-            const pwd = prompt('Digite a senha de administrador para DELETAR o usuário permanentemente (0258):');
-            if (pwd !== DANGER_PASSWORD) { alert('Senha incorreta'); return; }
-
-            if (!confirm('🚨 PERIGO: Isso vai DELETAR o usuário e TODOS os dados associados (assinaturas, chaves API, histórico). Esta ação NÃO pode ser desfeita. Continuar?')) return;
+            if (!confirm('🚨 PERIGO: Isso vai DELETAR o usuário e TODOS os dados associados (assinaturas, chaves API, histórico). Esta ação NÃO pode ser desfeita.\n\nTem certeza absoluta?')) return;
+            if (!confirm('CONFIRMAÇÃO FINAL: Realmente DELETAR permanentemente? Não há como recuperar.')) return;
 
             try {
-                const result = await apiFetch(`/api/admin/users/${subId}/delete-complete`, {
-                    method: 'DELETE',
-                    body: JSON.stringify({ password: pwd })
-                });
-                alert('✅ Usuário deletado permanentemente do sistema.');
+                await apiFetch(`/api/admin/subscriptions/${subId}`, { method: 'DELETE' });
+                alert('✅ Usuário deletado permanentemente.');
                 closeUserModal();
                 loadSubscriptions();
             } catch (e) { alert('Erro ao deletar: ' + e.message); }
@@ -1575,10 +1573,10 @@
                         <tr draggable="true" data-affiliate-id="${a.id}" ondragstart="handleDragStart(event, ${idStr})" ondragover="handleDragOver(event)" ondrop="handleDrop(event, ${idStr})" ondragleave="handleDragLeave(event)" style="cursor:move;">
                             <td class="mono" style="font-size:11px;">#${String(a.id).slice(0,8)}</td>
                             <td style="font-size:13px;padding-left:${indent}px;">
-                                ${arrow}<strong>${userEmail}</strong>${parentInfo}<br>
-                                <span style="font-size:11px;color:var(--text-muted);padding-left:${indent + (level > 0 ? 20 : 0)}px;">${userName}</span>
+                                ${arrow}<strong>${escAdmin(userEmail)}</strong>${parentInfo}<br>
+                                <span style="font-size:11px;color:var(--text-muted);padding-left:${indent + (level > 0 ? 20 : 0)}px;">${escAdmin(userName)}</span>
                             </td>
-                            <td class="mono" style="font-size:12px;">${a.code}</td>
+                            <td class="mono" style="font-size:12px;">${escAdmin(a.code)}</td>
                             <td>
                                 <span class="badge badge-pro">${a.commission_pct}%</span>
                                 ${a.parent_affiliate_id ? `<br><span style="font-size:10px;color:var(--accent-teal);">Mãe recebe: ${affiliateMap[a.parent_affiliate_id]?.commission_pct || 0}%</span>` : ''}
@@ -1598,7 +1596,7 @@
                 rootAffiliates.forEach(a => renderAffiliate(a, 0));
                 tbody.innerHTML = html;
             } catch (e) {
-                document.getElementById('affiliatesTableBody').innerHTML = `<tr><td colspan="8" class="empty-state" style="color:var(--accent-red);">${e.message}</td></tr>`;
+                document.getElementById('affiliatesTableBody').innerHTML = `<tr><td colspan="8" class="empty-state" style="color:var(--accent-red);">${escAdmin(e.message)}</td></tr>`;
             }
         }
 
@@ -1645,7 +1643,7 @@
                 if (results.length === 1) {
                     const u = results[0];
                     const planNames = { mensal: 'Mensal', trimestral: 'Trimestral', anual: 'Anual', free: 'Free' };
-                    if (foundInfo) foundInfo.innerHTML = `✅ <strong>${u.name || 'Sem nome'}</strong> — ${u.email} — Plano: ${planNames[u.plan] || u.plan || 'Free'}`;
+                    if (foundInfo) foundInfo.innerHTML = `✅ <strong>${escAdmin(u.name) || 'Sem nome'}</strong> — ${escAdmin(u.email)} — Plano: ${planNames[u.plan] || u.plan || 'Free'}`;
                     if (foundDiv) foundDiv.style.display = 'block';
                     emailInput.value = u.email;
                     showAlert('affFormAlert', '', 'success');
@@ -1653,8 +1651,11 @@
                     // Múltiplos resultados — mostrar lista
                     let html = results.map(u => {
                         const planNames = { mensal: 'Mensal', trimestral: 'Trimestral', anual: 'Anual', free: 'Free' };
-                        return `<div style="cursor:pointer;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.05);" onclick="document.getElementById('affEmail').value='${u.email}';document.getElementById('affUserFoundInfo').innerHTML='✅ <strong>${(u.name||'Sem nome').replace(/'/g,"\\'")}</strong> — ${u.email} — Plano: ${planNames[u.plan]||u.plan||'Free'}';showAlert('affFormAlert','','success');">
-                            <strong>${u.name || 'Sem nome'}</strong> — ${u.email} — ${planNames[u.plan] || u.plan || 'Free'}
+                        const safeEmail = escAdmin(u.email).replace(/'/g, "\\'");
+                        const safeName = escAdmin(u.name || 'Sem nome');
+                        const safeNameAttr = safeName.replace(/'/g, "\\'");
+                        return `<div style="cursor:pointer;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.05);" onclick="document.getElementById('affEmail').value='${safeEmail}';document.getElementById('affUserFoundInfo').innerHTML='✅ <strong>${safeNameAttr}</strong> — ${safeEmail} — Plano: ${planNames[u.plan]||u.plan||'Free'}';showAlert('affFormAlert','','success');">
+                            <strong>${safeName}</strong> — ${escAdmin(u.email)} — ${planNames[u.plan] || u.plan || 'Free'}
                         </div>`;
                     }).join('');
                     if (foundInfo) foundInfo.innerHTML = `${results.length} usuários encontrados — clique para selecionar:<br>${html}`;
@@ -1731,16 +1732,16 @@
                     const plan = log.plan || (p.products?.[0]?.offer_name) || '—';
                     return `<tr>
                         <td class="mono" style="font-size:12px;">${new Date(log.created_at).toLocaleString('pt-BR')}</td>
-                        <td><span class="badge ${badgeClass}">${evt}</span></td>
-                        <td>${status}</td>
-                        <td style="font-size:13px;">${email}</td>
-                        <td class="mono" style="font-size:12px;">${ip}</td>
-                        <td>${plan}</td>
-                        <td style="font-size:11px;color:var(--text-muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;">${JSON.stringify(p).substring(0, 100)}...</td>
+                        <td><span class="badge ${badgeClass}">${escAdmin(evt)}</span></td>
+                        <td>${escAdmin(status)}</td>
+                        <td style="font-size:13px;">${escAdmin(email)}</td>
+                        <td class="mono" style="font-size:12px;">${escAdmin(ip)}</td>
+                        <td>${escAdmin(plan)}</td>
+                        <td style="font-size:11px;color:var(--text-muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;">${escAdmin(JSON.stringify(p).substring(0, 100))}...</td>
                     </tr>`;
                 }).join('');
             } catch (e) {
-                document.getElementById('webhookLogsBody').innerHTML = `<tr><td colspan="7" class="empty-state" style="color:var(--accent-red);">${e.message}</td></tr>`;
+                document.getElementById('webhookLogsBody').innerHTML = `<tr><td colspan="7" class="empty-state" style="color:var(--accent-red);">${escAdmin(e.message)}</td></tr>`;
             }
         }
 
@@ -1827,20 +1828,21 @@
                 if (!expired.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Nenhum plano expirado. Tudo em dia!</td></tr>'; return; }
                 tbody.innerHTML = expired.map(s => {
                     const daysExpired = Math.floor((now - new Date(s.expires_at)) / (1000*60*60*24));
+                    const safeIp = escAdmin(s.ip).replace(/'/g, "\\'");
                     return `<tr>
-                        <td class="mono">${s.ip}</td>
+                        <td class="mono">${escAdmin(s.ip)}</td>
                         <td>${badgeForPlan(s.plan)}</td>
-                        <td style="font-size:13px;color:var(--text-secondary);">${s.user_email || '—'}</td>
+                        <td style="font-size:13px;color:var(--text-secondary);">${escAdmin(s.user_email) || '—'}</td>
                         <td class="mono" style="font-size:12px;">${formatDate(s.expires_at)}</td>
                         <td><span class="badge badge-expired">${daysExpired} dia${daysExpired !== 1 ? 's' : ''}</span></td>
                         <td class="actions">
-                            <button class="btn btn-success btn-sm" onclick="reactivateIp(${s.id},'${s.ip}')">Reativar</button>
-                            <button class="btn btn-danger btn-sm" onclick="deleteSub(${s.id},'${s.ip}')">Remover</button>
+                            <button class="btn btn-success btn-sm" onclick="reactivateIp(${s.id},'${safeIp}')">Reativar</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteSub(${s.id},'${safeIp}')">Remover</button>
                         </td>
                     </tr>`;
                 }).join('');
             } catch (e) {
-                document.getElementById('expiredTableBody').innerHTML = `<tr><td colspan="6" class="empty-state" style="color:var(--accent-red);">${e.message}</td></tr>`;
+                document.getElementById('expiredTableBody').innerHTML = `<tr><td colspan="6" class="empty-state" style="color:var(--accent-red);">${escAdmin(e.message)}</td></tr>`;
             }
         }
 
@@ -1880,15 +1882,15 @@
                                     <table>
                                         <thead><tr><th>IP</th><th>Status</th><th>Usuário</th><th>Expira</th><th>Ações</th></tr></thead>
                                         <tbody>
-                                            ${ips.map(s => `
+                                            ${ips.map(s => { const safeIp = escAdmin(s.ip).replace(/'/g, "\\'"); return `
                                                 <tr>
-                                                    <td class="mono">${s.ip}</td>
+                                                    <td class="mono">${escAdmin(s.ip)}</td>
                                                     <td>${badgeForStatus(s.status)}</td>
-                                                    <td style="font-size:13px;color:var(--text-secondary);">${s.user_email || '—'}</td>
+                                                    <td style="font-size:13px;color:var(--text-secondary);">${escAdmin(s.user_email) || '—'}</td>
                                                     <td class="mono" style="font-size:12px;">${formatDate(s.expires_at)}</td>
-                                                    <td class="actions"><button class="btn btn-danger btn-sm" onclick="removeIpFromPlan(${s.id},'${s.ip}','${plan}')">Remover IP</button></td>
+                                                    <td class="actions"><button class="btn btn-danger btn-sm" onclick="removeIpFromPlan(${s.id},'${safeIp}','${plan}')">Remover IP</button></td>
                                                 </tr>
-                                            `).join('')}
+                                            `; }).join('')}
                                         </tbody>
                                     </table>
                                 </div>
@@ -1901,20 +1903,20 @@
                     const ips = grouped[plan];
                     html += `
                         <div class="card">
-                            <div class="card-title">${plan} <span style="font-size:13px;color:var(--text-muted);font-weight:400;">(${ips.length} IP${ips.length !== 1 ? 's' : ''})</span></div>
+                            <div class="card-title">${escAdmin(plan)} <span style="font-size:13px;color:var(--text-muted);font-weight:400;">(${ips.length} IP${ips.length !== 1 ? 's' : ''})</span></div>
                             <div class="table-wrap">
                                 <table>
                                     <thead><tr><th>IP</th><th>Status</th><th>Usuário</th><th>Expira</th><th>Ações</th></tr></thead>
                                     <tbody>
-                                        ${ips.map(s => `
+                                        ${ips.map(s => { const safeIp2 = escAdmin(s.ip).replace(/'/g, "\\'"); return `
                                             <tr>
-                                                <td class="mono">${s.ip}</td>
+                                                <td class="mono">${escAdmin(s.ip)}</td>
                                                 <td>${badgeForStatus(s.status)}</td>
-                                                <td style="font-size:13px;color:var(--text-secondary);">${s.user_email || '—'}</td>
+                                                <td style="font-size:13px;color:var(--text-secondary);">${escAdmin(s.user_email) || '—'}</td>
                                                 <td class="mono" style="font-size:12px;">${formatDate(s.expires_at)}</td>
-                                                <td class="actions"><button class="btn btn-danger btn-sm" onclick="removeIpFromPlan(${s.id},'${s.ip}','${plan}')">Remover IP</button></td>
+                                                <td class="actions"><button class="btn btn-danger btn-sm" onclick="removeIpFromPlan(${s.id},'${safeIp2}','${escAdmin(plan)}')">Remover IP</button></td>
                                             </tr>
-                                        `).join('')}
+                                        `; }).join('')}
                                     </tbody>
                                 </table>
                             </div>
@@ -1923,7 +1925,7 @@
                 }
                 container.innerHTML = html || '<div class="empty-state">Nenhum IP cadastrado.</div>';
             } catch (e) {
-                document.getElementById('plansContainer').innerHTML = `<div class="empty-state" style="color:var(--accent-red);">${e.message}</div>`;
+                document.getElementById('plansContainer').innerHTML = `<div class="empty-state" style="color:var(--accent-red);">${escAdmin(e.message)}</div>`;
             }
         }
 
@@ -1946,8 +1948,9 @@
                         isExpired ? '<span class="badge badge-expired">Expirado</span>' :
                         isExhausted ? '<span class="badge badge-suspended">Esgotado</span>' :
                         '<span class="badge badge-suspended">Inativo</span>';
+                    const safeCode = escAdmin(c.code).replace(/'/g, "\\'");
                     return `<tr>
-                        <td class="mono" style="font-weight:700;color:var(--accent-orange);">${c.code}</td>
+                        <td class="mono" style="font-weight:700;color:var(--accent-orange);">${escAdmin(c.code)}</td>
                         <td><span class="badge badge-pro">${c.discount_pct}%</span></td>
                         <td class="mono">${c.uses_count || 0}</td>
                         <td class="mono">${c.max_uses || '∞'}</td>
@@ -1955,12 +1958,12 @@
                         <td>${statusBadge}</td>
                         <td class="actions">
                             <button class="btn btn-secondary btn-sm" onclick="toggleCoupon(${c.id}, ${c.active ? 0 : 1})">${c.active ? 'Desativar' : 'Ativar'}</button>
-                            <button class="btn btn-danger btn-sm" onclick="deleteCoupon(${c.id}, '${c.code}')">Remover</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteCoupon(${c.id}, '${safeCode}')">Remover</button>
                         </td>
                     </tr>`;
                 }).join('');
             } catch (e) {
-                document.getElementById('couponsTableBody').innerHTML = `<tr><td colspan="7" class="empty-state" style="color:var(--accent-red);">${e.message}</td></tr>`;
+                document.getElementById('couponsTableBody').innerHTML = `<tr><td colspan="7" class="empty-state" style="color:var(--accent-red);">${escAdmin(e.message)}</td></tr>`;
             }
         }
 

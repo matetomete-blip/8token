@@ -12,8 +12,25 @@ const jwt = require('jsonwebtoken');
 const { createClient } = require('@supabase/supabase-js');
 const { OAuth2Client } = require('google-auth-library');
 const crypto = require('crypto');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
+
+// Rate limiters for auth endpoints
+const loginLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 5,
+  message: { error: 'Muitas tentativas de login. Tente novamente em 1 minuto.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 3,
+  message: { error: 'Limite de registros atingido. Tente novamente em 1 hora.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET || JWT_SECRET === '8token-jwt-secret-stable-fallback-2026') {
   console.error('ERRO: JWT_SECRET não configurado ou usando valor inseguro. Defina via variável de ambiente.');
@@ -194,7 +211,7 @@ const PLAN_EXPIRY_MS = {
 
 // --- AUTH ROUTES ---
 
-app.post('/api/auth/register', async (req, res) => {
+app.post('/api/auth/register', registerLimiter, async (req, res) => {
   try {
     const { email, password, name } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email e senha são obrigatórios' });
@@ -240,7 +257,7 @@ app.post('/api/auth/register', async (req, res) => {
   }
 });
 
-app.post('/api/auth/login', async (req, res) => {
+app.post('/api/auth/login', loginLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email e senha são obrigatórios' });
@@ -945,6 +962,7 @@ app.put('/api/user/additional-ip', authenticateToken, async (req, res) => {
 app.post('/api/user/change-ip', authenticateToken, async (req, res) => {
   const { new_ip } = req.body;
   if (!new_ip) return res.status(400).json({ error: 'Novo IP é obrigatório.' });
+  if (!isValidIp(new_ip)) return res.status(400).json({ error: 'Formato de IP inválido.' });
   const { data: sub } = await supabase.from('ip_subscriptions').select('*').eq('user_id', req.user.id).eq('status', 'active').single();
   if (!sub) return res.status(400).json({ error: 'Nenhum plano ativo encontrado.' });
   if (new_ip === sub.ip) return res.status(400).json({ error: 'O novo IP é igual ao atual.' });
@@ -953,7 +971,7 @@ app.post('/api/user/change-ip', authenticateToken, async (req, res) => {
   await supabase.from('ip_change_requests').insert({ user_id: req.user.id, old_ip: sub.ip, new_ip, status: 'pending' });
   await supabase.from('notifications').insert({ user_id: req.user.id, title: 'Alteração de IP Solicitada', message: `Solicitação para alterar IP de ${sub.ip} para ${new_ip} enviada.`, type: 'info' });
   sendEmail(ADMIN_EMAIL_NOTIFY, '8Token — Nova solicitação de troca de IP',
-    `<p>O usuário <strong>${req.user.email}</strong> solicitou a troca de IP de <strong>${sub.ip}</strong> para <strong>${new_ip}</strong>.</p><p>Aprove ou recuse no painel admin.</p>`).catch(() => {});
+    `<p>O usuário <strong>${escHtml(req.user.email)}</strong> solicitou a troca de IP de <strong>${escHtml(sub.ip)}</strong> para <strong>${escHtml(new_ip)}</strong>.</p><p>Aprove ou recuse no painel admin.</p>`).catch(() => {});
   res.json({ success: true, message: 'Solicitação enviada. Aguarde aprovação.' });
 });
 
@@ -1687,7 +1705,7 @@ app.post('/api/admin/ip-changes/:id/approve', adminAuth, async (req, res) => {
   await supabase.from('notifications').insert({ user_id: changeReq.user_id, title: 'IP Alterado!', message: `Seu IP foi alterado de ${changeReq.old_ip} para ${changeReq.new_ip}.`, type: 'success' });
   const { data: approvedUser } = await supabase.from('users').select('email').eq('id', changeReq.user_id).single();
   if (approvedUser?.email) sendEmail(approvedUser.email, '8Token — IP alterado com sucesso',
-    `<p>Olá! Sua solicitação foi aprovada.</p><p>Seu IP autorizado agora é <strong>${changeReq.new_ip}</strong> (antes: ${changeReq.old_ip}).</p>`).catch(() => {});
+    `<p>Olá! Sua solicitação foi aprovada.</p><p>Seu IP autorizado agora é <strong>${escHtml(changeReq.new_ip)}</strong> (antes: ${escHtml(changeReq.old_ip)}).</p>`).catch(() => {});
   res.json({ success: true });
 });
 
@@ -1699,7 +1717,7 @@ app.post('/api/admin/ip-changes/:id/reject', adminAuth, async (req, res) => {
   await supabase.from('notifications').insert({ user_id: changeReq.user_id, title: 'Alteração de IP Recusada', message: `Sua solicitação foi recusada.${notes ? ' Motivo: ' + notes : ''}`, type: 'error' });
   const { data: rejectedUser } = await supabase.from('users').select('email').eq('id', changeReq.user_id).single();
   if (rejectedUser?.email) sendEmail(rejectedUser.email, '8Token — Solicitação de IP recusada',
-    `<p>Olá! Infelizmente sua solicitação de troca de IP para <strong>${changeReq.new_ip}</strong> foi recusada.${notes ? '</p><p>Motivo: ' + notes : ''}</p>`).catch(() => {});
+    `<p>Olá! Infelizmente sua solicitação de troca de IP para <strong>${escHtml(changeReq.new_ip)}</strong> foi recusada.${notes ? '</p><p>Motivo: ' + escHtml(notes) : ''}</p>`).catch(() => {});
   res.json({ success: true });
 });
 
