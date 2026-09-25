@@ -1384,6 +1384,34 @@ app.post('/api/admin/webhook-test', adminAuth, async (req, res) => {
   }
 });
 
+// TEMP: Migrate webhook_logs table — add missing columns
+app.post('/api/admin/migrate-webhook-logs', adminAuth, async (req, res) => {
+  try {
+    const { data, error } = await supabase.rpc('exec_sql', { sql: `
+      ALTER TABLE webhook_logs ADD COLUMN IF NOT EXISTS event TEXT;
+      ALTER TABLE webhook_logs ADD COLUMN IF NOT EXISTS status TEXT;
+      ALTER TABLE webhook_logs ADD COLUMN IF NOT EXISTS customer_email TEXT;
+      ALTER TABLE webhook_logs ADD COLUMN IF NOT EXISTS customer_ip TEXT;
+      ALTER TABLE webhook_logs ADD COLUMN IF NOT EXISTS plan TEXT;
+    `});
+    if (error) throw error;
+    res.json({ success: true, message: 'Colunas adicionadas com sucesso' });
+  } catch (err) {
+    // Fallback: try individual inserts to test which columns exist
+    const testPayload = { event_type: 'MIGRATION_TEST', event: 'MIGRATION_TEST', sale_id: 'mig-test', status: 'TEST', customer_email: 'mig@test.com', customer_ip: '0.0.0.0', plan: 'test', payload: { test: true } };
+    const { error: insertErr } = await supabase.from('webhook_logs').insert(testPayload);
+    if (insertErr) {
+      // Try minimal insert
+      const { error: minErr } = await supabase.from('webhook_logs').insert({ event_type: 'MIGRATION_TEST', sale_id: 'mig-test', payload: { test: true } });
+      if (minErr) return res.status(500).json({ error: 'Tabela webhook_logs não aceita insert: ' + minErr.message, detail: insertErr.message });
+      return res.json({ success: false, message: 'Colunas extras não existem na tabela. Adicione manualmente no Supabase SQL Editor:', sql: 'ALTER TABLE webhook_logs ADD COLUMN IF NOT EXISTS event TEXT; ALTER TABLE webhook_logs ADD COLUMN IF NOT EXISTS status TEXT; ALTER TABLE webhook_logs ADD COLUMN IF NOT EXISTS customer_email TEXT; ALTER TABLE webhook_logs ADD COLUMN IF NOT EXISTS customer_ip TEXT; ALTER TABLE webhook_logs ADD COLUMN IF NOT EXISTS plan TEXT;', minimal_insert_works: true });
+    }
+    // Clean up test row
+    await supabase.from('webhook_logs').delete().eq('sale_id', 'mig-test');
+    res.json({ success: true, message: 'Tabela webhook_logs já tem todas as colunas necessárias' });
+  }
+});
+
 // Remote deploy endpoint — runs git pull + pm2 restart on the VPS
 app.post('/api/admin/deploy', adminAuth, async (req, res) => {
   const { exec } = require('child_process');
