@@ -622,8 +622,8 @@
         //
         // SIMULATE_APPROVAL: enquanto não houver backend, deixe true para testar o fluxo
         //   (a página simula aprovação após alguns segundos). Em produção, coloque false.
-        const STATUS_ENDPOINT = '/api/checkout/status'; // TODO [PRODUÇÃO]: URL real do seu backend
-        const SIMULATE_APPROVAL = true;                 // TODO [PRODUÇÃO]: false quando o backend existir
+        const STATUS_ENDPOINT = '/api/checkout/status';
+        const SIMULATE_APPROVAL = false;                // Polling real no backend — webhook Kirvano atualiza o plano
         const POLL_INTERVAL_MS = 5000;                  // verifica a cada 5s
         const SIMULATE_APPROVE_AFTER_MS = 12000;        // (só simulação) aprova após 12s
 
@@ -674,11 +674,11 @@
         }
 
         function checkStatus() {
-            if (!currentOrderId) return;
             var meta = document.getElementById('pollMeta');
-            fetch(STATUS_ENDPOINT + '?order_id=' + encodeURIComponent(currentOrderId), {
+            var token = localStorage.getItem('8token_token') || localStorage.getItem('token') || '';
+            fetch(STATUS_ENDPOINT, {
                 method: 'GET',
-                headers: { 'Accept': 'application/json' },
+                headers: { 'Accept': 'application/json', 'Authorization': 'Bearer ' + token },
             })
             .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)); })
             .then(function (data) {

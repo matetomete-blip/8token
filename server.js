@@ -391,6 +391,47 @@ app.get('/api/checkout/:plan', authenticateToken, async (req, res) => {
   res.json({ redirect_url: `${checkoutUrl}${separator}email=${encodeURIComponent(user?.email || '')}`, plan });
 });
 
+// Checkout status polling — verifica se o plano do usuário foi atualizado recentemente pelo webhook
+app.get('/api/checkout/status', authenticateToken, async (req, res) => {
+  try {
+    const { data: user } = await supabase
+      .from('users')
+      .select('plan, plan_expires_at')
+      .eq('id', req.user.id)
+      .single();
+
+    if (!user) return res.json({ status: 'pending' });
+
+    // Se o plano não é 'free' e tem expiração futura, foi aprovado
+    const hasActivePlan = user.plan && user.plan !== 'free' && user.plan_expires_at && new Date(user.plan_expires_at) > new Date();
+
+    if (hasActivePlan) {
+      return res.json({ status: 'approved', plan: user.plan, expires_at: user.plan_expires_at });
+    }
+
+    // Verifica se há invoice recente paga nos últimos 5 minutos
+    const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const { data: recentPaid } = await supabase
+      .from('invoices')
+      .select('id, plan, paid_at')
+      .eq('user_id', req.user.id)
+      .eq('status', 'paid')
+      .gte('paid_at', fiveMinAgo)
+      .order('paid_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (recentPaid) {
+      return res.json({ status: 'approved', plan: recentPaid.plan, paid_at: recentPaid.paid_at });
+    }
+
+    return res.json({ status: 'pending' });
+  } catch (err) {
+    console.error('[Checkout Status] Error:', err.message);
+    return res.json({ status: 'pending' });
+  }
+});
+
 // --- WEBHOOK ---
 app.post('/api/webhooks/kirvano', async (req, res) => {
   // Read webhook token from DB settings (admin-configurable) — fall back to env var
