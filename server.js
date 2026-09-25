@@ -405,7 +405,7 @@ app.delete('/api/keys/:id', authenticateToken, async (req, res) => {
   // Limpar cache do gateway para esta chave
   try {
     const { data: keyRow } = await supabase.from('api_keys').select('key_hash').eq('id', req.params.id).single();
-    if (keyRow?.key_hash) { deleteCache(keyCache, keyRow.key_hash); deleteCache(subCache, req.user.id); }
+    if (keyRow?.key_hash) { invalidateKeyCache(keyRow.key_hash); invalidateSubCache(req.user.id); }
   } catch (_) {}
   res.json({ success: true });
 });
@@ -435,7 +435,7 @@ app.post('/api/keys/:id/authorize-ip', authenticateToken, async (req, res) => {
   // Limpar cache
   try {
     const { data: kh } = await supabase.from('api_keys').select('key_hash').eq('id', id).single();
-    if (kh?.key_hash) deleteCache(keyCache, kh.key_hash);
+    if (kh?.key_hash) invalidateKeyCache(kh.key_hash);
   } catch (_) {}
   // Retornar lista atualizada de IPs desta chave
   const { data: ips } = await supabase.from('key_authorized_ips')
@@ -454,7 +454,7 @@ app.delete('/api/keys/:id/authorized-ips/:ipId', authenticateToken, async (req, 
   // Limpar cache
   try {
     const { data: kh } = await supabase.from('api_keys').select('key_hash').eq('id', id).single();
-    if (kh?.key_hash) deleteCache(keyCache, kh.key_hash);
+    if (kh?.key_hash) invalidateKeyCache(kh.key_hash);
   } catch (_) {}
   res.json({ success: true });
 });
@@ -1500,28 +1500,33 @@ app.post('/api/admin/webhook-config', adminAuth, async (req, res) => {
   try {
     const { webhook_token, product_mensal_id, product_trimestral_id, product_anual_id, product_ip_adicional_id, checkout_mensal_url, checkout_trimestral_url, checkout_anual_url, checkout_ip_adicional_url } = req.body;
     if (!webhook_token) return res.status(400).json({ error: 'Token do webhook é obrigatório' });
-    // Store config in a settings table (create if not exists)
-    const configData = {
-      key: 'kirvano_config',
-      value: JSON.stringify({
-        webhook_token,
-        product_mensal_id: product_mensal_id || '',
-        product_trimestral_id: product_trimestral_id || '',
-        product_anual_id: product_anual_id || '',
-        product_ip_adicional_id: product_ip_adicional_id || '',
-        checkout_mensal_url: checkout_mensal_url || '',
-        checkout_trimestral_url: checkout_trimestral_url || '',
-        checkout_anual_url: checkout_anual_url || '',
-        checkout_ip_adicional_url: checkout_ip_adicional_url || ''
-      }),
-      updated_at: new Date().toISOString()
-    };
-    // Try update first, then insert
-    const { data: existing } = await supabase.from('settings').select('id').eq('key', 'kirvano_config').single();
-    if (existing) {
-      await supabase.from('settings').update({ value: configData.value, updated_at: configData.updated_at }).eq('key', 'kirvano_config');
-    } else {
-      await supabase.from('settings').insert(configData);
+    const configValue = JSON.stringify({
+      webhook_token,
+      product_mensal_id: product_mensal_id || '',
+      product_trimestral_id: product_trimestral_id || '',
+      product_anual_id: product_anual_id || '',
+      product_ip_adicional_id: product_ip_adicional_id || '',
+      checkout_mensal_url: checkout_mensal_url || '',
+      checkout_trimestral_url: checkout_trimestral_url || '',
+      checkout_anual_url: checkout_anual_url || '',
+      checkout_ip_adicional_url: checkout_ip_adicional_url || ''
+    });
+    // Use upsert — works whether the row exists or not, and whether PK is 'key' or 'id'
+    const { error: upsertErr } = await supabase.from('settings').upsert(
+      { key: 'kirvano_config', value: configValue, updated_at: new Date().toISOString() },
+      { onConflict: 'key' }
+    );
+    if (upsertErr) {
+      // Fallback: try site_settings table instead
+      console.error('[Webhook Config] settings upsert failed, trying site_settings:', upsertErr.message);
+      const { error: fallbackErr } = await supabase.from('site_settings').upsert(
+        { key: 'kirvano_config', value: configValue, updated_at: new Date().toISOString() },
+        { onConflict: 'key' }
+      );
+      if (fallbackErr) {
+        console.error('[Webhook Config] site_settings upsert also failed:', fallbackErr.message);
+        return res.status(500).json({ error: 'Erro ao salvar: ' + upsertErr.message + ' / ' + fallbackErr.message });
+      }
     }
     res.json({ success: true, message: 'Configuração do webhook salva' });
   } catch (err) {
@@ -1532,13 +1537,35 @@ app.post('/api/admin/webhook-config', adminAuth, async (req, res) => {
 
 app.get('/api/admin/webhook-config', adminAuth, async (req, res) => {
   try {
-    const { data } = await supabase.from('settings').select('value').eq('key', 'kirvano_config').single();
+    // Try settings table first
+    let { data, error } = await supabase.from('settings').select('value').eq('key', 'kirvano_config').single();
+    if (!data || error) {
+      // Fallback: try site_settings table
+      const fallback = await supabase.from('site_settings').select('value').eq('key', 'kirvano_config').single();
+      data = fallback.data;
+      error = fallback.error;
+    }
     if (!data) return res.json({ configured: false });
-    const config = JSON.parse(data.value);
+    const config = typeof data.value === 'string' ? JSON.parse(data.value) : data.value;
     res.json({ configured: true, ...config });
   } catch (err) {
-    res.json({ configured: false });
+    console.error('Webhook config load error:', err.message);
+    res.json({ configured: false, error: err.message });
   }
+});
+
+// Diagnostic: check which settings table exists and has data
+app.get('/api/admin/webhook-config-debug', adminAuth, async (req, res) => {
+  const results = {};
+  try {
+    const { data: s1, error: e1 } = await supabase.from('settings').select('*').eq('key', 'kirvano_config');
+    results.settings = { data: s1, error: e1?.message };
+  } catch (e) { results.settings = { error: e.message }; }
+  try {
+    const { data: s2, error: e2 } = await supabase.from('site_settings').select('*').eq('key', 'kirvano_config');
+    results.site_settings = { data: s2, error: e2?.message };
+  } catch (e) { results.site_settings = { error: e.message }; }
+  res.json(results);
 });
 
 app.post('/api/admin/webhook-test', adminAuth, async (req, res) => {
