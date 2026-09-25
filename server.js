@@ -1813,7 +1813,7 @@ app.get('/api/admin/crm/users/:id', adminAuth, async (req, res) => {
     // Subscriptions
     const { data: subscriptions } = await supabase
       .from('ip_subscriptions')
-      .select('id, ip, plan, status, expires_at, auto_renew, cancellation_reason, renewed_from_id, created_at')
+      .select('id, ip, plan, status, expires_at, created_at')
       .eq('user_id', id)
       .order('created_at', { ascending: false });
 
