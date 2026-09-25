@@ -365,7 +365,8 @@ app.put('/api/user/name', authenticateToken, async (req, res) => {
 
 // --- HELPER: sync key_authorized_ips when admin changes a user's IP ---
 // Replaces old_ip with new_ip across all active keys of a user, or adds new_ip if no authorized IPs exist
-async function syncKeyAuthorizedIps(userId, oldIp, newIp) {
+// If subId is provided, only syncs for that specific subscription's IP change
+async function syncKeyAuthorizedIps(userId, oldIp, newIp, subId = null) {
   if (!userId || !newIp) return;
   try {
     // Get all active (non-revoked) keys for this user
@@ -389,9 +390,32 @@ async function syncKeyAuthorizedIps(userId, oldIp, newIp) {
       if (kh?.key_hash) invalidateKeyCache(kh.key_hash);
     }
     invalidateSubCache(userId);
-    console.log(`[syncKeyAuthorizedIps] ✅ Synced ${keys.length} key(s) for user ${userId}: ${oldIp || 'none'} → ${newIp}`);
+    console.log(`[syncKeyAuthorizedIps] ✅ Synced ${keys.length} key(s) for user ${userId}${subId ? ' (sub ' + subId + ')' : ''}: ${oldIp || 'none'} → ${newIp}`);
   } catch (e) {
     console.error('[syncKeyAuthorizedIps] Error:', e.message);
+  }
+}
+
+// --- HELPER: toggle IP authorization for a specific key ---
+// Adds or removes an IP from a specific key's authorized list
+async function toggleKeyIpAuthorization(keyId, ip, authorize = true) {
+  if (!keyId || !ip) return;
+  try {
+    if (authorize) {
+      await supabase.from('key_authorized_ips').upsert(
+        { api_key_id: keyId, ip },
+        { onConflict: 'api_key_id,ip', ignoreDuplicates: true }
+      );
+    } else {
+      await supabase.from('key_authorized_ips')
+        .delete().eq('api_key_id', keyId).eq('ip', ip);
+    }
+    // Invalidate cache for this key
+    const { data: kh } = await supabase.from('api_keys').select('key_hash').eq('id', keyId).single();
+    if (kh?.key_hash) invalidateKeyCache(kh.key_hash);
+    console.log(`[toggleKeyIpAuthorization] ${authorize ? '✅ Authorized' : '❌ Removed'} IP ${ip} for key ${keyId}`);
+  } catch (e) {
+    console.error('[toggleKeyIpAuthorization] Error:', e.message);
   }
 }
 
@@ -671,18 +695,21 @@ app.post('/api/webhooks/kirvano', async (req, res) => {
     // Step 2: Upsert ip_subscriptions (source of truth for plan/status)
     const { data: existingSub } = await supabase
       .from('ip_subscriptions')
-      .select('id, plan')
+      .select('id, plan, ip, status')
+      .in('status', ['active', 'pending_ip'])
       .eq('user_id', user.id)
-      .eq('status', 'active')
       .order('created_at', { ascending: false })
       .limit(1)
       .single();
 
     let subId = null;
     if (existingSub) {
+      // Only set status to 'active' if IP was already authorized; otherwise keep 'pending_ip'
+      const hasRealIp = existingSub.ip && existingSub.ip !== 'pending-activation' && existingSub.ip !== 'pending';
+      const newStatus = hasRealIp ? 'active' : 'pending_ip';
       const { error: subUpdateErr } = await supabase
         .from('ip_subscriptions')
-        .update({ plan, status: 'active', expires_at: expiresAt })
+        .update({ plan, status: newStatus, expires_at: expiresAt })
         .eq('id', existingSub.id);
       if (subUpdateErr) {
         console.error('[Kirvano Webhook] Failed to update subscription:', subUpdateErr);
@@ -978,6 +1005,74 @@ app.put('/api/admin/subscriptions/:id', adminAuth, async (req, res) => {
 app.delete('/api/admin/subscriptions/:id', adminAuth, async (req, res) => {
   await supabase.from('ip_subscriptions').delete().eq('id', req.params.id);
   res.json({ success: true });
+});
+
+// --- ADMIN: FIX LEGACY IPS — reset subscriptions that have a real IP but user never authorized it ---
+// Logic: if a subscription has status 'active' and an IP that is NOT in key_authorized_ips for that user,
+// it was auto-set by the old webhook bug. Reset to pending-activation + pending_ip.
+app.post('/api/admin/fix-legacy-ips', adminAuth, async (req, res) => {
+  try {
+    // Get all active subscriptions with a real IP (not placeholder)
+    const { data: subs, error: subsErr } = await supabase
+      .from('ip_subscriptions')
+      .select('id, user_id, ip, status, plan')
+      .eq('status', 'active')
+      .neq('ip', 'pending-activation')
+      .neq('ip', 'pending')
+      .not('ip', 'is', null);
+
+    if (subsErr) return res.status(500).json({ error: subsErr.message });
+    if (!subs || !subs.length) return res.json({ fixed: 0, message: 'Nenhum registro legado encontrado.' });
+
+    let fixed = 0;
+    const details = [];
+
+    for (const sub of subs) {
+      // Check if this user has ANY entry in key_authorized_ips matching this IP
+      const { data: authIps } = await supabase
+        .from('key_authorized_ips')
+        .select('id')
+        .eq('ip', sub.ip)
+        .limit(1);
+
+      // Also check via api_keys → user_id join
+      const { data: userKeys } = await supabase
+        .from('api_keys')
+        .select('id')
+        .eq('user_id', sub.user_id);
+
+      let hasAuthorizedIp = false;
+      if (userKeys && userKeys.length > 0) {
+        const keyIds = userKeys.map(k => k.id);
+        const { data: keyAuthIps } = await supabase
+          .from('key_authorized_ips')
+          .select('id')
+          .in('api_key_id', keyIds)
+          .eq('ip', sub.ip)
+          .limit(1);
+        hasAuthorizedIp = keyAuthIps && keyAuthIps.length > 0;
+      }
+
+      if (!hasAuthorizedIp) {
+        // This IP was auto-set by old webhook, user never explicitly authorized it
+        const { error: updateErr } = await supabase
+          .from('ip_subscriptions')
+          .update({ ip: 'pending-activation', status: 'pending_ip' })
+          .eq('id', sub.id);
+
+        if (!updateErr) {
+          fixed++;
+          details.push({ sub_id: sub.id, user_id: sub.user_id, old_ip: sub.ip, action: 'reset to pending_ip' });
+        }
+      }
+    }
+
+    console.log(`[Admin] fix-legacy-ips: reset ${fixed}/${subs.length} subscriptions`);
+    res.json({ fixed, total: subs.length, details });
+  } catch (e) {
+    console.error('[Admin] fix-legacy-ips error:', e);
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // --- ADMIN: IP VALIDATION (Hermes API) ---

@@ -264,6 +264,7 @@
                 <span class="admin-badge">Admin</span>
             </a>
             <div class="navbar-right">
+                <button class="btn btn-secondary btn-sm" onclick="fixLegacyIps()" style="border-color:var(--accent-amber);color:var(--accent-amber);">🔧 Corrigir IPs Legados</button>
                 <button class="btn btn-secondary btn-sm" onclick="createTestAccounts()" style="border-color:var(--accent-purple);color:var(--accent-purple);">⚡ Contas Teste</button>
                 <a href="dashboard.html" class="btn btn-secondary btn-sm">Dashboard</a>
                 <a href="index.html" class="btn btn-secondary btn-sm">Site</a>
@@ -1174,6 +1175,15 @@
             try {
                 await apiFetch('/api/admin/ips/invalidate', { method: 'POST', body: JSON.stringify({ ip }) });
                 showAlert('userFormAlert', `IP ${ip} desvalidado.`, 'success');
+                loadSubscriptions(); loadDashboard();
+            } catch (e) { showAlert('userFormAlert', e.message, 'error'); }
+        }
+
+        async function fixLegacyIps() {
+            if (!confirm('Isso vai resetar todos os IPs que foram salvos automaticamente pelo webhook antigo (antes do usuário pedir liberação no dashboard). O status mudará para "Aguardando IP". Continuar?')) return;
+            try {
+                const result = await apiFetch('/api/admin/fix-legacy-ips', { method: 'POST' });
+                showAlert('userFormAlert', `Correção aplicada: ${result.fixed} de ${result.total} registro(s) resetado(s) para "Aguardando IP".`, 'success');
                 loadSubscriptions(); loadDashboard();
             } catch (e) { showAlert('userFormAlert', e.message, 'error'); }
         }
