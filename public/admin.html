@@ -686,7 +686,16 @@
             if (name === 'coupons') loadCoupons();
             if (name === 'ipchanges') loadIpChanges();
             if (name === 'settings') loadSettings();
-            if (name === 'webhook') { loadWebhookLogs(); loadWebhookConfig(); }
+            if (name === 'webhook') { loadWebhookLogs(); loadWebhookConfig(); startWebhookLogsPolling(); } else { stopWebhookLogsPolling(); }
+        }
+
+        let webhookLogsInterval = null;
+        function startWebhookLogsPolling() {
+            stopWebhookLogsPolling();
+            webhookLogsInterval = setInterval(() => loadWebhookLogs(), 5000);
+        }
+        function stopWebhookLogsPolling() {
+            if (webhookLogsInterval) { clearInterval(webhookLogsInterval); webhookLogsInterval = null; }
         }
 
         async function loadWebhookConfig() {
@@ -1254,6 +1263,7 @@
                     })
                 });
                 showAlert('webhookFormAlert', 'Configuração salva com sucesso!', 'success');
+                await loadWebhookConfig();
             } catch (e) { showAlert('webhookFormAlert', e.message, 'error'); }
         }
 

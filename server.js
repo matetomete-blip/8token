@@ -393,15 +393,37 @@ app.get('/api/checkout/:plan', authenticateToken, async (req, res) => {
 
 // --- WEBHOOK ---
 app.post('/api/webhooks/kirvano', async (req, res) => {
-  const authHeader = req.headers['authorization'] || req.headers['x-webhook-token'] || '';
+  // Read webhook token from DB settings (admin-configurable) — fall back to env var
+  let dbWebhookToken = '';
+  try {
+    const { data: cfgRow } = await supabase.from('settings').select('value').eq('key', 'kirvano_config').single();
+    if (cfgRow) {
+      const cfg = JSON.parse(cfgRow.value);
+      dbWebhookToken = cfg.webhook_token || '';
+    }
+  } catch (_) { /* ignore — proceed with env var or no auth */ }
+
+  const effectiveToken = dbWebhookToken || KIRVANO_WEBHOOK_TOKEN;
+  const authHeader = req.headers['authorization'] || req.headers['x-webhook-token'] || req.headers['x-webhook-secret'] || '';
   const token = authHeader.replace('Bearer ', '').trim();
-  if (KIRVANO_WEBHOOK_TOKEN && token !== KIRVANO_WEBHOOK_TOKEN) return res.status(401).json({ error: 'Unauthorized' });
+
+  // Only enforce auth if a token is actually configured; Kirvano may not send any header
+  if (effectiveToken && token && token !== effectiveToken) return res.status(401).json({ error: 'Unauthorized' });
 
   const payload = req.body;
   const event = payload.event;
   console.log(`[Kirvano Webhook] ${event} | sale_id: ${payload.sale_id}`);
 
-  await supabase.from('webhook_logs').insert({ event_type: event, sale_id: payload.sale_id || null, payload: JSON.stringify(payload) });
+  await supabase.from('webhook_logs').insert({
+    event_type: event,
+    event: event,
+    sale_id: payload.sale_id || null,
+    status: payload.status || null,
+    customer_email: payload.customer?.email || null,
+    customer_ip: payload.ip || null,
+    plan: resolvePlanFromKirvano(payload.products) || null,
+    payload: payload
+  });
 
   if (event === 'SALE_APPROVED') {
     const customerEmail = payload.customer?.email;
@@ -743,33 +765,11 @@ app.put('/api/admin/subscriptions/:id', adminAuth, async (req, res) => {
   const { data: updatedSub, error: subError } = await supabase.from('ip_subscriptions').update(update).eq('id', req.params.id).select('user_id, ip, plan, status, expires_at').single();
   if (subError) return res.status(500).json({ error: subError.message });
 
-  // Step 3: Also update ALL other subscriptions with the same IP (plan + status + expires_at)
-  // This ensures duplicate/orphan subs for the same IP stay in sync
-  const targetIp = updatedSub?.ip || currentSub.ip;
-  if (targetIp && (plan !== undefined || status !== undefined || expires_at !== undefined)) {
-    const bulkUpdate = {};
-    if (plan !== undefined) bulkUpdate.plan = plan;
-    if (status !== undefined) bulkUpdate.status = status;
-    if (expires_at !== undefined) bulkUpdate.expires_at = expires_at;
-    await supabase.from('ip_subscriptions').update(bulkUpdate).eq('ip', targetIp).neq('id', req.params.id);
-    console.log(`[Admin PUT] Bulk-updated all subs with IP ${targetIp} (except ${req.params.id})`);
-  }
+  // Step 3 REMOVED: No longer bulk-update all subs with the same IP.
+  // Each subscription is edited individually by its ID — editing one user must NOT affect others.
 
-  // Step 4: Find the user_id to sync — from this sub, or from any sibling sub with the same IP
+  // Step 4: Find the user_id to sync — use THIS subscription's user_id only
   let syncedUserId = updatedSub?.user_id;
-  if (!syncedUserId && targetIp) {
-    const { data: linkedSub } = await supabase
-      .from('ip_subscriptions')
-      .select('user_id')
-      .eq('ip', targetIp)
-      .not('user_id', 'is', null)
-      .limit(1)
-      .single();
-    if (linkedSub?.user_id) {
-      syncedUserId = linkedSub.user_id;
-      console.log(`[Admin PUT] Sub ${req.params.id} has no user_id — found linked user ${syncedUserId} via IP ${targetIp}`);
-    }
-  }
 
   // Step 5: Sync users.plan so dashboard reflects admin changes immediately
   if (syncedUserId) {
@@ -806,18 +806,21 @@ app.post('/api/admin/ips/validate', adminAuth, async (req, res) => {
   const { ip, status = 'active', plan = 'mensal', expires_at } = req.body;
   if (!ip) return res.status(400).json({ error: 'IP é obrigatório' });
 
-  const { data: sub } = await supabase.from('ip_subscriptions').select('*').eq('ip', ip).single();
-  if (sub) {
-    const update = { status };
-    if (plan) update.plan = plan;
-    if (expires_at) update.expires_at = expires_at;
-    await supabase.from('ip_subscriptions').update(update).eq('ip', ip);
-    // CRITICAL: Sync users.plan so dashboard reflects admin changes immediately
-    if (sub.user_id && (plan || expires_at)) {
-      const userUpdate = {};
-      if (plan) userUpdate.plan = plan;
-      if (expires_at) userUpdate.plan_expires_at = expires_at;
-      await supabase.from('users').update(userUpdate).eq('id', sub.user_id);
+  // Find ALL subscriptions with this IP — update each individually by ID (not bulk by IP)
+  const { data: subs } = await supabase.from('ip_subscriptions').select('*').eq('ip', ip);
+  if (subs && subs.length > 0) {
+    for (const sub of subs) {
+      const update = { status };
+      if (plan) update.plan = plan;
+      if (expires_at) update.expires_at = expires_at;
+      await supabase.from('ip_subscriptions').update(update).eq('id', sub.id);
+      // Sync users.plan for THIS specific user only
+      if (sub.user_id && (plan || expires_at)) {
+        const userUpdate = {};
+        if (plan) userUpdate.plan = plan;
+        if (expires_at) userUpdate.plan_expires_at = expires_at;
+        await supabase.from('users').update(userUpdate).eq('id', sub.user_id);
+      }
     }
   } else {
     const expiresAt = expires_at || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
@@ -829,13 +832,14 @@ app.post('/api/admin/ips/validate', adminAuth, async (req, res) => {
 app.post('/api/admin/ips/invalidate', adminAuth, async (req, res) => {
   const { ip } = req.body;
   if (!ip) return res.status(400).json({ error: 'IP é obrigatório' });
-  const { data: sub } = await supabase.from('ip_subscriptions').select('user_id').eq('ip', ip).single();
-  await supabase.from('ip_subscriptions').update({ status: 'suspended' }).eq('ip', ip);
-  // CRITICAL: Sync users table — suspended IP means user loses access
-  if (sub && sub.user_id) {
-    // users table has no updated_at column — skip timestamp update
+  // Find ALL subscriptions with this IP — suspend each individually by ID (not bulk by IP)
+  const { data: subs } = await supabase.from('ip_subscriptions').select('id, user_id').eq('ip', ip);
+  if (subs && subs.length > 0) {
+    for (const sub of subs) {
+      await supabase.from('ip_subscriptions').update({ status: 'suspended' }).eq('id', sub.id);
+    }
   }
-  res.json({ success: true, ip, status: 'suspended' });
+  res.json({ success: true, ip, status: 'suspended', affected: (subs || []).length });
 });
 
 app.get('/api/admin/ips/:ip/status', adminAuth, async (req, res) => {
