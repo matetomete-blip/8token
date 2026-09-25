@@ -296,18 +296,21 @@ app.post('/api/auth/register', registerLimiter, async (req, res) => {
     if (!email || !password) return res.status(400).json({ error: 'Email e senha são obrigatórios' });
     if (password.length < 6) return res.status(400).json({ error: 'Senha deve ter pelo menos 6 caracteres' });
 
-    // Check if already exists in custom table
-    const { data: existingCustom } = await supabase.from('users').select('id').eq('email', email).single();
+    // Normalize email to prevent duplicates from case/whitespace typos
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // Check if already exists in custom table (using normalized email)
+    const { data: existingCustom } = await supabase.from('users').select('id').eq('email', normalizedEmail).single();
     if (existingCustom) return res.status(409).json({ error: 'Email já cadastrado' });
 
-    const displayName = name || email.split('@')[0];
+    const displayName = name || normalizedEmail.split('@')[0];
     const passwordHash = await bcrypt.hash(password, 12);
 
     // Step 1: Create user in Supabase Auth (so they appear in Authentication → Users)
     let authUserId;
     try {
       const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
-        email,
+        email: normalizedEmail,
         password,
         email_confirm: true, // Auto-confirm email
         user_metadata: { name: displayName }
@@ -325,11 +328,11 @@ app.post('/api/auth/register', registerLimiter, async (req, res) => {
     }
 
     // Step 2: Create in custom users table using the same ID from Supabase Auth
-    const role = email === 'matetomete@gmail.com' ? 'admin' : 'user';
+    const role = normalizedEmail === 'matetomete@gmail.com' ? 'admin' : 'user';
     const plan = 'free';
     const { data: newUser, error } = await supabase.from('users').insert({
       id: authUserId,
-      email,
+      email: normalizedEmail,
       password_hash: passwordHash,
       name: displayName,
       plan,
@@ -338,7 +341,7 @@ app.post('/api/auth/register', registerLimiter, async (req, res) => {
 
     if (error) {
       // If insert fails (e.g. duplicate), try to find existing
-      const { data: found } = await supabase.from('users').select('*').eq('email', email).single();
+      const { data: found } = await supabase.from('users').select('*').eq('email', normalizedEmail).single();
       if (found) {
         const token = jwt.sign({ id: found.id, email: found.email }, JWT_SECRET, { algorithm: 'HS256', expiresIn: '30d' });
         return res.json({ token, user: { id: found.id, email: found.email, name: found.name, plan: found.plan } });
@@ -360,8 +363,8 @@ app.post('/api/auth/register', registerLimiter, async (req, res) => {
       // Non-fatal — user is already created, just won't appear in admin until manually added
     }
 
-    const token = jwt.sign({ id: newUser.id, email }, JWT_SECRET, { algorithm: 'HS256', expiresIn: '30d' });
-    res.json({ token, user: { id: newUser.id, email, name: displayName, plan } });
+    const token = jwt.sign({ id: newUser.id, email: normalizedEmail }, JWT_SECRET, { algorithm: 'HS256', expiresIn: '30d' });
+    res.json({ token, user: { id: newUser.id, email: normalizedEmail, name: displayName, plan } });
   } catch (err) {
     console.error('Register error:', err);
     res.status(500).json({ error: 'Erro ao criar conta: ' + (err.message || 'Erro interno') });
@@ -373,8 +376,11 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email e senha são obrigatórios' });
 
+    // Normalize email to prevent case/whitespace mismatches
+    const normalizedEmail = email.trim().toLowerCase();
+
     // Try custom users table first
-    let { data: user } = await supabase.from('users').select('*').eq('email', email).single();
+    let { data: user } = await supabase.from('users').select('*').eq('email', normalizedEmail).single();
 
     if (!user) return res.status(401).json({ error: 'Email ou senha incorretos' });
 
@@ -384,14 +390,14 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
       if (!valid) return res.status(401).json({ error: 'Email ou senha incorretos' });
     } else {
       // No password set yet — try Supabase Auth signIn to verify, then store hash
-      const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
+      const { error: signInErr } = await supabase.auth.signInWithPassword({ email: normalizedEmail, password });
       if (signInErr) return res.status(401).json({ error: 'Email ou senha incorretos' });
       const passwordHash = await bcrypt.hash(password, 12);
       await supabase.from('users').update({ password_hash: passwordHash }).eq('id', user.id);
     }
 
     // Auto-promote matetomete@gmail.com to admin role (separate from plan)
-    if (email === 'matetomete@gmail.com' && user.role !== 'admin') {
+    if (normalizedEmail === 'matetomete@gmail.com' && user.role !== 'admin') {
       await supabase.from('users').update({ role: 'admin' }).eq('id', user.id);
       user.role = 'admin';
     }
@@ -417,10 +423,12 @@ app.post('/api/auth/google', async (req, res) => {
     const ticket = await googleClient.verifyIdToken({ idToken: credential, audience: GOOGLE_CLIENT_ID });
     payload = ticket.getPayload();
 
-    const { email, name, picture, sub: googleId } = payload;
-    if (!email) return res.status(400).json({ error: 'Email não encontrado no token Google' });
+    const { email: rawEmail, name, picture, sub: googleId } = payload;
+    if (!rawEmail) return res.status(400).json({ error: 'Email não encontrado no token Google' });
+    // Normalize email to prevent duplicates from case/whitespace typos
+    const email = rawEmail.trim().toLowerCase();
 
-    // Check if user exists in custom table (by google_id or email for auto-linking)
+    // Check if user exists in custom table (by google_id or normalized email for auto-linking)
     let { data: user } = await supabase.from('users').select('*').or(`google_id.eq.${googleId},email.eq.${email}`).single();
 
     if (!user) {
@@ -470,28 +478,29 @@ app.post('/api/auth/google', async (req, res) => {
         console.error('Auto-create ip_subscription warning (Google):', ipErr.message);
       }
     } else {
-      // User exists — link Google account if not already linked
-      if (!user.google_id) {
-        await supabase.from('users').update({
-          google_id: googleId,
-          avatar_url: picture,
-          name: user.name || name
-        }).eq('id', user.id);
-        user.name = user.name || name;
+      // User exists — link Google account if not already linked, PRIORITIZE Google name
+      const updates = {
+        google_id: googleId,
+        avatar_url: picture,
+        name: name || user.name // Prioritize Google display name when linking
+      };
+      await supabase.from('users').update(updates).eq('id', user.id);
+      user.name = updates.name;
+      user.google_id = googleId;
+      user.avatar_url = picture;
 
-        // Also link in Supabase Auth if the auth user exists
-        try {
-          const { data: authUsers } = await supabase.auth.admin.listUsers({ perPage: 1000 });
-          const existingAuthUser = authUsers?.users?.find(u => u.email === email);
-          if (existingAuthUser) {
-            await supabase.auth.admin.updateUserById(existingAuthUser.id, {
-              user_metadata: { ...existingAuthUser.user_metadata, picture, provider: 'google' },
-              app_metadata: { ...existingAuthUser.app_metadata, provider: 'google', providers: [...(existingAuthUser.app_metadata?.providers || []), 'google'] }
-            });
-          }
-        } catch (linkErr) {
-          console.error('[google-auth] Link Supabase Auth warning:', linkErr.message);
+      // Also link in Supabase Auth if the auth user exists
+      try {
+        const { data: authUsers } = await supabase.auth.admin.listUsers({ perPage: 1000 });
+        const existingAuthUser = authUsers?.users?.find(u => u.email.toLowerCase() === email);
+        if (existingAuthUser) {
+          await supabase.auth.admin.updateUserById(existingAuthUser.id, {
+            user_metadata: { ...existingAuthUser.user_metadata, name, picture, provider: 'google' },
+            app_metadata: { ...existingAuthUser.app_metadata, provider: 'google', providers: [...(existingAuthUser.app_metadata?.providers || []), 'google'] }
+          });
         }
+      } catch (linkErr) {
+        console.error('[google-auth] Link Supabase Auth warning:', linkErr.message);
       }
 
       // Auto-promote matetomete@gmail.com to admin role via Google login too
@@ -2111,60 +2120,6 @@ app.post('/api/admin/ip-changes/:id/reject', adminAuth, async (req, res) => {
   res.json({ success: true });
 });
 
-// --- ADMIN: COUPONS ---
-app.get('/api/admin/coupons', adminAuth, async (req, res) => {
-  const { data } = await supabase.from('coupons').select('*').order('created_at', { ascending: false });
-  res.json(data || []);
-});
-
-app.post('/api/admin/coupons', adminAuth, async (req, res) => {
-  const { code, discount_pct, max_uses, expires_at, notes } = req.body;
-  if (!code || !discount_pct) return res.status(400).json({ error: 'Código e desconto são obrigatórios' });
-  const { data: existing } = await supabase.from('coupons').select('id').eq('code', code.toUpperCase()).single();
-  if (existing) return res.status(409).json({ error: 'Cupom já existe' });
-  const { data } = await supabase.from('coupons').insert({ code: code.toUpperCase(), discount_pct, max_uses, expires_at, notes }).select().single();
-  res.json(data);
-});
-
-app.put('/api/admin/coupons/:id', adminAuth, async (req, res) => {
-  const { discount_pct, max_uses, expires_at, active, notes } = req.body;
-  const update = {};
-  if (discount_pct !== undefined) update.discount_pct = discount_pct;
-  if (max_uses !== undefined) update.max_uses = max_uses;
-  if (expires_at !== undefined) update.expires_at = expires_at;
-  if (active !== undefined) update.active = active;
-  if (notes !== undefined) update.notes = notes;
-  await supabase.from('coupons').update(update).eq('id', req.params.id);
-  res.json({ success: true });
-});
-
-app.delete('/api/admin/coupons/:id', adminAuth, async (req, res) => {
-  await supabase.from('coupons').delete().eq('id', req.params.id);
-  res.json({ success: true });
-});
-
-app.post('/api/coupons/validate', async (req, res) => {
-  const { code } = req.body;
-  if (!code) return res.status(400).json({ valid: false, error: 'Código necessário' });
-  const { data: coupon } = await supabase.from('coupons').select('*').eq('code', code.toUpperCase()).eq('active', true).single();
-  if (!coupon) return res.json({ valid: false, error: 'Cupom inválido' });
-  if (coupon.expires_at && new Date(coupon.expires_at) < new Date()) return res.json({ valid: false, error: 'Cupom expirado' });
-  if (coupon.max_uses && coupon.uses_count >= coupon.max_uses) return res.json({ valid: false, error: 'Cupom esgotado' });
-  res.json({ valid: true, discount_pct: coupon.discount_pct, code: coupon.code });
-});
-
-app.post('/api/coupons/apply', authenticateToken, async (req, res) => {
-  const { code, plan } = req.body;
-  if (!code || !plan) return res.status(400).json({ error: 'Código e plano necessários' });
-  const { data: coupon } = await supabase.from('coupons').select('*').eq('code', code.toUpperCase()).eq('active', true).single();
-  if (!coupon) return res.status(404).json({ error: 'Cupom inválido' });
-  if (coupon.expires_at && new Date(coupon.expires_at) < new Date()) return res.status(400).json({ error: 'Cupom expirado' });
-  if (coupon.max_uses && coupon.uses_count >= coupon.max_uses) return res.status(400).json({ error: 'Cupom esgotado' });
-  const originalPrice = PLAN_PRICES[plan] || 0;
-  if (!originalPrice) return res.status(400).json({ error: 'Plano inválido' });
-  const discountAmount = originalPrice * (coupon.discount_pct / 100);
-  res.json({ valid: true, code: coupon.code, discount_pct: coupon.discount_pct, original_price: originalPrice, discount_amount: Math.round(discountAmount * 100) / 100, final_price: Math.round((originalPrice - discountAmount) * 100) / 100 });
-});
 
 // --- ADMIN: AFFILIATES ---
 app.get('/api/admin/affiliates', adminAuth, async (req, res) => {
