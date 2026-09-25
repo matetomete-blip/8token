@@ -432,58 +432,49 @@
 
             <!-- KPIs -->
             <div class="kpi-row">
-                <div class="kpi-card">
-                    <div class="kpi-label">Plano Atual</div>
-                    <div class="kpi-value orange" id="kpiPlan">Carregando...</div>
-                    <div class="kpi-sub" id="kpiPlanExpiry">—</div>
+                <div class="kpi-card" id="planCardContainer" style="position:relative;">
+                    <!-- Estado: Sem plano -->
+                    <div id="planCardEmpty" style="text-align:center;padding:var(--space-sm) 0;">
+                        <div class="kpi-label">Plano Atual</div>
+                        <div style="font-size:28px;margin-bottom:var(--space-xs);">📋</div>
+                        <div style="font-size:14px;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-xs);">Sem plano</div>
+                        <a href="index.html#pricing" class="btn-upgrade" style="display:inline-flex;height:32px;padding:0 var(--space-md);font-size:12px;margin-top:var(--space-xs);">Ver planos</a>
+                    </div>
+                    <!-- Estado: Com plano -->
+                    <div id="planCardActive" style="display:none;">
+                        <div class="kpi-label">Plano Atual</div>
+                        <div class="plan-name" style="margin-top:var(--space-xs);">
+                            <span id="planCardName" style="font-size:22px;">—</span>
+                            <span class="plan-badge" id="planCardBadge" style="display:none;"></span>
+                        </div>
+                        <div class="plan-details" style="font-size:11px;margin-top:4px;">
+                            Claude Opus 5, Sonnet 5, Fable 5.1 e GLM 5.3 · Uso ilimitado
+                        </div>
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:var(--space-sm);flex-wrap:wrap;gap:var(--space-xs);">
+                            <div>
+                                <span class="plan-price-value" id="planCardPrice" style="font-size:18px;">—</span>
+                                <span class="plan-price-period" id="planCardPeriod" style="font-size:11px;"></span>
+                                <div class="plan-renewal" id="planCardRenewal" style="font-size:10px;"></div>
+                            </div>
+                            <a href="account.html" class="btn-upgrade btn-secondary" style="display:inline-flex;height:28px;padding:0 var(--space-sm);font-size:11px;">Gerenciar</a>
+                        </div>
+                    </div>
                 </div>
                 <div class="kpi-card">
                     <div class="kpi-label">Chaves API</div>
-                    <div class="kpi-value green">2</div>
+                    <div class="kpi-value green" id="kpiKeys">—</div>
                     <div class="kpi-sub">Ativas</div>
                 </div>
                 <div class="kpi-card">
                     <div class="kpi-label">Tokens Usados (Mês)</div>
-                    <div class="kpi-value blue">4.2B</div>
+                    <div class="kpi-value blue" id="kpiTokens">—</div>
                     <div class="kpi-sub">∞ Ilimitado</div>
                 </div>
             </div>
 
-            <!-- Subscription & IP -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);">
-                <div class="dash-section" style="margin-bottom: 0;">
-                    <div class="dash-section-title">Assinatura</div>
-                    <div class="card plan-card" id="planCardContainer">
-                        <!-- Estado: Sem plano -->
-                        <div id="planCardEmpty" style="text-align:center;padding:var(--space-xl) 0;">
-                            <div style="font-size:40px;margin-bottom:var(--space-sm);">📋</div>
-                            <div style="font-size:16px;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-xs);">Nenhum plano ativo</div>
-                            <div style="font-size:13px;color:var(--text-muted);margin-bottom:var(--space-lg);">Assine um plano para acessar todos os modelos de IA</div>
-                            <a href="index.html#pricing" class="btn-upgrade" style="display:inline-flex;height:40px;padding:0 var(--space-lg);font-size:14px;">Ver planos e assinar</a>
-                        </div>
-                        <!-- Estado: Com plano -->
-                        <div id="planCardActive" style="display:none;">
-                            <div class="plan-info">
-                                <div class="plan-name">
-                                    <span id="planCardName">—</span>
-                                    <span class="plan-badge" id="planCardBadge" style="display:none;"></span>
-                                </div>
-                                <div class="plan-details">
-                                    Claude Opus 5, Sonnet 5, Fable 5.1 e GLM 5.3 · Uso ilimitado
-                                </div>
-                            </div>
-                            <div class="plan-price">
-                                <div class="plan-price-value" id="planCardPrice">—</div>
-                                <div class="plan-price-period" id="planCardPeriod"></div>
-                                <div class="plan-renewal" id="planCardRenewal"></div>
-                            </div>
-                            <a href="account.html" class="btn-upgrade btn-secondary" style="display:inline-flex;height:36px;padding:0 var(--space-md);font-size:13px;text-align:center;">Gerenciar Plano</a>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="dash-section" style="margin-bottom: 0;">
-                    <div class="dash-section-title">IP Autorizado</div>
+            <!-- IP Autorizado — full width -->
+            <div class="dash-section" style="margin-bottom: 0;">
+                <div class="dash-section-title">IP Autorizado</div>
                     <div class="card" style="display:flex; flex-direction:column; gap:var(--space-lg);">
                         <!-- IP Principal -->
                         <div>
@@ -619,43 +610,12 @@
                             <div class="tokens-chart-subtitle">Distribuição do consumo de tokens</div>
                         </div>
                         <div class="tokens-chart-total">
-                            <div class="tokens-chart-total-value">4.2B</div>
+                            <div class="tokens-chart-total-value" id="tokensChartTotal">—</div>
                             <div class="tokens-chart-total-label">Total Tokens</div>
                         </div>
                     </div>
-                    <div class="tokens-bar-list">
-                        <div class="tokens-bar-item">
-                            <div class="tokens-bar-label">
-                                <div class="tokens-bar-name">Claude Fable 5.1</div>
-                                <div class="tokens-bar-provider">Anthropic</div>
-                            </div>
-                            <div class="tokens-bar-track"><div class="tokens-bar-fill fable" style="width: 48%;"></div></div>
-                            <div class="tokens-bar-value">2.01B <span class="unit">tokens</span></div>
-                        </div>
-                        <div class="tokens-bar-item">
-                            <div class="tokens-bar-label">
-                                <div class="tokens-bar-name">GPT-6 Astra</div>
-                                <div class="tokens-bar-provider">OpenAI</div>
-                            </div>
-                            <div class="tokens-bar-track"><div class="tokens-bar-fill gpt" style="width: 22%;"></div></div>
-                            <div class="tokens-bar-value">924M <span class="unit">tokens</span></div>
-                        </div>
-                        <div class="tokens-bar-item">
-                            <div class="tokens-bar-label">
-                                <div class="tokens-bar-name">Claude Opus 5</div>
-                                <div class="tokens-bar-provider">Anthropic</div>
-                            </div>
-                            <div class="tokens-bar-track"><div class="tokens-bar-fill opus" style="width: 18%;"></div></div>
-                            <div class="tokens-bar-value">756M <span class="unit">tokens</span></div>
-                        </div>
-                        <div class="tokens-bar-item">
-                            <div class="tokens-bar-label">
-                                <div class="tokens-bar-name">Outros Modelos</div>
-                                <div class="tokens-bar-provider">Mixed</div>
-                            </div>
-                            <div class="tokens-bar-track"><div class="tokens-bar-fill glm" style="width: 12%;"></div></div>
-                            <div class="tokens-bar-value">504M <span class="unit">tokens</span></div>
-                        </div>
+                    <div class="tokens-bar-list" id="tokensBarList">
+                        <div style="text-align:center;padding:var(--space-lg);color:var(--text-muted);font-size:13px;">Carregando uso...</div>
                     </div>
                     <div class="tokens-chart-footer">
                         <div class="tokens-chart-note">
@@ -768,9 +728,7 @@
         async function loadIpInfo() {
             try {
                 const token = localStorage.getItem('8token_token');
-                console.log('[IP DEBUG] Token exists:', !!token);
                 if (!token) {
-                    console.error('[IP DEBUG] No token found in localStorage');
                     const ipMainEl = document.getElementById('ipMainValue');
                     const statusBadge = document.getElementById('ipStatusBadge');
                     const currentIpEl = document.getElementById('ipCurrentNetwork');
@@ -783,7 +741,6 @@
                 const controller = new AbortController();
                 const timeout = setTimeout(() => controller.abort(), 8000);
 
-                console.log('[IP DEBUG] Fetching IP info...');
                 // Fetch IP info and current network IP in parallel with timeout
                 const [ipRes, currentIpRes] = await Promise.all([
                     fetch(API_BASE + '/api/user/ip-info', { headers, signal: controller.signal }),
@@ -791,14 +748,8 @@
                 ]);
                 clearTimeout(timeout);
 
-                console.log('[IP DEBUG] ip-info status:', ipRes.status);
-                console.log('[IP DEBUG] current-ip status:', currentIpRes.status);
-
                 const data = ipRes.ok ? await ipRes.json() : {};
                 const currentIpData = currentIpRes.ok ? await currentIpRes.json() : {};
-
-                console.log('[IP DEBUG] ip-info response:', data);
-                console.log('[IP DEBUG] current-ip response:', currentIpData);
 
                 currentNetworkIp = currentIpData.ip || null;
                 authorizedIp = data.ip || null;
@@ -837,8 +788,10 @@
                         authorizeBtn.style.display = 'inline-flex';
                         authorizeBtn.textContent = 'IP da rede liberado!';
                         authorizeBtn.disabled = true;
-                        authorizeBtn.style.background = 'var(--accent-green)';
-                        authorizeBtn.style.borderColor = 'var(--accent-green)';
+                        authorizeBtn.style.background = '#1a8a4a';
+                        authorizeBtn.style.borderColor = '#1a8a4a';
+                        authorizeBtn.style.color = '#fff';
+                        authorizeBtn.style.boxShadow = 'none';
                     } else if (currentNetworkIp) {
                         authorizeBtn.style.display = 'inline-flex';
                         authorizeBtn.textContent = 'Liberar este IP';
@@ -884,7 +837,7 @@
                     if (additionalExpiresEl) additionalExpiresEl.style.display = 'none';
                 }
             } catch (e) {
-                console.error('[IP DEBUG] Load IP info error:', e);
+                console.error('Load IP info error:', e);
                 const ipMainEl = document.getElementById('ipMainValue');
                 const statusBadge = document.getElementById('ipStatusBadge');
                 const currentIpEl = document.getElementById('ipCurrentNetwork');
