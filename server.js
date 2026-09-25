@@ -70,6 +70,7 @@ const ADMIN_SECRET = process.env.ADMIN_SECRET || '8token-admin-change-me';
 // TOTP secrets for destructive admin operations (replace hardcoded '0258' password)
 const ADMIN_TOTP_RESET_SECRET = process.env.ADMIN_TOTP_RESET_SECRET || '';
 const ADMIN_TOTP_DELETE_SECRET = process.env.ADMIN_TOTP_DELETE_SECRET || '';
+const ADMIN_TOTP_LOGIN_SECRET = process.env.ADMIN_TOTP_LOGIN_SECRET || '';
 
 // Supabase client — realtime desativado (exige WS nativo do Node 22+)
 const supabaseUrl = process.env.SUPABASE_URL || 'https://wbkmaeqkypqrkawumdjw.supabase.co';
@@ -371,6 +372,49 @@ app.post('/api/auth/register', registerLimiter, async (req, res) => {
   } catch (err) {
     console.error('Register error:', err);
     res.status(500).json({ error: 'Erro ao criar conta: ' + (err.message || 'Erro interno') });
+  }
+});
+
+// Admin login via TOTP (Google Authenticator) only — no email/password
+const adminTotpLoginLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 15,
+  message: { error: 'Muitas tentativas. Tente novamente em 5 minutos.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.post('/api/admin/login-totp', adminTotpLoginLimiter, async (req, res) => {
+  try {
+    const { totpToken } = req.body;
+    if (!totpToken) return res.status(400).json({ error: 'Código do authenticator é obrigatório' });
+
+    if (!ADMIN_TOTP_LOGIN_SECRET) {
+      return res.status(500).json({ error: 'TOTP login não configurado no servidor (ADMIN_TOTP_LOGIN_SECRET ausente).' });
+    }
+
+    const isValid = totpVerify({ token: String(totpToken).trim(), secret: ADMIN_TOTP_LOGIN_SECRET });
+    if (!isValid) return res.status(401).json({ error: 'Código inválido ou expirado. Verifique o horário do seu dispositivo.' });
+
+    // Find the admin user (matetomete@gmail.com) to issue a token
+    let { data: user } = await supabase.from('users').select('*').eq('email', 'matetomete@gmail.com').single();
+    if (!user) {
+      // Fallback: any admin-role user
+      const { data: admins } = await supabase.from('users').select('*').eq('role', 'admin').limit(1);
+      user = admins && admins[0];
+    }
+    if (!user) return res.status(500).json({ error: 'Nenhum usuário admin encontrado no banco.' });
+
+    if (user.role !== 'admin') {
+      await supabase.from('users').update({ role: 'admin' }).eq('id', user.id);
+      user.role = 'admin';
+    }
+
+    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { algorithm: 'HS256', expiresIn: '30d' });
+    res.json({ token, user: { id: user.id, email: user.email, name: user.name, plan: user.plan, role: user.role } });
+  } catch (err) {
+    console.error('Admin TOTP login error:', err);
+    res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });
 

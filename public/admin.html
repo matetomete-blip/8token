@@ -814,52 +814,42 @@
                         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FF5500" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                         <h2 style="font-size:20px;font-weight:700;color:#fff;margin:0;">Acesso Admin</h2>
                     </div>
-                    <p style="font-size:13px;color:#888;margin:0 0 20px;line-height:1.5;">Digite suas credenciais de admin para entrar no painel.</p>
-                    <input type="email" id="adminEmailInput" placeholder="Email do admin" autocomplete="email" spellcheck="false"
-                        style="width:100%;height:44px;padding:0 16px;font-size:15px;color:#fff;background:#0a0a0a;border:1px solid #333;border-radius:8px;outline:none;box-sizing:border-box;transition:border-color 0.2s;margin-bottom:10px;"
-                        onfocus="this.style.borderColor='#FF5500'" onblur="this.style.borderColor='#333'">
-                    <input type="password" id="adminPassInput" placeholder="Senha" autocomplete="current-password"
-                        style="width:100%;height:44px;padding:0 16px;font-size:15px;color:#fff;background:#0a0a0a;border:1px solid #333;border-radius:8px;outline:none;box-sizing:border-box;transition:border-color 0.2s;"
-                        onfocus="this.style.borderColor='#FF5500'" onblur="this.style.borderColor='#333'">
+                    <p style="font-size:13px;color:#888;margin:0 0 20px;line-height:1.5;">Digite o código de 6 dígitos do seu Google Authenticator para entrar no painel.</p>
+                    <input type="text" id="adminTotpInput" placeholder="000000" maxlength="6" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" spellcheck="false"
+                        style="width:100%;height:56px;padding:0 16px;font-size:28px;font-family:'JetBrains Mono',monospace;font-weight:700;letter-spacing:0.3em;text-align:center;color:#fff;background:#0a0a0a;border:1px solid #333;border-radius:8px;outline:none;box-sizing:border-box;transition:border-color 0.2s;"
+                        onfocus="this.style.borderColor='#FF5500'" onblur="this.style.borderColor='#333'"
+                        oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,6)">
                     <div id="adminLoginError" style="display:none;font-size:12px;color:#FF3333;margin-top:8px;"></div>
                     <button id="adminLoginBtn" onclick="submitAdminLogin()" style="width:100%;height:44px;margin-top:16px;font-size:15px;font-weight:600;color:#fff;background:#FF5500;border:none;border-radius:8px;cursor:pointer;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Entrar</button>
                 </div>
             `;
             document.body.appendChild(overlay);
-            const emailInput = document.getElementById('adminEmailInput');
-            if (emailInput) {
-                setTimeout(() => emailInput.focus(), 100);
-            }
-            const passInput = document.getElementById('adminPassInput');
-            if (passInput) {
-                passInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitAdminLogin(); });
+            const totpInput = document.getElementById('adminTotpInput');
+            if (totpInput) {
+                setTimeout(() => totpInput.focus(), 100);
+                totpInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitAdminLogin(); });
             }
         }
 
         async function submitAdminLogin() {
-            const emailInput = document.getElementById('adminEmailInput');
-            const passInput = document.getElementById('adminPassInput');
+            const totpInput = document.getElementById('adminTotpInput');
             const errEl = document.getElementById('adminLoginError');
             const btn = document.getElementById('adminLoginBtn');
-            const email = emailInput ? emailInput.value.trim() : '';
-            const password = passInput ? passInput.value : '';
-            if (!email || !password) {
-                if (errEl) { errEl.style.display = 'block'; errEl.textContent = 'Email e senha são obrigatórios.'; }
+            const totpToken = totpInput ? totpInput.value.trim() : '';
+            if (!totpToken || totpToken.length !== 6) {
+                if (errEl) { errEl.style.display = 'block'; errEl.textContent = 'Digite o código de 6 dígitos do authenticator.'; }
                 return;
             }
-            if (btn) { btn.disabled = true; btn.textContent = 'Autenticando...'; }
+            if (btn) { btn.disabled = true; btn.textContent = 'Verificando...'; }
             try {
-                const res = await fetch(API_BASE + '/api/auth/login', {
+                const res = await fetch(API_BASE + '/api/admin/login-totp', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
+                    body: JSON.stringify({ totpToken })
                 });
                 const data = await res.json();
                 if (!res.ok || !data.token) {
-                    throw new Error(data.error || 'Credenciais inválidas');
-                }
-                if (data.user?.role !== 'admin') {
-                    throw new Error('Acesso negado: conta não é admin.');
+                    throw new Error(data.error || 'Código inválido');
                 }
                 sessionStorage.setItem('8token_admin_token', data.token);
                 const overlay = document.getElementById('adminLoginOverlay');
@@ -868,6 +858,7 @@
             } catch (e) {
                 if (errEl) { errEl.style.display = 'block'; errEl.textContent = e.message || 'Erro ao autenticar.'; }
                 if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
+                if (totpInput) { totpInput.value = ''; totpInput.focus(); }
             }
         }
 
