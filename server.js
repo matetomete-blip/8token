@@ -31,6 +31,14 @@ function isValidIp(ip) {
   const ipv4 = /^(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)$/;
   return ipv4.test(ip);
 }
+// AES key for API key encryption — must be explicitly configured
+const AES_KEY_RAW = process.env.AES_KEY || process.env.JWT_SECRET;
+if (!AES_KEY_RAW || AES_KEY_RAW === 'fallback-secret-key-32chars!!') {
+  console.error('ERRO: AES_KEY não configurado. Defina via variável de ambiente.');
+  process.exit(1);
+}
+const AES_KEY = Buffer.from(AES_KEY_RAW, 'utf8').slice(0, 32);
+
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const ADMIN_SECRET = process.env.ADMIN_SECRET || '8token-admin-change-me';
 
@@ -698,8 +706,22 @@ app.post('/api/webhooks/kirvano', async (req, res) => {
   const authHeader = req.headers['authorization'] || req.headers['x-webhook-token'] || req.headers['x-webhook-secret'] || '';
   const token = authHeader.replace('Bearer ', '').trim();
 
-  // Only enforce auth if a token is actually configured; Kirvano may not send any header
-  if (effectiveToken && token && token !== effectiveToken) return res.status(401).json({ error: 'Unauthorized' });
+  // Fail-closed: reject all requests if no webhook token is configured
+  if (!effectiveToken) {
+    console.error('[SECURITY] KIRVANO_WEBHOOK_TOKEN not configured — rejecting webhook request');
+    return res.status(500).json({ error: 'Webhook not configured' });
+  }
+  if (!token) return res.status(401).json({ error: 'Missing authentication token' });
+  // Timing-safe comparison to prevent timing attacks
+  try {
+    const expected = Buffer.from(effectiveToken);
+    const provided = Buffer.from(token);
+    if (expected.length !== provided.length || !crypto.timingSafeEqual(expected, provided)) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+  } catch (_) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
 
   const payload = req.body;
   const event = payload.event;

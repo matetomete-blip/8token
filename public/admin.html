@@ -1431,27 +1431,16 @@
 
         function resetUserForm() {
             document.getElementById('editId').value = '';
-            document.getElementById('fieldIp').value = '';
             document.getElementById('fieldPlan').value = 'free';
-            document.getElementById('fieldStatus').value = 'active';
             document.getElementById('fieldExpires').value = '';
             document.getElementById('fieldNotes').value = '';
-            document.getElementById('userFormTitle').textContent = 'Adicionar IP';
-            document.getElementById('fieldIp').disabled = false;
+            const titleEl = document.getElementById('userFormTitle');
+            if (titleEl) titleEl.textContent = 'Adicionar Usuário';
         }
 
         function editSub(id) {
-            const sub = allSubs.find(s => s.id === id);
-            if (!sub) return;
-            document.getElementById('editId').value = sub.id;
-            document.getElementById('fieldIp').value = sub.ip;
-            document.getElementById('fieldIp').disabled = true;
-            document.getElementById('fieldPlan').value = sub.plan;
-            document.getElementById('fieldStatus').value = sub.status;
-            document.getElementById('fieldExpires').value = sub.expires_at ? sub.expires_at.slice(0, 16) : '';
-            document.getElementById('fieldNotes').value = sub.notes || '';
-            document.getElementById('userFormTitle').textContent = `Editar IP: ${sub.ip}`;
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            // Legacy function — redirect to modal-based editing
+            openUserModal(id);
         }
 
         async function saveSubscription() {
