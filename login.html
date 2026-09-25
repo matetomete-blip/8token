@@ -514,12 +514,27 @@
 
         const API_BASE = ''; // Usa URL relativa — funciona em localhost e em produção (Vercel)
 
+        // SECURITY FIX: Validate redirect param to prevent open redirect attacks
         // Suporte a redirect pós-login (ex: checkout.html?plan=trimestral)
         function getRedirectUrl() {
             var params = new URLSearchParams(window.location.search);
             var redirect = params.get('redirect');
             if (redirect) {
-                try { return decodeURIComponent(redirect); } catch(e) { return redirect; }
+                try {
+                    var decoded = decodeURIComponent(redirect);
+                    // Reject protocol-relative URLs and values containing :// or //
+                    if (decoded.indexOf('//') !== -1 || decoded.indexOf('://') !== -1) {
+                        return 'dashboard.html';
+                    }
+                    // Parse as URL relative to origin and validate same-origin
+                    var parsed = new URL(decoded, location.origin);
+                    if (parsed.origin === location.origin && (parsed.protocol === 'http:' || parsed.protocol === 'https:')) {
+                        return parsed.pathname + parsed.search + parsed.hash;
+                    }
+                } catch(e) {
+                    // Invalid URL — fall through to default
+                }
+                return 'dashboard.html';
             }
             return 'dashboard.html';
         }

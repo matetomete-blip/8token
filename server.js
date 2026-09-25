@@ -317,6 +317,10 @@ function adminAuth(req, res, next) {
   if (!token) return res.status(401).json({ error: 'Token de admin não fornecido' });
   jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] }, (err, user) => {
     if (err) return res.status(403).json({ error: 'Token de admin inválido ou expirado' });
+    // SECURITY FIX: Check token blacklist for revoked tokens (logout support)
+    if (user.jti && tokenBlacklist.has(user.jti)) {
+      return res.status(401).json({ error: 'Token revogado' });
+    }
     // SECURITY FIX: Enforce role=admin check — regular user tokens are rejected
     if (user.role !== 'admin') return res.status(403).json({ error: 'Acesso negado: privilégios de admin necessários' });
     req.user = user;
@@ -1948,7 +1952,7 @@ app.delete('/api/admin/users/:subId/delete-complete', adminAuth, requireTotp('de
 
 
 // --- ADMIN: RESET SUBSCRIPTION (alias route matching frontend call) ---
-app.post('/api/admin/subscriptions/:id/reset', adminAuth, async (req, res) => {
+app.post('/api/admin/subscriptions/:id/reset', adminAuth, requireTotp('reset'), async (req, res) => {
   const { id } = req.params;
   try {
     const { data: sub, error: subErr } = await supabase
@@ -1995,7 +1999,7 @@ app.post('/api/admin/subscriptions/:id/reset', adminAuth, async (req, res) => {
 });
 
 // --- ADMIN: DELETE SUBSCRIPTION COMPLETE (alias route matching frontend call) ---
-app.delete('/api/admin/subscriptions/:id/delete-complete', adminAuth, async (req, res) => {
+app.delete('/api/admin/subscriptions/:id/delete-complete', adminAuth, requireTotp('delete'), async (req, res) => {
   const { id } = req.params;
   try {
     const { data: sub, error: subErr } = await supabase
@@ -3327,6 +3331,16 @@ const PLAN_HIERARCHY = ['free', 'mensal', 'trimestral', 'anual'];
   }
 }
 
+// Explicit deny list: premium models that must NEVER be accessible from lower tiers
+// Defense-in-depth layer on top of the prefix-matching fix below
+const PREMIUM_MODEL_DENY_FOR_FREE = new Set([
+  'gpt-4o', 'gpt-4-turbo', 'gpt-4',
+  'claude-sonnet-4-20250514', 'claude-opus-4-20250514', 'claude-opus-4-thinking',
+  'gemini-2.5-pro', 'gemini-2.5-ultra',
+  'o1-preview', 'o1-pro', 'o3', 'o3-mini',
+  'gpt-6-astra', 'gpt-6-astra-pro',
+]);
+
 // Check if a model is allowed for a given plan tier
 function isModelAllowedForPlan(model, plan) {
   if (!model) return true; // No model specified (e.g. /models listing) — allow
@@ -3334,10 +3348,17 @@ function isModelAllowedForPlan(model, plan) {
   const effectivePlan = PLAN_HIERARCHY.includes(plan) ? plan : 'free';
   const allowedSet = CUMULATIVE_MODELS[effectivePlan];
   if (!allowedSet) return false;
-  // Exact match or prefix match for versioned model IDs (e.g. "gpt-4o" matches "gpt-4o-2024-08-06")
+
+  // DEFENSE-IN-DEPTH: Block known premium models for free tier explicitly
+  if (effectivePlan === 'free' && PREMIUM_MODEL_DENY_FOR_FREE.has(normalizedModel)) return false;
+
+  // SECURITY FIX: Exact match or forward-prefix only (requested starts with allowed + separator)
+  // Prevents bidirectional bypass where free-tier 'gpt-4o-mini' matched premium 'gpt-4o'
   if (allowedSet.has(normalizedModel)) return true;
   for (const allowed of allowedSet) {
-    if (normalizedModel.startsWith(allowed) || allowed.startsWith(normalizedModel)) return true;
+    // Only allow if requested model is a versioned variant of an allowed base model
+    // e.g. "gpt-4o-mini" startsWith "gpt-4o-mini" (exact) or "gpt-4o-2024-08-06" startsWith "gpt-4o-"
+    if (normalizedModel.startsWith(allowed + '-') || normalizedModel.startsWith(allowed + '_')) return true;
   }
   return false;
 }
