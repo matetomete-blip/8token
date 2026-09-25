@@ -210,21 +210,7 @@
                         <div class="plan-option-period">/ano</div>
                     </div>
                 </div>
-                <!-- Coupon Field -->
-                <div style="margin-bottom:var(--space-md);">
-                    <label class="form-label">Cupom de Desconto</label>
-                    <div style="display:flex;gap:var(--space-sm);">
-                        <input type="text" id="couponInput" class="form-input" placeholder="Digite seu cupom" style="text-transform:uppercase;flex:1;">
-                        <button type="button" class="btn-secondary" onclick="applyCoupon()" style="height:44px;padding:0 var(--space-lg);font-size:13px;font-weight:600;border-radius:var(--radius-sm);cursor:pointer;white-space:nowrap;" id="couponApplyBtn">Aplicar</button>
-                    </div>
-                    <div id="couponFeedback" style="font-size:12px;margin-top:var(--space-xs);display:none;"></div>
-                </div>
-                <div id="priceSummary" style="display:none;background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:var(--space-sm) var(--space-md);margin-bottom:var(--space-md);font-size:13px;">
-                    <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:var(--text-secondary);">Preço original:</span><span id="origPriceDisplay" class="mono"></span></div>
-                    <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:var(--accent-green);">Desconto (<span id="discountPctDisplay"></span>%):</span><span id="discountAmtDisplay" style="color:var(--accent-green);" class="mono"></span></div>
-                    <div style="display:flex;justify-content:space-between;font-weight:700;font-size:15px;border-top:1px solid var(--border);padding-top:4px;margin-top:4px;"><span>Total:</span><span id="finalPriceDisplay" style="color:var(--accent-orange);" class="mono"></span></div>
-                </div>
-                <button class="btn-save" onclick="goToCheckout()" style="width:100%;" id="checkoutBtn">Ir para Checkout</button>
+                                <button class="btn-save" onclick="goToCheckout()" style="width:100%;" id="checkoutBtn">Ir para Checkout</button>
             </div>
         </div>
 
@@ -367,63 +353,10 @@
         }
 
         // Plan selection
-        let appliedCoupon = null; // { code, discount_pct, original_price, discount_amount, final_price }
-
         function selectPlan(el) {
             document.querySelectorAll('.plan-option').forEach(o => o.classList.remove('selected'));
             el.classList.add('selected');
             selectedPlan = el.dataset.plan;
-            // Reset coupon when plan changes
-            appliedCoupon = null;
-            document.getElementById('couponInput').value = '';
-            document.getElementById('couponFeedback').style.display = 'none';
-            document.getElementById('priceSummary').style.display = 'none';
-            document.getElementById('couponApplyBtn').textContent = 'Aplicar';
-            document.getElementById('couponApplyBtn').disabled = false;
-        }
-
-        // Coupon validation (with debounce to prevent rapid-click use consumption)
-        let couponApplying = false;
-        async function applyCoupon() {
-            if (couponApplying) return; // debounce: ignore rapid clicks
-            const code = document.getElementById('couponInput').value.trim().toUpperCase();
-            const feedback = document.getElementById('couponFeedback');
-            const summary = document.getElementById('priceSummary');
-            if (!code) {
-                feedback.textContent = 'Digite um código de cupom.';
-                feedback.style.color = 'var(--accent-red)';
-                feedback.style.display = 'block';
-                return;
-            }
-            couponApplying = true;
-            document.getElementById('couponApplyBtn').disabled = true;
-            try {
-                const result = await apiFetch('/api/coupons/apply', {
-                    method: 'POST',
-                    body: JSON.stringify({ code, plan: selectedPlan })
-                });
-                appliedCoupon = result;
-                feedback.textContent = `Cupom ${result.code} aplicado! ${result.discount_pct}% de desconto.`;
-                feedback.style.color = 'var(--accent-green)';
-                feedback.style.display = 'block';
-                document.getElementById('origPriceDisplay').textContent = 'R$ ' + result.original_price.toFixed(2);
-                document.getElementById('discountPctDisplay').textContent = result.discount_pct;
-                document.getElementById('discountAmtDisplay').textContent = '- R$ ' + result.discount_amount.toFixed(2);
-                document.getElementById('finalPriceDisplay').textContent = 'R$ ' + result.final_price.toFixed(2);
-                summary.style.display = 'block';
-                document.getElementById('couponApplyBtn').textContent = 'Aplicado ✓';
-                document.getElementById('couponApplyBtn').disabled = true;
-            } catch (e) {
-                appliedCoupon = null;
-                summary.style.display = 'none';
-                feedback.textContent = e.message || 'Cupom inválido.';
-                feedback.style.color = 'var(--accent-red)';
-                feedback.style.display = 'block';
-                document.getElementById('couponApplyBtn').textContent = 'Aplicar';
-                document.getElementById('couponApplyBtn').disabled = false;
-            } finally {
-                couponApplying = false;
-            }
         }
 
         // Go to Kirvano checkout

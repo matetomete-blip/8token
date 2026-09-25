@@ -312,9 +312,7 @@
                 <button class="admin-tab-btn" onclick="switchTab('users', this)" data-tab="users">Usuários / IPs</button>
                 <button class="admin-tab-btn" onclick="switchTab('affiliates', this)" data-tab="affiliates">Afiliados</button>
                 <button class="admin-tab-btn" onclick="switchTab('plans', this)" data-tab="plans">Planos</button>
-                <button class="admin-tab-btn" onclick="switchTab('expired', this)" data-tab="expired">Expirados <span class="tab-badge" id="expiredCount" style="display:none;">0</span></button>
-                <button class="admin-tab-btn" onclick="switchTab('coupons', this)" data-tab="coupons">Cupons</button>
-                <button class="admin-tab-btn" onclick="switchTab('notifications', this)" data-tab="notifications">Notificações</button>
+                <button class="admin-tab-btn" onclick="switchTab('expired', this)" data-tab="expired">Expirados <span class="tab-badge" id="expiredCount" style="display:none;">0</span></button>                <button class="admin-tab-btn" onclick="switchTab('notifications', this)" data-tab="notifications">Notificações</button>
                 <button class="admin-tab-btn" onclick="switchTab('webhook', this)" data-tab="webhook">Webhook</button>
                 <button class="admin-tab-btn" onclick="switchTab('settings', this)" data-tab="settings">Config</button>
             </div>
@@ -521,48 +519,7 @@
             <button class="btn btn-primary btn-sm" onclick="submitPasswordModal()" id="pwdModalSubmitBtn" style="min-width:100px;">Confirmar</button>
         </div>
     </div>
-</div>
-
-
-            <!-- TAB: COUPONS -->
-            <div class="tab-panel" id="tab-coupons">
-                <div class="card">
-                    <div class="card-title">Criar Cupom de Desconto</div>
-                    <div id="couponFormAlert" class="alert"></div>
-                    <div class="form-row">
-                        <div class="form-group"><label class="form-label">Código *</label><input type="text" id="couponCode" class="form-input" placeholder="Ex: PROMO20" style="text-transform:uppercase;"></div>
-                        <div class="form-group"><label class="form-label">Desconto (%) *</label><input type="number" id="couponDiscount" class="form-input" placeholder="Ex: 20" min="1" max="100" value="10"></div>
-                        <div class="form-group"><label class="form-label">Máx. de Usos</label><input type="number" id="couponMaxUses" class="form-input" placeholder="Ilimitado se vazio" min="1"></div>
-                        <div class="form-group"><label class="form-label">Expira em</label><input type="datetime-local" id="couponExpires" class="form-input"></div>
-                    </div>
-                    <div class="form-row"><div class="form-group" style="grid-column: 1 / -1;"><label class="form-label">Notas</label><input type="text" id="couponNotes" class="form-input" placeholder="Observações internas (opcional)"></div></div>
-                    <button class="btn btn-primary" onclick="createCoupon()" style="margin-top:var(--space-sm);">Criar Cupom</button>
-                </div>
-                <div class="table-wrap">
-                    <table>
-                        <thead><tr><th>Código</th><th>Desconto</th><th>Usos</th><th>Máx.</th><th>Expira</th><th>Status</th><th>Ações</th></tr></thead>
-                        <tbody id="couponsTableBody"><tr><td colspan="7" class="empty-state">Carregando...</td></tr></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- TAB: NOTIFICATIONS -->
-            <div class="tab-panel" id="tab-notifications">
-                <p style="color:var(--text-secondary);font-size:14px;margin-bottom:var(--space-lg);">Envie notificações para todos os usuários ou filtre por plano específico. As notificações aparecem no sininho do dashboard e na página de notificações dos usuários.</p>
-                <div class="card">
-                    <h3 style="font-size:16px;font-weight:700;margin-bottom:var(--space-lg);color:var(--text-primary);">📢 Enviar Nova Notificação</h3>
-                    <div style="display:grid;gap:var(--space-md);">
-                        <div><label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-xs);">Título *</label><input type="text" id="notifTitle" placeholder="Ex: Manutenção programada" class="form-input" /></div>
-                        <div><label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-xs);">Mensagem *</label><textarea id="notifMessage" rows="4" placeholder="Escreva a mensagem da notificação..." class="form-input"></textarea></div>
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-md);">
-                            <div><label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-xs);">Tipo</label><select id="notifType" class="form-select"><option value="info">ℹ️ Info</option><option value="success">✅ Sucesso</option><option value="warning">⚠️ Aviso</option><option value="error">❌ Erro</option></select></div>
-                            <div><label style="display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:var(--space-xs);">Plano Alvo</label><select id="notifTargetPlan" class="form-select"><option value="all">🌍 Todos os usuários</option><option value="free">Free</option><option value="mensal">Mensal</option><option value="trimestral">Trimestral</option><option value="anual">Anual</option></select></div>
-                        </div>
-                        <button onclick="sendBroadcastNotification()" id="sendNotifBtn" class="btn btn-primary" style="margin-top:var(--space-sm);">🚀 Enviar Notificação</button>
-                        <div id="notifSendStatus" style="display:none;padding:var(--space-md);border-radius:var(--radius-sm);font-size:13px;font-weight:600;"></div>
-                    </div>
-                </div>
-                <div class="card">
+</div>                <div class="card">
                     <h3 style="font-size:16px;font-weight:700;margin-bottom:var(--space-lg);color:var(--text-primary);">📊 Estatísticas Rápidas</h3>
                     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:var(--space-md);">
                         <div style="padding:var(--space-md);background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">Total de Usuários</div><div style="font-size:24px;font-weight:700;color:var(--accent-orange);" id="totalUsersCount">-</div></div>
@@ -835,16 +792,13 @@
             return d.innerHTML;
         }
 
+        // SECURITY FIX: Removed hardcoded fallback and ?key= URL parameter parsing.
+        // Secret must only come from sessionStorage after proper auth flow (login modal).
         function getAdminSecret() {
-            let secret = sessionStorage.getItem('8token_admin_secret');
+            const secret = sessionStorage.getItem('8token_admin_secret');
             if (!secret) {
-                const params = new URLSearchParams(window.location.search);
-                secret = params.get('key') || '';
-                if (!secret) {
-                    showAdminLoginModal();
-                    return null;
-                }
-                sessionStorage.setItem('8token_admin_secret', secret);
+                showAdminLoginModal();
+                return null;
             }
             return secret;
         }
@@ -931,7 +885,6 @@
             if (name === 'notifications') loadNotifStats();
             if (name === 'plans') loadPlans();
             if (name === 'expired') loadExpired();
-            if (name === 'coupons') loadCoupons();
             if (name === 'settings') loadSettings();
             if (name === 'webhook') { loadWebhookLogs(); loadWebhookConfig(); startWebhookLogsPolling(); } else { stopWebhookLogsPolling(); }
         }
@@ -2281,68 +2234,6 @@
         async function removeIpFromPlan(id, ip, plan) {
             if (!confirm(`Remover o IP ${ip} do plano ${plan}? Esta ação não pode ser desfeita.`)) return;
             try { await apiFetch(`/api/admin/subscriptions/${id}`, { method: 'DELETE' }); loadPlans(); loadDashboard(); } catch (e) { alert(e.message); }
-        }
-
-        // ---- COUPONS ----
-        async function loadCoupons() {
-            try {
-                const coupons = await apiFetch('/api/admin/coupons');
-                const tbody = document.getElementById('couponsTableBody');
-                if (!coupons.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Nenhum cupom cadastrado.</td></tr>'; return; }
-                tbody.innerHTML = coupons.map(c => {
-                    const isExpired = c.expires_at && new Date(c.expires_at) < new Date();
-                    const isExhausted = c.max_uses && c.uses_count >= c.max_uses;
-                    const isActive = c.active && !isExpired && !isExhausted;
-                    const statusBadge = isActive ? '<span class="badge badge-active">Ativo</span>' :
-                        isExpired ? '<span class="badge badge-expired">Expirado</span>' :
-                        isExhausted ? '<span class="badge badge-suspended">Esgotado</span>' :
-                        '<span class="badge badge-suspended">Inativo</span>';
-                    const safeCode = escAdmin(c.code).replace(/'/g, "\\'");
-                    return `<tr>
-                        <td class="mono" style="font-weight:700;color:var(--accent-orange);">${escAdmin(c.code)}</td>
-                        <td><span class="badge badge-pro">${c.discount_pct}%</span></td>
-                        <td class="mono">${c.uses_count || 0}</td>
-                        <td class="mono">${c.max_uses || '∞'}</td>
-                        <td class="mono" style="font-size:12px;">${c.expires_at ? formatDate(c.expires_at) : '—'}</td>
-                        <td>${statusBadge}</td>
-                        <td class="actions">
-                            <button class="btn btn-secondary btn-sm" onclick="toggleCoupon(${c.id}, ${c.active ? 0 : 1})">${c.active ? 'Desativar' : 'Ativar'}</button>
-                            <button class="btn btn-danger btn-sm" onclick="deleteCoupon(${c.id}, '${safeCode}')">Remover</button>
-                        </td>
-                    </tr>`;
-                }).join('');
-            } catch (e) {
-                document.getElementById('couponsTableBody').innerHTML = `<tr><td colspan="7" class="empty-state" style="color:var(--accent-red);">${escAdmin(e.message)}</td></tr>`;
-            }
-        }
-
-        async function createCoupon() {
-            const code = document.getElementById('couponCode').value.trim().toUpperCase();
-            const discount = parseFloat(document.getElementById('couponDiscount').value) || 10;
-            const maxUses = document.getElementById('couponMaxUses').value ? parseInt(document.getElementById('couponMaxUses').value) : null;
-            const expires = document.getElementById('couponExpires').value || null;
-            const notes = document.getElementById('couponNotes').value.trim() || null;
-            if (!code) { showAlert('couponFormAlert', 'Código é obrigatório.', 'error'); return; }
-            if (discount < 1 || discount > 100) { showAlert('couponFormAlert', 'Desconto deve ser entre 1% e 100%.', 'error'); return; }
-            try {
-                const result = await apiFetch('/api/admin/coupons', { method: 'POST', body: JSON.stringify({ code, discount_pct: discount, max_uses: maxUses, expires_at: expires, notes }) });
-                showAlert('couponFormAlert', `Cupom ${result.code} criado com sucesso!`, 'success');
-                document.getElementById('couponCode').value = '';
-                document.getElementById('couponDiscount').value = '10';
-                document.getElementById('couponMaxUses').value = '';
-                document.getElementById('couponExpires').value = '';
-                document.getElementById('couponNotes').value = '';
-                loadCoupons();
-            } catch (e) { showAlert('couponFormAlert', e.message, 'error'); }
-        }
-
-        async function toggleCoupon(id, newActive) {
-            try { await apiFetch(`/api/admin/coupons/${id}`, { method: 'PUT', body: JSON.stringify({ active: newActive }) }); loadCoupons(); } catch (e) { alert(e.message); }
-        }
-
-        async function deleteCoupon(id, code) {
-            if (!confirm(`Remover o cupom ${code}?`)) return;
-            try { await apiFetch(`/api/admin/coupons/${id}`, { method: 'DELETE' }); loadCoupons(); } catch (e) { alert(e.message); }
         }
 
         // ---- NOTIFICATIONS BROADCAST ----
