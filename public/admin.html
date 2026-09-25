@@ -387,6 +387,7 @@
                         <button class="btn btn-primary" onclick="openUserModal()">+ Adicionar Usuário</button>
                         <button class="btn btn-secondary" onclick="bulkValidate()">Validar Selecionados</button>
                         <button class="btn btn-danger" onclick="bulkDelete()">Excluir Selecionados</button>
+                        <button class="btn btn-secondary" onclick="cleanupFreeIps()" style="border-color:var(--accent-amber);color:var(--accent-amber);"> Limpar IPs FREE</button>
                     </div>
                     <div style="flex:1;max-width:400px;min-width:200px;">
                         <input type="text" id="userSearchInput" class="form-input" placeholder="Buscar por nome, email, IP..." oninput="filterUsersTable()" style="width:100%;">
@@ -1407,6 +1408,15 @@
                 }
                 loadSubscriptions();
             }
+        }
+
+        async function cleanupFreeIps() {
+            if (!confirm('Limpar todos os registros IP com plano FREE e status ativo? Isso remove IPs criados automaticamente pelo bug antigo.')) return;
+            try {
+                const res = await apiFetch('/api/admin/cleanup-free-ips', { method: 'POST' });
+                showAlert('userFormAlert', res.message || `${res.deleted} registros FREE removidos.`, 'success');
+                loadUsers();
+            } catch (e) { showAlert('userFormAlert', e.message, 'error'); }
         }
 
         async function bulkDelete() {

@@ -19,7 +19,12 @@ const { Agent: UndiciAgent } = require('undici');
 const keepAliveDispatcher = new UndiciAgent({
   keepAliveTimeout: 30000,
   keepAliveMaxTimeout: 60000,
-  connections: 50,
+  connections: 100,           // pool maior absorve picos sem fila
+  pipelining: 1,              // HTTP/1.1 pipelining conservador
+  bodyTimeout: 60000,         // timeout total do body
+  headersTimeout: 10000,      // fail-fast se upstream não responder headers em 10s
+  autoSelectFamily: true,     // Happy Eyeballs: tenta IPv4+IPv6 em paralelo
+  autoSelectFamilyAttemptTimeout: 250,
 });
 
 const app = express();
@@ -155,14 +160,8 @@ function adminAuth(req, res, next) {
   next();
 }
 
-// Helper: ensure IP record exists for user
-async function ensureIpRecord(ip, userId) {
-  if (!ip || !userId) return;
-  const { data } = await supabase.from('ip_subscriptions').select('id').eq('user_id', userId).eq('status', 'active').single();
-  if (!data) {
-    await supabase.from('ip_subscriptions').insert({ ip, user_id: userId, plan: 'free', status: 'active' });
-  }
-}
+// Helper: ensure IP record exists for user — REMOVED: IPs should only be saved when user explicitly requests authorization
+// async function ensureIpRecord(ip, userId) { ... } — no longer auto-creates IP records on login/register
 
 // Generate API key
 function generateApiKey() {
@@ -250,14 +249,12 @@ app.post('/api/auth/register', registerLimiter, async (req, res) => {
       const { data: found } = await supabase.from('users').select('*').eq('email', email).single();
       if (found) {
         const token = jwt.sign({ id: found.id, email: found.email }, JWT_SECRET, { algorithm: 'HS256', expiresIn: '30d' });
-        await ensureIpRecord(req.clientIp, found.id);
         return res.json({ token, user: { id: found.id, email: found.email, name: found.name, plan: found.plan } });
       }
       throw error;
     }
 
     const token = jwt.sign({ id: newUser.id, email }, JWT_SECRET, { algorithm: 'HS256', expiresIn: '30d' });
-    await ensureIpRecord(req.clientIp, newUser.id);
     res.json({ token, user: { id: newUser.id, email, name: displayName, plan } });
   } catch (err) {
     console.error('Register error:', err);
@@ -294,7 +291,6 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
     }
 
     const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { algorithm: 'HS256', expiresIn: '30d' });
-    await ensureIpRecord(req.clientIp, user.id);
     res.json({ token, user: { id: user.id, email: user.email, name: user.name, plan: user.plan, role: user.role || 'user' } });
   } catch (err) {
     console.error('Login error:', err);
@@ -335,7 +331,6 @@ app.post('/api/auth/google', async (req, res) => {
     }
 
     const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { algorithm: 'HS256', expiresIn: '30d' });
-    await ensureIpRecord(req.clientIp, user.id);
     res.json({ token, user: { id: user.id, email: user.email, name: user.name || name, plan: user.plan, role: user.role || 'user' } });
   } catch (err) {
     console.error('Google auth error:', err);
@@ -992,8 +987,14 @@ app.get('/api/user/current-ip', authenticateToken, (req, res) => {
 app.post('/api/user/authorize-current-ip', authenticateToken, async (req, res) => {
   const currentIp = req.clientIp;
   if (!currentIp) return res.status(400).json({ error: 'Não foi possível detectar seu IP.' });
+  // Verificar se o usuário tem plano pago ativo (não FREE)
+  const { data: profile } = await supabase.from('users').select('plan, plan_expires_at').eq('id', req.user.id).single();
+  const hasPlan = profile?.plan && profile.plan !== 'free';
+  const planActive = hasPlan && (!profile?.plan_expires_at || new Date(profile.plan_expires_at) > new Date());
+  if (!planActive) return res.status(403).json({ error: 'Plano ativo necessário para liberar IP. Faça upgrade do seu plano.' });
   const { data: sub } = await supabase.from('ip_subscriptions')
     .select('*').in('status', ['active', 'pending_ip']).eq('user_id', req.user.id)
+    .neq('plan', 'free')
     .order('created_at', { ascending: false }).limit(1).single();
   if (!sub) return res.status(400).json({ error: 'Nenhum plano ativo encontrado.' });
   if (sub.ip === currentIp && sub.status === 'active') return res.json({ success: true, message: 'IP da rede já está liberado!', ip: currentIp });
@@ -1049,21 +1050,31 @@ app.get('/api/admin/stats', adminAuth, async (req, res) => {
   const { count: totalIps } = await supabase.from('ip_subscriptions').select('*', { count: 'exact', head: true });
   const { count: activeIps } = await supabase.from('ip_subscriptions').select('*', { count: 'exact', head: true }).eq('status', 'active');
   const { count: paidPlans } = await supabase.from('ip_subscriptions').select('*', { count: 'exact', head: true }).neq('plan', 'free').eq('status', 'active');
+
+  // Fetch all active subscriptions with is_family_friend flag for accurate cost/profit calc
+  const { data: allActiveSubs } = await supabase.from('ip_subscriptions')
+    .select('plan, expires_at, is_family_friend, status')
+    .eq('status', 'active');
+
+  // paidActiveIps = active + paid plan + NOT family/friend → used for cost per IP and profit per IP
+  const paidActiveNonFamily = (allActiveSubs || []).filter(s =>
+    s.plan !== 'free' && s.plan !== 'admin' && !s.is_family_friend
+  );
+  const paidActiveIps = paidActiveNonFamily.length;
+
   let planBreakdown = [];
   try {
     const { data: rpcData } = await supabase.rpc('get_plan_breakdown');
     planBreakdown = rpcData || [];
   } catch (e) { /* rpc not available, use fallback */ }
-  // Fallback: manual breakdown
+  // Fallback: manual breakdown (all active, for display purposes)
   let breakdown = [];
   if (!planBreakdown || !planBreakdown.length) {
-    const { data: subs } = await supabase.from('ip_subscriptions').select('plan').eq('status', 'active');
     const counts = {};
-    (subs || []).forEach(s => { counts[s.plan] = (counts[s.plan] || 0) + 1; });
+    (allActiveSubs || []).forEach(s => { counts[s.plan] = (counts[s.plan] || 0) + 1; });
     breakdown = Object.entries(counts).map(([plan, count]) => ({ plan, count }));
   }
-  // Active subscriptions with expires_at for revenue projection
-  const { data: activeSubs } = await supabase.from('ip_subscriptions').select('plan, expires_at').eq('status', 'active');
+
   const { count: totalUsers } = await supabase.from('users').select('*', { count: 'exact', head: true });
   const { data: recentInvoices } = await supabase.from('invoices').select('*').eq('status', 'paid').order('paid_at', { ascending: false }).limit(10);
   const totalRevenue = (recentInvoices || []).reduce((sum, inv) => sum + (inv.amount || 0), 0);
@@ -1072,9 +1083,10 @@ app.get('/api/admin/stats', adminAuth, async (req, res) => {
     totalIps: totalIps || 0,
     activeIps: activeIps || 0,
     paidPlans: paidPlans || 0,
+    paidActiveIps,
     totalUsers: totalUsers || 0,
     planBreakdown: breakdown,
-    activeSubscriptions: (activeSubs || []).map(s => ({ plan: s.plan, expires_at: s.expires_at })),
+    activeSubscriptions: (allActiveSubs || []).map(s => ({ plan: s.plan, expires_at: s.expires_at, is_family_friend: !!s.is_family_friend })),
     totalRevenue,
     recentInvoices: recentInvoices || []
   });
@@ -1086,23 +1098,24 @@ app.get('/api/admin/subscriptions', adminAuth, async (req, res) => {
 });
 
 app.post('/api/admin/subscriptions', adminAuth, async (req, res) => {
-  const { ip, user_id, plan, status, notes, expires_at } = req.body;
+  const { ip, user_id, plan, status, notes, expires_at, is_family_friend } = req.body;
   if (!ip) return res.status(400).json({ error: 'IP é obrigatório' });
   // Allow multiple IPs per user — only check if this exact IP already exists
   const { data: existing } = await supabase.from('ip_subscriptions').select('id').eq('ip', ip).single();
   if (existing) return res.status(409).json({ error: 'Este IP já está cadastrado' });
-  const { data } = await supabase.from('ip_subscriptions').insert({ ip, user_id, plan: plan || 'free', status: status || 'active', notes, expires_at }).select().single();
+  const { data } = await supabase.from('ip_subscriptions').insert({ ip, user_id, plan: plan || 'free', status: status || 'active', notes, expires_at, is_family_friend: !!is_family_friend }).select().single();
   res.json(data);
 });
 
 app.put('/api/admin/subscriptions/:id', adminAuth, async (req, res) => {
-  const { plan, status, notes, expires_at, ip, user_data } = req.body;
+  const { plan, status, notes, expires_at, ip, user_data, is_family_friend } = req.body;
   const update = {};
   if (plan !== undefined) update.plan = plan;
   if (status !== undefined) update.status = status;
   if (notes !== undefined) update.notes = notes;
   if (expires_at !== undefined) update.expires_at = expires_at;
   if (ip !== undefined) update.ip = ip;
+  if (is_family_friend !== undefined) update.is_family_friend = is_family_friend;
 
   // Step 1: Get the current subscription to know its IP before updating
   const { data: currentSub } = await supabase.from('ip_subscriptions').select('id, ip, user_id').eq('id', req.params.id).single();
@@ -1150,6 +1163,28 @@ app.put('/api/admin/subscriptions/:id', adminAuth, async (req, res) => {
 app.delete('/api/admin/subscriptions/:id', adminAuth, async (req, res) => {
   await supabase.from('ip_subscriptions').delete().eq('id', req.params.id);
   res.json({ success: true });
+});
+
+// --- ADMIN: CLEANUP FREE IP RECORDS — remove auto-created free IP records from old bug ---
+app.post('/api/admin/cleanup-free-ips', adminAuth, async (req, res) => {
+  try {
+    // Delete all ip_subscriptions with plan='free' and status='active'
+    const { data, error } = await supabase
+      .from('ip_subscriptions')
+      .delete()
+      .eq('plan', 'free')
+      .eq('status', 'active')
+      .select('id');
+
+    if (error) return res.status(500).json({ error: 'Erro ao limpar registros: ' + error.message });
+
+    const count = data?.length || 0;
+    console.log(`[ADMIN] Cleaned up ${count} free IP records`);
+    res.json({ success: true, deleted: count, message: `${count} registros FREE removidos.` });
+  } catch (err) {
+    console.error('Cleanup free IPs error:', err);
+    res.status(500).json({ error: 'Erro ao limpar registros: ' + err.message });
+  }
 });
 
 // --- ADMIN: RESET USER ACCOUNT — clears plan, IP, keys but keeps user record ---
