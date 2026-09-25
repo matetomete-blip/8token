@@ -68,7 +68,7 @@
             display: flex; align-items: center;
         }
         .navbar-inner {
-            max-width: 1600px; margin: 0 auto; width: 100%; padding: 0 var(--space-md);
+            max-width: 100%; margin: 0; width: 100%; padding: 0 var(--space-sm);
             display: flex; justify-content: space-between; align-items: center;
         }
         .navbar-logo {
@@ -84,7 +84,7 @@
 
         /* Admin Layout: Sidebar + Content */
         .admin-layout {
-            max-width: 1600px; margin: 0 auto; padding: 120px var(--space-md) var(--space-xl);
+            max-width: 100%; margin: 0; padding: 100px var(--space-sm) var(--space-lg);
             display: grid; grid-template-columns: 280px 1fr; gap: var(--space-xl);
         }
         @media (max-width: 1024px) { .admin-layout { grid-template-columns: 1fr; } }
@@ -110,6 +110,25 @@
             margin-left: auto; background: rgba(255, 85, 0, 0.15); color: var(--accent-orange);
             font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: var(--radius-pill);
             min-width: 18px; text-align: center;
+        }
+
+        /* Admin Sub-Navigation Tabs */
+        .admin-tab-btn {
+            padding: 8px 14px; border-radius: var(--radius-sm);
+            background: transparent; border: 1px solid var(--border);
+            color: var(--text-secondary); font-size: 13px; font-weight: 500;
+            cursor: pointer; transition: var(--transition);
+            display: inline-flex; align-items: center; gap: 6px;
+        }
+        .admin-tab-btn:hover { border-color: var(--border-hover); color: var(--text-primary); }
+        .admin-tab-btn.active {
+            background: rgba(255, 85, 0, 0.1); color: var(--accent-orange);
+            border-color: rgba(255, 85, 0, 0.3);
+        }
+        .tab-badge {
+            background: rgba(255, 85, 0, 0.2); color: var(--accent-orange);
+            font-size: 10px; font-weight: 700; padding: 1px 5px;
+            border-radius: var(--radius-pill); min-width: 16px; text-align: center;
         }
 
         /* Content Area */
@@ -278,6 +297,20 @@
 
         <!-- Content Area -->
         <div class="content-area">
+            <!-- Admin Sub-Navigation (tabs moved from sidebar) -->
+            <div class="admin-tabs-nav" style="display:flex;flex-wrap:wrap;gap:8px;padding-bottom:var(--space-md);border-bottom:1px solid var(--border);margin-bottom:var(--space-sm);">
+                <button class="admin-tab-btn active" onclick="switchTab('dashboard', this)" data-tab="dashboard">Dashboard</button>
+                <button class="admin-tab-btn" onclick="switchTab('users', this)" data-tab="users">Usuários / IPs</button>
+                <button class="admin-tab-btn" onclick="switchTab('activations', this)" data-tab="activations">Ativação <span class="tab-badge" id="pendingCount" style="display:none;">0</span></button>
+                <button class="admin-tab-btn" onclick="switchTab('affiliates', this)" data-tab="affiliates">Afiliados</button>
+                <button class="admin-tab-btn" onclick="switchTab('plans', this)" data-tab="plans">Planos</button>
+                <button class="admin-tab-btn" onclick="switchTab('expired', this)" data-tab="expired">Expirados <span class="tab-badge" id="expiredCount" style="display:none;">0</span></button>
+                <button class="admin-tab-btn" onclick="switchTab('coupons', this)" data-tab="coupons">Cupons</button>
+                <button class="admin-tab-btn" onclick="switchTab('ipchanges', this)" data-tab="ipchanges">Solicitações IP <span class="tab-badge" id="ipChangeCount" style="display:none;">0</span></button>
+                <button class="admin-tab-btn" onclick="switchTab('notifications', this)" data-tab="notifications">Notificações</button>
+                <button class="admin-tab-btn" onclick="switchTab('webhook', this)" data-tab="webhook">Webhook</button>
+                <button class="admin-tab-btn" onclick="switchTab('settings', this)" data-tab="settings">Config</button>
+            </div>
             <!-- TAB: DASHBOARD -->
             <div class="tab-panel active" id="tab-dashboard">
                 <div class="stats-row">
@@ -626,16 +659,22 @@
             setTimeout(() => { el.className = 'alert'; }, 5000);
         }
 
-        // ---- TABS (Sidebar navigation) ----
+        function handleLogout() {
+            localStorage.removeItem('8token_token');
+            sessionStorage.removeItem('8token_admin_secret');
+            window.location.href = '/login';
+        }
+
+        // ---- TABS (Admin sub-navigation) ----
         function switchTab(name, btnEl) {
             document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-            document.querySelectorAll('.sidebar-link').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.admin-tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('tab-' + name).classList.add('active');
             if (btnEl) btnEl.classList.add('active');
             else {
-                // Fallback: find button by tab name
-                const btns = document.querySelectorAll('.sidebar-link');
-                btns.forEach(b => { if (b.getAttribute('onclick')?.includes("'" + name + "'")) b.classList.add('active'); });
+                // Fallback: find button by data-tab attribute
+                const btns = document.querySelectorAll('.admin-tab-btn');
+                btns.forEach(b => { if (b.getAttribute('data-tab') === name) b.classList.add('active'); });
             }
             if (name === 'dashboard') loadDashboard();
             if (name === 'users') loadSubscriptions();
