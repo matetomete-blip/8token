@@ -792,15 +792,14 @@
             return d.innerHTML;
         }
 
-        // SECURITY FIX: Removed hardcoded fallback and ?key= URL parameter parsing.
-        // Secret must only come from sessionStorage after proper auth flow (login modal).
-        function getAdminSecret() {
-            const secret = sessionStorage.getItem('8token_admin_secret');
-            if (!secret) {
+        // JWT-based admin auth — token stored in sessionStorage after login via /api/auth/login
+        function getAdminToken() {
+            const token = sessionStorage.getItem('8token_admin_token');
+            if (!token) {
                 showAdminLoginModal();
                 return null;
             }
-            return secret;
+            return token;
         }
 
         function showAdminLoginModal() {
@@ -815,8 +814,11 @@
                         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FF5500" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                         <h2 style="font-size:20px;font-weight:700;color:#fff;margin:0;">Acesso Admin</h2>
                     </div>
-                    <p style="font-size:13px;color:#888;margin:0 0 20px;line-height:1.5;">Digite sua chave de acesso para entrar no painel.</p>
-                    <input type="password" id="adminSecretInput" placeholder="Chave de acesso" autocomplete="off" spellcheck="false"
+                    <p style="font-size:13px;color:#888;margin:0 0 20px;line-height:1.5;">Digite suas credenciais de admin para entrar no painel.</p>
+                    <input type="email" id="adminEmailInput" placeholder="Email do admin" autocomplete="email" spellcheck="false"
+                        style="width:100%;height:44px;padding:0 16px;font-size:15px;color:#fff;background:#0a0a0a;border:1px solid #333;border-radius:8px;outline:none;box-sizing:border-box;transition:border-color 0.2s;margin-bottom:10px;"
+                        onfocus="this.style.borderColor='#FF5500'" onblur="this.style.borderColor='#333'">
+                    <input type="password" id="adminPassInput" placeholder="Senha" autocomplete="current-password"
                         style="width:100%;height:44px;padding:0 16px;font-size:15px;color:#fff;background:#0a0a0a;border:1px solid #333;border-radius:8px;outline:none;box-sizing:border-box;transition:border-color 0.2s;"
                         onfocus="this.style.borderColor='#FF5500'" onblur="this.style.borderColor='#333'">
                     <div id="adminLoginError" style="display:none;font-size:12px;color:#FF3333;margin-top:8px;"></div>
@@ -824,32 +826,61 @@
                 </div>
             `;
             document.body.appendChild(overlay);
-            const input = document.getElementById('adminSecretInput');
-            if (input) {
-                setTimeout(() => input.focus(), 100);
-                input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitAdminLogin(); });
+            const emailInput = document.getElementById('adminEmailInput');
+            if (emailInput) {
+                setTimeout(() => emailInput.focus(), 100);
+            }
+            const passInput = document.getElementById('adminPassInput');
+            if (passInput) {
+                passInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitAdminLogin(); });
             }
         }
 
-        function submitAdminLogin() {
-            const input = document.getElementById('adminSecretInput');
+        async function submitAdminLogin() {
+            const emailInput = document.getElementById('adminEmailInput');
+            const passInput = document.getElementById('adminPassInput');
             const errEl = document.getElementById('adminLoginError');
-            const val = input ? input.value.trim() : '';
-            if (!val) {
-                if (errEl) { errEl.style.display = 'block'; errEl.textContent = 'Digite sua chave de acesso.'; }
+            const btn = document.getElementById('adminLoginBtn');
+            const email = emailInput ? emailInput.value.trim() : '';
+            const password = passInput ? passInput.value : '';
+            if (!email || !password) {
+                if (errEl) { errEl.style.display = 'block'; errEl.textContent = 'Email e senha são obrigatórios.'; }
                 return;
             }
-            sessionStorage.setItem('8token_admin_secret', val);
-            const overlay = document.getElementById('adminLoginOverlay');
-            if (overlay) overlay.remove();
-            location.reload();
+            if (btn) { btn.disabled = true; btn.textContent = 'Autenticando...'; }
+            try {
+                const res = await fetch(API_BASE + '/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+                if (!res.ok || !data.token) {
+                    throw new Error(data.error || 'Credenciais inválidas');
+                }
+                if (data.user?.role !== 'admin') {
+                    throw new Error('Acesso negado: conta não é admin.');
+                }
+                sessionStorage.setItem('8token_admin_token', data.token);
+                const overlay = document.getElementById('adminLoginOverlay');
+                if (overlay) overlay.remove();
+                location.reload();
+            } catch (e) {
+                if (errEl) { errEl.style.display = 'block'; errEl.textContent = e.message || 'Erro ao autenticar.'; }
+                if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
+            }
         }
 
         async function apiFetch(url, options = {}) {
-            const secret = getAdminSecret();
-            if (!secret) throw new Error('Autenticação cancelada');
-            const headers = { 'Content-Type': 'application/json', 'X-Admin-Secret': secret, ...options.headers };
+            const token = getAdminToken();
+            if (!token) throw new Error('Autenticação cancelada');
+            const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, ...options.headers };
             const res = await fetch(API_BASE + url, { ...options, headers });
+            if (res.status === 401 || res.status === 403) {
+                sessionStorage.removeItem('8token_admin_token');
+                showAdminLoginModal();
+                throw new Error('Sessão expirada ou acesso negado. Faça login novamente.');
+            }
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Erro na requisição');
             return data;
@@ -864,7 +895,7 @@
 
         function handleLogout() {
             localStorage.removeItem('8token_token');
-            sessionStorage.removeItem('8token_admin_secret');
+            sessionStorage.removeItem('8token_admin_token');
             window.location.href = '/login';
         }
 
@@ -1462,7 +1493,7 @@
                 filterUsersTable();
             } catch (e) {
                 document.getElementById('usersTableBody').innerHTML = `<tr><td colspan="8" class="empty-state" style="color:var(--accent-red);">${escAdmin(e.message)}</td></tr>`;
-                if (e.message.includes('Acesso negado')) sessionStorage.removeItem('8token_admin_secret');
+                if (e.message.includes('Acesso negado') || e.message.includes('Sessão expirada')) sessionStorage.removeItem('8token_admin_token');
             }
         }
 
@@ -2287,7 +2318,7 @@
             try {
                 const [usersRes, notifsRes] = await Promise.all([
                     apiFetch('/api/admin/stats'),
-                    fetch(API_BASE + '/api/admin/notifications/count', { headers: { 'x-admin-secret': sessionStorage.getItem('8token_admin_secret') || '' } }).catch(() => null)
+                    apiFetch('/api/admin/notifications/count').catch(() => null)
                 ]);
                 if (usersRes) {
                     document.getElementById('totalUsersCount').textContent = usersRes.total_users || usersRes.totalUsers || '-';
