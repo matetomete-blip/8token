@@ -184,16 +184,16 @@
         .dashboard-header p { color: var(--text-secondary); }
 
         /* KPI Grid */
-        .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--space-md); }
+        .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--space-sm); }
         .kpi-card {
             background: var(--bg-card); backdrop-filter: var(--glass);
             border: 1px solid var(--border); border-radius: var(--radius-md);
-            padding: var(--space-lg); transition: var(--transition);
+            padding: var(--space-md); transition: var(--transition);
         }
         .kpi-card:hover { border-color: var(--border-hover); transform: translateY(-2px); }
-        .kpi-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: var(--space-xs); }
-        .kpi-value { font-size: 32px; font-weight: 700; font-family: var(--font-mono); line-height: 1; }
-        .kpi-sub { font-size: 13px; color: var(--text-secondary); margin-top: var(--space-xs); }
+        .kpi-label { font-size: 12px; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; font-weight: 600; opacity: 0.85; }
+        .kpi-value { font-size: 28px; font-weight: 700; font-family: var(--font-mono); line-height: 1; }
+        .kpi-sub { font-size: 13px; color: var(--text-secondary); margin-top: 8px; line-height: 1.5; opacity: 0.9; }
         .kpi-value.green { color: var(--accent-green); }
         .kpi-value.orange { color: var(--accent-orange); }
         .kpi-value.blue { color: var(--accent-blue); }
@@ -432,11 +432,6 @@
 
             <!-- KPIs Primários -->
             <div class="kpi-row">
-                <div class="kpi-card">
-                    <div class="kpi-label">Chaves API</div>
-                    <div class="kpi-value green" id="kpiKeys">—</div>
-                    <div class="kpi-sub">Ativas</div>
-                </div>
                 <div class="kpi-card">
                     <div class="kpi-label">Tokens Usados (Mês)</div>
                     <div class="kpi-value blue" id="kpiTokens">—</div>
