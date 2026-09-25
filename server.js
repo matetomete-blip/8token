@@ -1417,12 +1417,42 @@ app.post('/api/admin/deploy', adminAuth, async (req, res) => {
   res.json({ success: true, message: 'Deploy iniciado — servidor vai reiniciar em 2s' });
   setTimeout(() => {
     const { exec } = require('child_process');
-    exec('cd /opt/8token && git stash && git pull && pm2 restart 8token', { timeout: 30000 }, (err) => {
+    exec('cd /opt/8token && git checkout -- . && git pull && pm2 restart 8token', { timeout: 30000 }, (err) => {
       if (err) console.error('[Deploy] Error:', err.message);
       else console.log('[Deploy] Success — server restarted');
     });
   }, 2000);
 });
+
+// Auto-migrate webhook_logs table on startup — ensure all columns exist
+(async function migrateWebhookLogs() {
+  try {
+    // Test insert with all columns to check if they exist
+    const testRow = { event_type: 'STARTUP_CHECK', event: 'STARTUP_CHECK', sale_id: 'startup-check', status: 'CHECK', customer_email: 'check@startup.local', customer_ip: '0.0.0.0', plan: 'check', payload: { startup: true } };
+    const { error } = await supabase.from('webhook_logs').insert(testRow);
+    if (error) {
+      console.log('[Migration] webhook_logs missing columns — trying minimal insert...');
+      const { error: minErr } = await supabase.from('webhook_logs').insert({ event_type: 'STARTUP_CHECK', sale_id: 'startup-check', payload: { startup: true } });
+      if (!minErr) {
+        await supabase.from('webhook_logs').delete().eq('sale_id', 'startup-check');
+        console.log('[Migration] webhook_logs needs columns: event, status, customer_email, customer_ip, plan');
+        console.log('[Migration] Run this SQL in Supabase Dashboard → SQL Editor:');
+        console.log('[Migration] ALTER TABLE webhook_logs ADD COLUMN IF NOT EXISTS event TEXT;');
+        console.log('[Migration] ALTER TABLE webhook_logs ADD COLUMN IF NOT EXISTS status TEXT;');
+        console.log('[Migration] ALTER TABLE webhook_logs ADD COLUMN IF NOT EXISTS customer_email TEXT;');
+        console.log('[Migration] ALTER TABLE webhook_logs ADD COLUMN IF NOT EXISTS customer_ip TEXT;');
+        console.log('[Migration] ALTER TABLE webhook_logs ADD COLUMN IF NOT EXISTS plan TEXT;');
+      } else {
+        console.error('[Migration] webhook_logs table issue:', minErr.message);
+      }
+    } else {
+      await supabase.from('webhook_logs').delete().eq('sale_id', 'startup-check');
+      console.log('[Migration] webhook_logs table OK — all columns present');
+    }
+  } catch (e) {
+    console.error('[Migration] webhook_logs check failed:', e.message);
+  }
+})();
 
 app.get('/api/admin/webhook-logs', adminAuth, async (req, res) => {
   try {
