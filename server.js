@@ -1382,9 +1382,32 @@ app.get('/api/admin/subscriptions', adminAuth, async (req, res) => {
       _isUserOnly: true
     }));
 
+  // Get all api_keys to check authorized IPs per user
+  const { data: allKeys } = await supabase.from('api_keys').select('id, user_id');
+  const keyToUser = {};
+  if (allKeys) allKeys.forEach(k => { keyToUser[k.id] = k.user_id; });
+  const { data: allAuthIps } = await supabase.from('key_authorized_ips').select('api_key_id, ip');
+  const authorizedIpsByUser = {};
+  if (allAuthIps && allKeys) {
+    allAuthIps.forEach(entry => {
+      const userId = keyToUser[entry.api_key_id];
+      if (userId) {
+        if (!authorizedIpsByUser[userId]) authorizedIpsByUser[userId] = new Set();
+        authorizedIpsByUser[userId].add(entry.ip);
+      }
+    });
+  }
+
   // Merge: real subscriptions first, then users without subscriptions
+  // CRITICAL FIX: Override status based on actual authorized IPs in key_authorized_ips
   const merged = [
-    ...(subs || []).map(s => ({ ...s, user_email: s.users?.email || '' })),
+    ...(subs || []).map(s => {
+      const userAuthIps = authorizedIpsByUser[s.user_id] || new Set();
+      const hasAuthorizedIp = s.ip && s.ip !== 'pending-activation' && s.ip !== 'pending' && userAuthIps.has(s.ip);
+      // If subscription says active but no IP is actually authorized in keys, override to pending_ip
+      const effectiveStatus = (s.status === 'active' && !hasAuthorizedIp) ? 'pending_ip' : s.status;
+      return { ...s, status: effectiveStatus, user_email: s.users?.email || '' };
+    }),
     ...usersWithoutSubs
   ];
 
