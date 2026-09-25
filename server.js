@@ -13,6 +13,14 @@ const { createClient } = require('@supabase/supabase-js');
 const { OAuth2Client } = require('google-auth-library');
 const crypto = require('crypto');
 const rateLimit = require('express-rate-limit');
+const { Agent: UndiciAgent } = require('undici');
+
+// Keep-alive dispatcher para fetch upstream — evita handshake TLS repetido (economiza 100-300ms/req)
+const keepAliveDispatcher = new UndiciAgent({
+  keepAliveTimeout: 30000,
+  keepAliveMaxTimeout: 60000,
+  connections: 50,
+});
 
 const app = express();
 
@@ -2623,7 +2631,7 @@ const GHOSTCLI_API_KEY = process.env.GHOSTCLI_API_KEY || '';
 // --- Cache em memória para validação de chaves (TTL 300s) ---
 const keyCache = new Map(); // keyHash → { userId, revoked, cachedAt }
 const subCache = new Map(); // userId → { ip, additional_ip, has_additional_ip, plan, status, expires_at, cachedAt }
-const CACHE_TTL_MS = 5 * 60 * 1000; // 300s — reduz queries ao Supabase em 5×
+const CACHE_TTL_MS = 10 * 60 * 1000; // 600s — reduz queries ao Supabase em 2× (era 300s)
 
 function getCached(map, key) {
   const entry = map.get(key);
@@ -2765,6 +2773,7 @@ async function proxyRequest(req, res, path) {
       },
       body: ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body),
       signal: controller.signal,
+      dispatcher: keepAliveDispatcher,
     });
     clearTimeout(timeoutId);
     ttfb = Date.now() - startTime; // Captura latência real ANTES de qualquer processing
