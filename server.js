@@ -349,19 +349,10 @@ app.post('/api/auth/register', registerLimiter, async (req, res) => {
       throw error;
     }
 
-    // Auto-create ip_subscriptions entry so the user appears in admin panel immediately
-    try {
-      await supabase.from('ip_subscriptions').insert({
-        ip: 'pending-' + authUserId.slice(0, 8),
-        user_id: authUserId,
-        plan: 'free',
-        status: 'pending',
-        notes: 'Conta criada via registro automático'
-      });
-    } catch (ipErr) {
-      console.error('Auto-create ip_subscription warning:', ipErr.message);
-      // Non-fatal — user is already created, just won't appear in admin until manually added
-    }
+    // NOTE: não criar ip_subscriptions automaticamente no registro.
+    // O usuário só aparece no painel admin quando o admin adiciona um IP manualmente
+    // ou quando o usuário autoriza um IP pelo dashboard. Isso evita linhas "pending"
+    // duplicadas que confundem a interface.
 
     const token = jwt.sign({ id: newUser.id, email: normalizedEmail }, JWT_SECRET, { algorithm: 'HS256', expiresIn: '30d' });
     res.json({ token, user: { id: newUser.id, email: normalizedEmail, name: displayName, plan } });
@@ -489,18 +480,10 @@ app.post('/api/auth/google', async (req, res) => {
         user = newUser;
       }
 
-      // Auto-create ip_subscriptions entry
-      try {
-        await supabase.from('ip_subscriptions').insert({
-          ip: 'pending-' + authUserId.slice(0, 8),
-          user_id: authUserId,
-          plan: 'free',
-          status: 'pending',
-          notes: 'Conta criada via Google OAuth'
-        });
-      } catch (ipErr) {
-        console.error('Auto-create ip_subscription warning (Google):', ipErr.message);
-      }
+      // NOTE: não criar ip_subscriptions automaticamente no Google OAuth.
+      // O usuário só aparece no painel admin quando o admin adiciona um IP manualmente
+      // ou quando o usuário autoriza um IP pelo dashboard. Isso evita linhas "pending"
+      // duplicadas que confundem a interface.
     } else {
       // User exists — link Google account if not already linked, PRIORITIZE Google name
       const updates = {
@@ -3459,6 +3442,21 @@ app.get('/api/admin/usage/stats', adminAuth, async (req, res) => {
   } catch (err) {
     console.error('Admin usage stats error:', err);
     res.status(500).json({ error: 'Erro ao carregar métricas globais: ' + err.message });
+  }
+});
+
+// GET /api/admin/usage/logs — últimas N requisições da API com dados do usuário
+app.get('/api/admin/usage/logs', adminAuth, async (req, res) => {
+  const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+  try {
+    const { data } = await supabase.from('usage_logs')
+      .select('id, user_id, api_key_id, model, tokens_in, tokens_out, latency_ms, ip, status, created_at, users(email, name), api_keys(key_prefix, key_suffix)')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    res.json(data || []);
+  } catch (err) {
+    console.error('Admin usage logs error:', err);
+    res.status(500).json({ error: 'Erro ao carregar logs da API: ' + err.message });
   }
 });
 
