@@ -14,7 +14,23 @@ const { OAuth2Client } = require('google-auth-library');
 const crypto = require('crypto');
 
 const app = express();
-const JWT_SECRET = process.env.JWT_SECRET || '8token-jwt-secret-stable-fallback-2026';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET || JWT_SECRET === '8token-jwt-secret-stable-fallback-2026') {
+  console.error('ERRO: JWT_SECRET não configurado ou usando valor inseguro. Defina via variável de ambiente.');
+  process.exit(1);
+}
+
+// HTML escaping helper for email templates and user-facing output
+function escHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// IP format validation (IPv4)
+function isValidIp(ip) {
+  const ipv4 = /^(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)$/;
+  return ipv4.test(ip);
+}
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const ADMIN_SECRET = process.env.ADMIN_SECRET || '8token-admin-change-me';
 
@@ -92,7 +108,7 @@ function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
   if (!token) return res.status(401).json({ error: 'Token não fornecido' });
-  jwt.verify(token, JWT_SECRET, (err, user) => {
+  jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] }, (err, user) => {
     if (err) return res.status(403).json({ error: 'Token inválido' });
     req.user = user;
     next();
@@ -200,14 +216,14 @@ app.post('/api/auth/register', async (req, res) => {
       // If insert fails (e.g. duplicate), try to find existing
       const { data: found } = await supabase.from('users').select('*').eq('email', email).single();
       if (found) {
-        const token = jwt.sign({ id: found.id, email: found.email }, JWT_SECRET, { expiresIn: '30d' });
+        const token = jwt.sign({ id: found.id, email: found.email }, JWT_SECRET, { algorithm: 'HS256', expiresIn: '30d' });
         await ensureIpRecord(req.clientIp, found.id);
         return res.json({ token, user: { id: found.id, email: found.email, name: found.name, plan: found.plan } });
       }
       throw error;
     }
 
-    const token = jwt.sign({ id: newUser.id, email }, JWT_SECRET, { expiresIn: '30d' });
+    const token = jwt.sign({ id: newUser.id, email }, JWT_SECRET, { algorithm: 'HS256', expiresIn: '30d' });
     await ensureIpRecord(req.clientIp, newUser.id);
     res.json({ token, user: { id: newUser.id, email, name: displayName, plan } });
   } catch (err) {
@@ -244,7 +260,7 @@ app.post('/api/auth/login', async (req, res) => {
       user.role = 'admin';
     }
 
-    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '30d' });
+    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { algorithm: 'HS256', expiresIn: '30d' });
     await ensureIpRecord(req.clientIp, user.id);
     res.json({ token, user: { id: user.id, email: user.email, name: user.name, plan: user.plan, role: user.role || 'user' } });
   } catch (err) {
@@ -259,12 +275,12 @@ app.post('/api/auth/google', async (req, res) => {
     if (!credential) return res.status(400).json({ error: 'Credencial do Google não fornecida' });
 
     let payload;
-    if (googleClient) {
-      const ticket = await googleClient.verifyIdToken({ idToken: credential, audience: GOOGLE_CLIENT_ID });
-      payload = ticket.getPayload();
-    } else {
-      payload = JSON.parse(Buffer.from(credential.split('.')[1], 'base64').toString());
+    if (!googleClient) {
+      console.error('[SECURITY] Google OAuth called but GOOGLE_CLIENT_ID not configured — rejecting request');
+      return res.status(500).json({ error: 'Google authentication not configured' });
     }
+    const ticket = await googleClient.verifyIdToken({ idToken: credential, audience: GOOGLE_CLIENT_ID });
+    payload = ticket.getPayload();
 
     const { email, name, picture, sub: googleId } = payload;
     if (!email) return res.status(400).json({ error: 'Email não encontrado no token Google' });
@@ -285,7 +301,7 @@ app.post('/api/auth/google', async (req, res) => {
       user.role = 'admin';
     }
 
-    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '30d' });
+    const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { algorithm: 'HS256', expiresIn: '30d' });
     await ensureIpRecord(req.clientIp, user.id);
     res.json({ token, user: { id: user.id, email: user.email, name: user.name || name, plan: user.plan, role: user.role || 'user' } });
   } catch (err) {
@@ -347,9 +363,21 @@ app.put('/api/user/password', authenticateToken, async (req, res) => {
   const { currentPassword, newPassword } = req.body;
   if (!newPassword || newPassword.length < 6) return res.status(400).json({ error: 'Nova senha deve ter pelo menos 6 caracteres' });
   const { data: user } = await supabase.from('users').select('password_hash').eq('id', req.user.id).single();
-  if (user.password_hash && currentPassword) {
+  if (user.password_hash) {
+    if (!currentPassword) return res.status(400).json({ error: 'Senha atual é obrigatória' });
     const valid = await bcrypt.compare(currentPassword, user.password_hash);
     if (!valid) return res.status(401).json({ error: 'Senha atual incorreta' });
+  } else {
+    // OAuth-only account: require Google re-verification before setting first password
+    const { googleCredential } = req.body;
+    if (!googleCredential || !googleClient) return res.status(400).json({ error: 'Re-autenticação via Google necessária para definir senha' });
+    try {
+      const ticket = await googleClient.verifyIdToken({ idToken: googleCredential, audience: GOOGLE_CLIENT_ID });
+      const gPayload = ticket.getPayload();
+      if (gPayload.email !== req.user.email) return res.status(403).json({ error: 'Credencial Google não corresponde à conta' });
+    } catch (e) {
+      return res.status(401).json({ error: 'Verificação Google falhou' });
+    }
   }
   const hash = await bcrypt.hash(newPassword, 12);
   await supabase.from('users').update({ password_hash: hash }).eq('id', req.user.id);
@@ -437,7 +465,7 @@ app.get('/api/keys', authenticateToken, async (req, res) => {
     let full_key = null;
     if (k.key_encrypted) {
       try {
-        const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(process.env.JWT_SECRET || 'fallback-secret-key-32chars!!', 'utf8').slice(0, 32), Buffer.alloc(16, 0));
+        const decipher = crypto.createDecipheriv('aes-256-cbc', AES_KEY, Buffer.alloc(16, 0)); // TODO: migrate to random IV per key
         full_key = decipher.update(k.key_encrypted, 'hex', 'utf8') + decipher.final('utf8');
       } catch (e) { /* decryption failed, leave null */ }
     }
@@ -461,7 +489,7 @@ app.post('/api/keys', authenticateToken, async (req, res) => {
   const suffix = apiKey.slice(-4);
   let keyEncrypted = null;
   try {
-    const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(process.env.JWT_SECRET || 'fallback-secret-key-32chars!!', 'utf8').slice(0, 32), Buffer.alloc(16, 0));
+    const cipher = crypto.createCipheriv('aes-256-cbc', AES_KEY, Buffer.alloc(16, 0)); // TODO: migrate to random IV per key
     keyEncrypted = cipher.update(apiKey, 'utf8', 'hex') + cipher.final('hex');
   } catch (e) { console.error('Key encryption failed:', e.message); }
   const { data, error } = await supabase.from('api_keys').insert({
@@ -560,6 +588,26 @@ app.delete('/api/admin/keys/:keyId/authorized-ips/:ipId', adminAuth, async (req,
     res.json({ success: true });
   } catch (e) {
     res.status(500).json({ error: 'Erro ao remover IP: ' + e.message });
+  }
+});
+
+// POST /api/admin/users/:userId/toggle-additional-ip — grant or revoke +1 IP additional product
+app.post('/api/admin/users/:userId/toggle-additional-ip', adminAuth, async (req, res) => {
+  const { userId } = req.params;
+  const { grant } = req.body; // true = grant, false = revoke
+  try {
+    const { data: sub } = await supabase.from('ip_subscriptions')
+      .select('id, has_additional_ip').eq('user_id', userId).eq('status', 'active').single();
+    if (!sub) return res.status(404).json({ error: 'Nenhuma subscription ativa encontrada.' });
+    if (grant) {
+      await supabase.from('ip_subscriptions').update({ has_additional_ip: true }).eq('id', sub.id);
+    } else {
+      await supabase.from('ip_subscriptions').update({ has_additional_ip: false, additional_ip: null }).eq('id', sub.id);
+    }
+    invalidateSubCache(userId);
+    res.json({ success: true, has_additional_ip: !!grant });
+  } catch (e) {
+    res.status(500).json({ error: 'Erro ao alterar +1 IP: ' + e.message });
   }
 });
 
@@ -1054,6 +1102,192 @@ app.put('/api/admin/subscriptions/:id', adminAuth, async (req, res) => {
 app.delete('/api/admin/subscriptions/:id', adminAuth, async (req, res) => {
   await supabase.from('ip_subscriptions').delete().eq('id', req.params.id);
   res.json({ success: true });
+});
+
+// --- ADMIN: RESET USER ACCOUNT — clears plan, IP, keys but keeps user record ---
+// Password protected (0258). Generates new user_id to isolate from old webhook logs.
+app.post('/api/admin/users/:subId/reset', adminAuth, async (req, res) => {
+  const { subId } = req.params;
+  const { password } = req.body;
+
+  // Verify password
+  if (password !== '0258') {
+    return res.status(403).json({ error: 'Senha incorreta' });
+  }
+
+  try {
+    // Step 1: Get the subscription and user_id
+    const { data: sub, error: subErr } = await supabase
+      .from('ip_subscriptions')
+      .select('id, user_id, ip, plan')
+      .eq('id', subId)
+      .single();
+
+    if (subErr || !sub) {
+      return res.status(404).json({ error: 'Assinatura não encontrada' });
+    }
+
+    const oldUserId = sub.user_id;
+    if (!oldUserId) {
+      return res.status(400).json({ error: 'Esta assinatura não tem user_id vinculado' });
+    }
+
+    // Step 2: Generate a NEW user_id to isolate from old webhook logs
+    // This ensures old SALE_APPROVED events won't affect the reset user
+    const newUserId = crypto.randomUUID();
+
+    // Step 3: Update the users table with new ID (keep email, name, role)
+    const { data: oldUser } = await supabase.from('users').select('*').eq('id', oldUserId).single();
+    if (!oldUser) {
+      return res.status(404).json({ error: 'Usuário não encontrado na tabela users' });
+    }
+
+    // Insert new user record with reset state
+    const { error: insertErr } = await supabase.from('users').insert({
+      id: newUserId,
+      email: oldUser.email,
+      name: oldUser.name,
+      role: oldUser.role || 'user',
+      plan: 'free',
+      plan_expires_at: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    });
+
+    if (insertErr) {
+      console.error('[Admin Reset] Failed to create new user record:', insertErr);
+      return res.status(500).json({ error: 'Falha ao criar novo registro de usuário: ' + insertErr.message });
+    }
+
+    // Step 4: Delete old user record
+    await supabase.from('users').delete().eq('id', oldUserId);
+
+    // Step 5: Update subscription to point to new user_id and reset state
+    await supabase.from('ip_subscriptions').update({
+      user_id: newUserId,
+      plan: 'free',
+      status: 'pending_ip',
+      ip: 'pending-activation',
+      expires_at: null,
+      notes: `[RESET ${new Date().toISOString()}] Conta resetada pelo admin. Old user_id: ${oldUserId}`
+    }).eq('id', subId);
+
+    // Step 6: Delete all API keys for the old user
+    await supabase.from('api_keys').delete().eq('user_id', oldUserId);
+
+    // Step 7: Delete all key_authorized_ips for the old user's keys
+    // First get all key IDs for this user
+    const { data: oldKeys } = await supabase.from('api_keys').select('id').eq('user_id', oldUserId);
+    if (oldKeys && oldKeys.length > 0) {
+      const keyIds = oldKeys.map(k => k.id);
+      await supabase.from('key_authorized_ips').delete().in('key_id', keyIds);
+    }
+
+    // Step 8: Archive old invoices (mark as archived, don't delete for audit trail)
+    await supabase.from('invoices').update({
+      status: 'archived_reset',
+      notes: `Conta resetada em ${new Date().toISOString()}. New user_id: ${newUserId}`
+    }).eq('user_id', oldUserId);
+
+    // Step 9: Log the reset action
+    await supabase.from('plan_audit_log').insert({
+      user_id: newUserId,
+      actor: 'admin',
+      action: 'account_reset',
+      field_changed: 'user_id',
+      old_value: oldUserId,
+      new_value: newUserId
+    });
+
+    console.log(`[Admin Reset] ✅ User ${oldUser.email} reset: ${oldUserId} → ${newUserId}`);
+
+    res.json({
+      success: true,
+      message: 'Conta resetada com sucesso',
+      old_user_id: oldUserId,
+      new_user_id: newUserId
+    });
+
+  } catch (err) {
+    console.error('[Admin Reset] Error:', err);
+    res.status(500).json({ error: 'Erro ao resetar conta: ' + err.message });
+  }
+});
+
+// --- ADMIN: DELETE USER COMPLETELY — removes everything including user record ---
+// Password protected (0258). Permanent deletion.
+app.delete('/api/admin/users/:subId/delete-complete', adminAuth, async (req, res) => {
+  const { subId } = req.params;
+  const { password } = req.body;
+
+  // Verify password
+  if (password !== '0258') {
+    return res.status(403).json({ error: 'Senha incorreta' });
+  }
+
+  try {
+    // Step 1: Get the subscription and user_id
+    const { data: sub, error: subErr } = await supabase
+      .from('ip_subscriptions')
+      .select('id, user_id, ip')
+      .eq('id', subId)
+      .single();
+
+    if (subErr || !sub) {
+      return res.status(404).json({ error: 'Assinatura não encontrada' });
+    }
+
+    const userId = sub.user_id;
+    if (!userId) {
+      // No user linked — just delete the subscription
+      await supabase.from('ip_subscriptions').delete().eq('id', subId);
+      return res.json({ success: true, message: 'Assinatura sem usuário vinculada deletada' });
+    }
+
+    // Step 2: Get user info for logging
+    const { data: user } = await supabase.from('users').select('email, name').eq('id', userId).single();
+    const userEmail = user?.email || 'unknown';
+
+    // Step 3: Delete all key_authorized_ips for this user's keys
+    const { data: userKeys } = await supabase.from('api_keys').select('id').eq('user_id', userId);
+    if (userKeys && userKeys.length > 0) {
+      const keyIds = userKeys.map(k => k.id);
+      await supabase.from('key_authorized_ips').delete().in('key_id', keyIds);
+    }
+
+    // Step 4: Delete all API keys
+    await supabase.from('api_keys').delete().eq('user_id', userId);
+
+    // Step 5: Delete all subscriptions for this user
+    await supabase.from('ip_subscriptions').delete().eq('user_id', userId);
+
+    // Step 6: Delete all invoices
+    await supabase.from('invoices').delete().eq('user_id', userId);
+
+    // Step 7: Delete plan audit logs
+    await supabase.from('plan_audit_log').delete().eq('user_id', userId);
+
+    // Step 8: Delete affiliate record if exists
+    await supabase.from('affiliates').delete().eq('user_id', userId);
+
+    // Step 9: Delete the user record itself
+    await supabase.from('users').delete().eq('id', userId);
+
+    // Note: webhook_logs are NOT deleted — they stay for audit/compliance
+    // They reference customer_email, not user_id, so they remain as historical records
+
+    console.log(`[Admin Delete] ️ User ${userEmail} (${userId}) completely deleted`);
+
+    res.json({
+      success: true,
+      message: `Usuário ${userEmail} deletado permanentemente`,
+      deleted_user_id: userId
+    });
+
+  } catch (err) {
+    console.error('[Admin Delete] Error:', err);
+    res.status(500).json({ error: 'Erro ao deletar usuário: ' + err.message });
+  }
 });
 
 // --- ADMIN: FIX LEGACY IPS — reset subscriptions that have a real IP but user never authorized it ---

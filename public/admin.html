@@ -435,14 +435,36 @@
                         <div class="form-group"><label class="form-label">Expira em</label><input type="datetime-local" id="fieldExpires" class="form-input"></div>
                     </div>
 
+                    <!-- Produto +1 IP Adicional -->
+                    <div style="margin-top:var(--space-md);margin-bottom:var(--space-md);padding:var(--space-md);background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);">
+                        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-sm);">
+                            <div>
+                                <div style="font-size:13px;font-weight:600;color:var(--text-primary);">Produto +1 IP Adicional</div>
+                                <div style="font-size:11px;color:var(--text-muted);margin-top:2px;" id="additionalIpStatus">Carregando...</div>
+                            </div>
+                            <div style="display:flex;gap:var(--space-xs);">
+                                <button class="btn btn-success btn-sm" onclick="adminToggleAdditionalIp(true)" style="font-size:11px;padding:4px 10px;height:28px;">+ Dar +1 IP</button>
+                                <button class="btn btn-danger btn-sm" onclick="adminToggleAdditionalIp(false)" style="font-size:11px;padding:4px 10px;height:28px;">− Remover +1 IP</button>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- IPs Autorizados — containers individuais por chave/IP -->
-                    <div style="margin-top:var(--space-md);margin-bottom:var(--space-md);">
+                    <div style="margin-top:var(--space-sm);margin-bottom:var(--space-md);">
                         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-sm);">
                             <label class="form-label" style="margin-bottom:0;">IPs Autorizados por Chave</label>
                             <span id="ipCountBadge" style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono);"></span>
                         </div>
                         <div id="authorizedIpsContainer" style="display:flex;flex-direction:column;gap:var(--space-sm);">
                             <div style="text-align:center;padding:var(--space-md);color:var(--text-muted);font-size:12px;">Carregando...</div>
+                        </div>
+                        <!-- Adicionar IP manualmente -->
+                        <div style="margin-top:var(--space-sm);display:flex;gap:var(--space-xs);align-items:stretch;">
+                            <input type="text" id="adminNewIpInput" placeholder="Adicionar IP manualmente (ex: 189.45.12.34)" class="form-input" style="flex:1;font-family:var(--font-mono);font-size:12px;height:32px;padding:0 var(--space-sm);">
+                            <select id="adminNewIpKeySelect" class="form-select" style="width:140px;font-size:11px;height:32px;">
+                                <option value="">Selecionar chave...</option>
+                            </select>
+                            <button class="btn btn-primary btn-sm" onclick="adminAddIpToKey()" style="font-size:11px;padding:0 10px;height:32px;white-space:nowrap;">+ Adicionar</button>
                         </div>
                     </div>
                     <div class="form-row">
@@ -452,9 +474,15 @@
                         <div class="form-group" style="grid-column: 1 / -1;"><label class="form-label">Notas</label><textarea id="fieldNotes" class="form-input" placeholder="Observações internas..."></textarea></div>
                     </div>
 
-                    <div style="display:flex;gap:var(--space-md);margin-top:var(--space-lg);justify-content:flex-end;">
-                        <button class="btn btn-secondary" onclick="closeUserModal()">Cancelar</button>
-                        <button class="btn btn-primary" onclick="saveSubscription()">Salvar Alterações</button>
+                    <div style="display:flex;gap:var(--space-md);margin-top:var(--space-lg);justify-content:space-between;align-items:center;">
+                        <div style="display:flex;gap:var(--space-sm);" id="dangerZoneButtons">
+                            <button class="btn btn-warning btn-sm" onclick="resetUserAccount()" id="btnResetUser" style="display:none;">🔄 Resetar Conta</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteUserCompletely()" id="btnDeleteUser" style="display:none;">🗑️ Deletar Usuário</button>
+                        </div>
+                        <div style="display:flex;gap:var(--space-md);">
+                            <button class="btn btn-secondary" onclick="closeUserModal()">Cancelar</button>
+                            <button class="btn btn-primary" onclick="saveSubscription()">Salvar Alterações</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1088,8 +1116,15 @@
             if (ipsContainer) ipsContainer.innerHTML = '<div style="text-align:center;padding:var(--space-md);color:var(--text-muted);font-size:12px;">Carregando...</div>';
             if (ipBadge) ipBadge.textContent = '';
 
+            // Show/hide danger zone buttons based on edit mode
+            const btnReset = document.getElementById('btnResetUser');
+            const btnDelete = document.getElementById('btnDeleteUser');
+
             if (id) {
                 title.textContent = 'Editar Usuário / IP';
+                if (btnReset) btnReset.style.display = 'inline-block';
+                if (btnDelete) btnDelete.style.display = 'inline-block';
+
                 if (window.allSubscriptions) {
                     const sub = window.allSubscriptions.find(s => s.id === id);
                     if (sub) {
@@ -1100,22 +1135,30 @@
                         document.getElementById('fieldExpires').value = sub.expires_at ? new Date(sub.expires_at).toISOString().slice(0, 16) : '';
                         document.getElementById('fieldNotes').value = sub.notes || '';
 
-                        // Load authorized IPs for this user's keys
+                        // Load authorized IPs for this user's keys + populate key select + load +1IP status
                         const userId = sub.user_id;
                         if (userId && ipsContainer) {
                             try {
                                 const keysWithIps = await apiFetch(`/api/admin/users/${userId}/authorized-ips`);
                                 renderAuthorizedIps(keysWithIps, ipsContainer, ipBadge);
+                                populateKeySelect(keysWithIps);
                             } catch (e) {
                                 ipsContainer.innerHTML = '<div style="text-align:center;padding:var(--space-md);color:var(--accent-red);font-size:12px;">Erro ao carregar IPs</div>';
                             }
                         } else if (ipsContainer) {
                             ipsContainer.innerHTML = '<div style="text-align:center;padding:var(--space-md);color:var(--text-muted);font-size:12px;">Nenhuma chave API encontrada</div>';
                         }
+                        // Load +1 IP additional status
+                        const addIpStatusEl = document.getElementById('additionalIpStatus');
+                        if (addIpStatusEl) {
+                            addIpStatusEl.textContent = sub.has_additional_ip ? '✅ +1 IP Adicional ativo' : '❌ Sem IP adicional';
+                        }
                     }
                 }
             } else {
                 title.textContent = 'Adicionar Usuário / IP';
+                if (btnReset) btnReset.style.display = 'none';
+                if (btnDelete) btnDelete.style.display = 'none';
                 if (ipsContainer) ipsContainer.innerHTML = '<div style="text-align:center;padding:var(--space-md);color:var(--text-muted);font-size:12px;">Salve o registro primeiro para gerenciar IPs</div>';
             }
             modal.style.display = 'block';
@@ -1145,6 +1188,7 @@
                         html += `<div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-sm);padding:var(--space-xs) var(--space-sm);background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:var(--space-xs);">`;
                         html += `<span style="font-family:var(--font-mono);font-size:13px;color:var(--accent-blue);">${ipRow.ip}</span>`;
                         html += `<div style="display:flex;gap:var(--space-xs);">`;
+                        html += `<button class="btn btn-primary btn-sm" onclick="editAdminKeyIp('${keyData.key_id}','${ipRow.id}','${ipRow.ip}')" style="font-size:11px;padding:2px 8px;height:24px;" title="Editar IP">✏️ Editar</button>`;
                         html += `<button class="btn btn-success btn-sm" onclick="toggleAdminKeyIp('${keyData.key_id}','${ipRow.id}',false)" style="font-size:11px;padding:2px 8px;height:24px;" title="Bloquear este IP">🔴 Bloquear</button>`;
                         html += `<button class="btn btn-danger btn-sm" onclick="removeAdminKeyIp('${keyData.key_id}','${ipRow.id}')" style="font-size:11px;padding:2px 8px;height:24px;" title="Remover IP">✕</button>`;
                         html += `</div></div>`;
@@ -1158,20 +1202,11 @@
 
         async function toggleAdminKeyIp(keyId, ipId, authorize) {
             try {
-                // Get the IP from the DOM or re-fetch
                 const result = await apiFetch(`/api/admin/keys/${keyId}/toggle-ip`, {
                     method: 'POST',
                     body: JSON.stringify({ ip: null, ipId, authorize })
                 });
-                // Reload the modal IPs
-                const editId = document.getElementById('editId').value;
-                if (editId && window.allSubscriptions) {
-                    const sub = window.allSubscriptions.find(s => s.id === editId);
-                    if (sub?.user_id) {
-                        const keysWithIps = await apiFetch(`/api/admin/users/${sub.user_id}/authorized-ips`);
-                        renderAuthorizedIps(keysWithIps, document.getElementById('authorizedIpsContainer'), document.getElementById('ipCountBadge'));
-                    }
-                }
+                await reloadModalIps();
                 showAlert('userFormAlert', authorize ? 'IP liberado!' : 'IP bloqueado!', 'success');
             } catch (e) { showAlert('userFormAlert', e.message, 'error'); }
         }
@@ -1180,16 +1215,96 @@
             if (!confirm('Remover este IP autorizado?')) return;
             try {
                 await apiFetch(`/api/admin/keys/${keyId}/authorized-ips/${ipId}`, { method: 'DELETE' });
-                const editId = document.getElementById('editId').value;
-                if (editId && window.allSubscriptions) {
-                    const sub = window.allSubscriptions.find(s => s.id === editId);
-                    if (sub?.user_id) {
-                        const keysWithIps = await apiFetch(`/api/admin/users/${sub.user_id}/authorized-ips`);
-                        renderAuthorizedIps(keysWithIps, document.getElementById('authorizedIpsContainer'), document.getElementById('ipCountBadge'));
-                    }
-                }
+                await reloadModalIps();
                 showAlert('userFormAlert', 'IP removido.', 'success');
             } catch (e) { showAlert('userFormAlert', e.message, 'error'); }
+        }
+
+        // Edit an existing authorized IP (replace with new value)
+        async function editAdminKeyIp(keyId, ipId, currentIp) {
+            const newIp = prompt('Digite o novo IP:', currentIp);
+            if (!newIp || newIp.trim() === currentIp) return;
+            if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(newIp.trim())) {
+                showAlert('userFormAlert', 'Formato de IP inválido.', 'error');
+                return;
+            }
+            try {
+                // Remove old, add new
+                await apiFetch(`/api/admin/keys/${keyId}/authorized-ips/${ipId}`, { method: 'DELETE' });
+                await apiFetch(`/api/admin/keys/${keyId}/toggle-ip`, {
+                    method: 'POST',
+                    body: JSON.stringify({ ip: newIp.trim(), authorize: true })
+                });
+                await reloadModalIps();
+                showAlert('userFormAlert', 'IP atualizado com sucesso!', 'success');
+            } catch (e) { showAlert('userFormAlert', e.message, 'error'); }
+        }
+
+        // Add a new IP to a specific key manually
+        async function adminAddIpToKey() {
+            const ipInput = document.getElementById('adminNewIpInput');
+            const keySelect = document.getElementById('adminNewIpKeySelect');
+            const ip = ipInput ? ipInput.value.trim() : '';
+            const keyId = keySelect ? keySelect.value : '';
+            if (!ip) { showAlert('userFormAlert', 'Digite um IP.', 'error'); return; }
+            if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(ip)) { showAlert('userFormAlert', 'Formato de IP inválido.', 'error'); return; }
+            if (!keyId) { showAlert('userFormAlert', 'Selecione uma chave.', 'error'); return; }
+            try {
+                await apiFetch(`/api/admin/keys/${keyId}/toggle-ip`, {
+                    method: 'POST',
+                    body: JSON.stringify({ ip, authorize: true })
+                });
+                if (ipInput) ipInput.value = '';
+                await reloadModalIps();
+                showAlert('userFormAlert', 'IP adicionado com sucesso!', 'success');
+            } catch (e) { showAlert('userFormAlert', e.message, 'error'); }
+        }
+
+        // Toggle +1 IP additional product for user
+        async function adminToggleAdditionalIp(grant) {
+            const editId = document.getElementById('editId').value;
+            if (!editId) { showAlert('userFormAlert', 'Salve o registro primeiro.', 'error'); return; }
+            const sub = window.allSubscriptions?.find(s => s.id === editId);
+            if (!sub?.user_id) { showAlert('userFormAlert', 'Usuário não encontrado.', 'error'); return; }
+            try {
+                await apiFetch(`/api/admin/users/${sub.user_id}/toggle-additional-ip`, {
+                    method: 'POST',
+                    body: JSON.stringify({ grant })
+                });
+                // Update status display
+                const statusEl = document.getElementById('additionalIpStatus');
+                if (statusEl) statusEl.textContent = grant ? '✅ +1 IP Adicional ativo' : '❌ Sem IP adicional';
+                showAlert('userFormAlert', grant ? '+1 IP Adicional concedido!' : '+1 IP Adicional removido.', 'success');
+                // Reload subscriptions to reflect changes
+                loadSubscriptions();
+            } catch (e) { showAlert('userFormAlert', e.message, 'error'); }
+        }
+
+        // Helper: reload IPs in the modal
+        async function reloadModalIps() {
+            const editId = document.getElementById('editId').value;
+            if (editId && window.allSubscriptions) {
+                const sub = window.allSubscriptions.find(s => s.id === editId);
+                if (sub?.user_id) {
+                    const keysWithIps = await apiFetch(`/api/admin/users/${sub.user_id}/authorized-ips`);
+                    renderAuthorizedIps(keysWithIps, document.getElementById('authorizedIpsContainer'), document.getElementById('ipCountBadge'));
+                    // Also update key select dropdown
+                    populateKeySelect(keysWithIps);
+                }
+            }
+        }
+
+        // Populate the key select dropdown for adding IPs
+        function populateKeySelect(keysWithIps) {
+            const select = document.getElementById('adminNewIpKeySelect');
+            if (!select) return;
+            select.innerHTML = '<option value="">Selecionar chave...</option>';
+            (keysWithIps || []).forEach(k => {
+                const opt = document.createElement('option');
+                opt.value = k.key_id;
+                opt.textContent = (k.key_name || 'Chave') + ' (' + (k.key_prefix || '8tk_') + '••••)';
+                select.appendChild(opt);
+            });
         }
 
         function closeUserModal() {
@@ -1343,56 +1458,96 @@
             const editId = document.getElementById('editId').value;
             const name = document.getElementById('fieldName').value.trim();
             const email = document.getElementById('fieldEmail').value.trim();
-            const ip = document.getElementById('fieldIp').value.trim();
             const role = document.getElementById('fieldRole').value;
             const plan = document.getElementById('fieldPlan').value;
-            const status = document.getElementById('fieldStatus').value;
             const expires = document.getElementById('fieldExpires').value || null;
             const notes = document.getElementById('fieldNotes').value.trim() || null;
 
-            if (!editId && !ip && !email) {
-                showAlert('userFormAlert', 'IP ou Email é obrigatório para novo registro.', 'error');
+            if (!editId && !email) {
+                showAlert('userFormAlert', 'Email é obrigatório para novo registro.', 'error');
                 return;
             }
 
             try {
                 if (editId) {
-                    // Update subscription AND user data
+                    // Update subscription AND user data (no IP field — IPs managed via key_authorized_ips)
                     await apiFetch(`/api/admin/subscriptions/${editId}`, {
                         method: 'PUT',
                         body: JSON.stringify({
                             plan,
-                            status,
-                            expires_at: expires,
-                            notes,
-                            ip,
-                            user_data: { name, email, role } // Backend needs to handle this
-                        })
-                    });
-                    showAlert('userFormAlert', 'Usuário e assinatura atualizados com sucesso!', 'success');
-                } else {
-                    // Create new - backend should handle user creation if email provided
-                    await apiFetch('/api/admin/subscriptions', {
-                        method: 'POST',
-                        body: JSON.stringify({
-                            ip,
-                            plan,
-                            status,
                             expires_at: expires,
                             notes,
                             user_data: { name, email, role }
                         })
                     });
+                    showAlert('userFormAlert', 'Usuário e assinatura atualizados com sucesso!', 'success');
+                } else {
+                    // Create new — find user by email first
+                    const users = await apiFetch(`/api/admin/users/search?q=${encodeURIComponent(email)}`);
+                    const userId = users?.[0]?.id || null;
+                    await apiFetch('/api/admin/subscriptions', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            ip: '0.0.0.0',
+                            user_id: userId,
+                            plan,
+                            status: 'active',
+                            expires_at: expires,
+                            notes
+                        })
+                    });
                     showAlert('userFormAlert', `Registro adicionado com sucesso!`, 'success');
                 }
-                closeUserModal();
-                loadSubscriptions();
+                setTimeout(() => { closeUserModal(); loadSubscriptions(); }, 800);
             } catch (e) { showAlert('userFormAlert', e.message, 'error'); }
         }
 
         async function deleteSub(id, ip) {
             if (!confirm(`Remover assinatura do IP ${ip}?`)) return;
             try { await apiFetch(`/api/admin/subscriptions/${id}`, { method: 'DELETE' }); loadSubscriptions(); } catch (e) { alert(e.message); }
+        }
+
+        // --- DANGER ZONE: Reset & Delete User (password protected) ---
+        const DANGER_PASSWORD = '0258';
+
+        async function resetUserAccount() {
+            const subId = document.getElementById('editId').value;
+            if (!subId) { alert('Nenhum usuário selecionado'); return; }
+
+            const pwd = prompt('Digite a senha de administrador para resetar a conta (0258):');
+            if (pwd !== DANGER_PASSWORD) { alert('Senha incorreta'); return; }
+
+            if (!confirm('⚠️ ATENÇÃO: Isso vai resetar completamente a conta do usuário (plano, IP, chaves API). O usuário permanecerá no sistema mas sem acesso. Continuar?')) return;
+
+            try {
+                const result = await apiFetch(`/api/admin/users/${subId}/reset`, {
+                    method: 'POST',
+                    body: JSON.stringify({ password: pwd })
+                });
+                alert('✅ Conta resetada com sucesso! O usuário agora está sem plano/IP ativo.');
+                closeUserModal();
+                loadSubscriptions();
+            } catch (e) { alert('Erro ao resetar: ' + e.message); }
+        }
+
+        async function deleteUserCompletely() {
+            const subId = document.getElementById('editId').value;
+            if (!subId) { alert('Nenhum usuário selecionado'); return; }
+
+            const pwd = prompt('Digite a senha de administrador para DELETAR o usuário permanentemente (0258):');
+            if (pwd !== DANGER_PASSWORD) { alert('Senha incorreta'); return; }
+
+            if (!confirm('🚨 PERIGO: Isso vai DELETAR o usuário e TODOS os dados associados (assinaturas, chaves API, histórico). Esta ação NÃO pode ser desfeita. Continuar?')) return;
+
+            try {
+                const result = await apiFetch(`/api/admin/users/${subId}/delete-complete`, {
+                    method: 'DELETE',
+                    body: JSON.stringify({ password: pwd })
+                });
+                alert('✅ Usuário deletado permanentemente do sistema.');
+                closeUserModal();
+                loadSubscriptions();
+            } catch (e) { alert('Erro ao deletar: ' + e.message); }
         }
 
         
