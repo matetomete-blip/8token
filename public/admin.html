@@ -1621,13 +1621,15 @@
             }
         }
 
-        // Enter/Escape key support for password modal
+        // Enter/Escape key support for password modal + Drag & Drop init
         document.addEventListener('DOMContentLoaded', () => {
             const pwdInput = document.getElementById('pwdModalInput');
             if (pwdInput) pwdInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') submitPasswordModal();
                 if (e.key === 'Escape') closePasswordModal();
             });
+            // Init drag & drop after DOM is ready
+            initAffiliateDragDrop();
         });
 
         // --- DANGER ZONE: Reset & Delete User (uses password modal overlay) ---
@@ -1704,6 +1706,7 @@
                             <td class="mono">R$ ${(a.total_commission_base || 0).toFixed(2)}</td>
                             <td class="actions">
                                 <button class="btn btn-secondary btn-sm" draggable="false" onclick='editAffiliateCommission(${idStr}, ${a.commission_pct}, ${parentIdStr})'>Editar %</button>
+                                <button class="btn btn-sm" draggable="false" style="background:var(--accent-teal);color:#000;font-weight:600;" onclick='showSubAffiliateModal(${idStr})'>Sub ↓</button>
                                 <button class="btn btn-danger btn-sm" draggable="false" onclick='removeAffiliate(${idStr})'>Remover</button>
                             </td>
                         </tr>
@@ -1720,7 +1723,7 @@
 
         // --- DRAG & DROP: Event Delegation na tabela de afiliados ---
         let draggedAffiliateId = null;
-        (function initAffiliateDragDrop() {
+        function initAffiliateDragDrop() {
             const table = document.getElementById('affiliatesTable');
             if (!table) return;
 
@@ -1795,7 +1798,109 @@
                 table.querySelectorAll('tr.drag-over').forEach(r => r.classList.remove('drag-over'));
                 draggedAffiliateId = null;
             });
-        })();
+        }
+
+        // --- SUB-AFFILIATE MODAL: selecionar afiliado pai via dropdown ---
+        function showSubAffiliateModal(affiliateId) {
+            const aff = allAffiliates.find(a => String(a.id) === String(affiliateId));
+            if (!aff) { showAlert('affFormAlert', 'Afiliado não encontrado.', 'error'); return; }
+
+            // Build options: all affiliates except self and its own children (prevent circular)
+            const childIds = new Set();
+            function collectChildren(id) {
+                allAffiliates.filter(a => String(a.parent_affiliate_id) === String(id)).forEach(c => {
+                    childIds.add(String(c.id));
+                    collectChildren(c.id);
+                });
+            }
+            collectChildren(affiliateId);
+
+            const options = allAffiliates
+                .filter(a => String(a.id) !== String(affiliateId) && !childIds.has(String(a.id)))
+                .map(a => `<option value="${a.id}" ${String(a.id) === String(aff.parent_affiliate_id) ? 'selected' : ''}>${a.user_email || a.code} (${a.code}) — ${a.commission_pct}%</option>`)
+                .join('');
+
+            const currentParent = aff.parent_affiliate_id
+                ? allAffiliates.find(a => String(a.id) === String(aff.parent_affiliate_id))
+                : null;
+            const currentParentLabel = currentParent ? `${currentParent.user_email || currentParent.code} (${currentParent.code})` : 'Nenhum (afiliado raiz)';
+
+            const modalHtml = `
+                <div id="subAffModal" style="position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:var(--space-md);">
+                    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-xl);max-width:480px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+                        <h3 style="margin:0 0 var(--space-md);color:var(--text-primary);font-size:18px;">🔗 Tornar Sub-Afiliado</h3>
+                        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:var(--space-lg);">
+                            Afiliado: <strong style="color:var(--accent-orange);">${escAdmin(aff.user_email || aff.code)}</strong> (${escAdmin(aff.code)})<br>
+                            Comissão atual: <strong>${aff.commission_pct}%</strong><br>
+                            Pai atual: <strong style="color:var(--accent-teal);">${escAdmin(currentParentLabel)}</strong>
+                        </p>
+                        <label style="display:block;font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:var(--space-xs);">Selecionar novo afiliado pai</label>
+                        <select id="subAffParentSelect" style="width:100%;padding:var(--space-sm) var(--space-md);background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-md);color:var(--text-primary);font-size:14px;margin-bottom:var(--space-md);">
+                            <option value="">— Nenhum (remover vínculo, tornar raiz) —</option>
+                            ${options}
+                        </select>
+                        <div id="subAffPreview" style="background:var(--bg-secondary);border-radius:var(--radius-md);padding:var(--space-sm) var(--space-md);margin-bottom:var(--space-lg);font-size:12px;color:var(--text-muted);min-height:40px;"></div>
+                        <div style="display:flex;gap:var(--space-sm);justify-content:flex-end;">
+                            <button onclick="document.getElementById('subAffModal').remove()" style="padding:var(--space-sm) var(--space-lg);background:transparent;border:1px solid var(--border);border-radius:var(--radius-md);color:var(--text-secondary);cursor:pointer;font-size:13px;">Cancelar</button>
+                            <button onclick="confirmSubAffiliate('${affiliateId}')" style="padding:var(--space-sm) var(--space-lg);background:var(--accent-teal);border:none;border-radius:var(--radius-md);color:#000;font-weight:700;cursor:pointer;font-size:13px;">Confirmar</button>
+                        </div>
+                    </div>
+                </div>`;
+
+            // Remove existing modal if any
+            const existing = document.getElementById('subAffModal');
+            if (existing) existing.remove();
+
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+            // Live preview on select change
+            const sel = document.getElementById('subAffParentSelect');
+            const preview = document.getElementById('subAffPreview');
+            function updatePreview() {
+                const val = sel.value;
+                if (!val) {
+                    preview.innerHTML = `ℹ️ <strong>${escAdmin(aff.user_email || aff.code)}</strong> será removido como subafiliado e voltará a ser afiliado raiz.`;
+                    return;
+                }
+                const parent = allAffiliates.find(a => String(a.id) === String(val));
+                if (!parent) { preview.innerHTML = ''; return; }
+                preview.innerHTML = `
+                    ✅ <strong>${escAdmin(aff.user_email || aff.code)}</strong> será subafiliado de <strong style="color:var(--accent-teal);">${escAdmin(parent.user_email || parent.code)}</strong><br>
+                    • ${escAdmin(aff.user_email || aff.code)} mantém comissão de <strong>${aff.commission_pct}%</strong> sobre suas vendas<br>
+                    • ${escAdmin(parent.user_email || parent.code)} recebe <strong>${parent.commission_pct}%</strong> em cima das vendas de ${escAdmin(aff.user_email || aff.code)}
+                `;
+            }
+            sel.addEventListener('change', updatePreview);
+            updatePreview();
+        }
+
+        async function confirmSubAffiliate(affiliateId) {
+            const sel = document.getElementById('subAffParentSelect');
+            if (!sel) return;
+            const parentId = sel.value || null;
+            const aff = allAffiliates.find(a => String(a.id) === String(affiliateId));
+
+            try {
+                if (!parentId) {
+                    // Remove sub-affiliate link
+                    await apiFetch(`/api/admin/affiliates/${affiliateId}/sub-affiliate`, { method: 'DELETE' });
+                    showAlert('affFormAlert', `✅ ${aff?.code || 'Afiliado'} removido como subafiliado — agora é raiz.`, 'success');
+                } else {
+                    await apiFetch(`/api/admin/affiliates/${affiliateId}/sub-affiliate`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ parent_affiliate_id: parentId })
+                    });
+                    const parent = allAffiliates.find(a => String(a.id) === String(parentId));
+                    showAlert('affFormAlert', `✅ ${aff?.code} agora é subafiliado de ${parent?.code}`, 'success');
+                }
+                const modal = document.getElementById('subAffModal');
+                if (modal) modal.remove();
+                loadAffiliates();
+            } catch (err) {
+                showAlert('affFormAlert', `Erro: ${err.message}`, 'error');
+            }
+        }
 
         async function searchUserByEmail() {
             const emailInput = document.getElementById('affEmail');
