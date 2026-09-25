@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard 8Token</title>
+    <meta name="description" content="Área do usuário 8Token, gerencie sua assinatura, chaves API e uso.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* ========================================
+           DESIGN SYSTEM V2 — Dashboard Production
+           ======================================== */
+        :root {
+            --bg-primary: #050505;
+            --bg-secondary: #0A0A0A;
+            --bg-card: rgba(17, 17, 17, 0.9);
+            --bg-card-solid: #111111;
+            --border: #222222;
+            --border-hover: #333333;
+            --text-primary: #FFFFFF;
+            --text-secondary: #A0A0A0;
+            --text-muted: #555555;
+            --accent-orange: #FF5500;
+            --accent-orange-glow: rgba(255, 85, 0, 0.25);
+            --accent-blue: #00D4FF;
+            --accent-green: #00FF94;
+            --accent-red: #FF3333;
+            --accent-amber: #F59E0B;
+            --space-xs: 8px;
+            --space-sm: 16px;
+            --space-md: 24px;
+            --space-lg: 32px;
+            --space-xl: 48px;
+            --space-2xl: 64px;
+            --font-sans: 'Inter', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-pill: 999px;
+            --glass: blur(10px);
+            --transition: all 0.3s ease-in-out;
+        }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            background-image: radial-gradient(circle at 50% 0%, #1a1a1a 0%, var(--bg-primary) 60%);
+            background-attachment: fixed;
+        }
+        a { text-decoration: none; color: inherit; transition: var(--transition); }
+        a:hover { color: var(--accent-orange); }
+
+        /* Navbar */
+        .navbar {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+            background: rgba(5, 5, 5, 0.8); backdrop-filter: var(--glass);
+            border-bottom: 1px solid var(--border); height: 80px;
+            display: flex; align-items: center;
+        }
+        .navbar-inner {
+            max-width: 1400px; margin: 0 auto; width: 100%; padding: 0 var(--space-md);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .navbar-logo {
+            font-size: 24px; font-weight: 800; display: flex; align-items: center; gap: var(--space-xs);
+        }
+        .navbar-logo svg { width: 32px; height: 32px; fill: var(--accent-orange); }
+        .navbar-right { display: flex; align-items: center; gap: var(--space-md); }
+
+        .user-pill {
+            display: flex; align-items: center; gap: var(--space-sm);
+            padding: 8px 16px; background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border); border-radius: var(--radius-pill);
+        }
+        .navbar-avatar {
+            width: 32px; height: 32px; border-radius: 50%;
+            background: var(--accent-orange); display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 14px; color: white;
+        }
+        .btn-logout {
+            font-size: 13px; color: var(--text-muted); padding: 8px 16px;
+            border: 1px solid var(--border); border-radius: var(--radius-sm);
+            background: transparent; cursor: pointer; transition: var(--transition);
+        }
+        .btn-logout:hover { border-color: var(--accent-red); color: var(--accent-red); }
+
+        /* Notification Bell */
+        .notif-bell-wrap { position: relative; }
+        .notif-bell-btn {
+            width: 40px; height: 40px; border-radius: var(--radius-sm);
+            border: 1px solid var(--border); background: transparent;
+            color: var(--text-secondary); cursor: pointer; transition: var(--transition);
+            display: flex; align-items: center; justify-content: center; position: relative;
+        }
+        .notif-bell-btn:hover { border-color: var(--accent-orange); color: var(--accent-orange); }
+        .notif-bell-btn svg { width: 20px; height: 20px; }
+        .notif-badge {
+            position: absolute; top: -4px; right: -4px; min-width: 16px; height: 16px;
+            border-radius: 50%; background: var(--accent-orange); color: white;
+            font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+            padding: 0 4px; box-shadow: 0 0 6px rgba(255,85,0,0.5); line-height: 1;
+        }
+        .notif-badge.hidden { display: none; }
+        .notif-dropdown {
+            position: absolute; top: calc(100% + 8px); right: 0; width: 340px; max-height: 420px;
+            background: var(--bg-card-solid); border: 1px solid var(--border); border-radius: var(--radius-md);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4); overflow: hidden; z-index: 200; display: none;
+        }
+        .notif-dropdown.open { display: block; }
+        .notif-dropdown-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: var(--space-md) var(--space-lg); border-bottom: 1px solid var(--border);
+        }
+        .notif-dropdown-title { font-size: 14px; font-weight: 700; }
+        .notif-dropdown-link {
+            font-size: 12px; color: var(--accent-orange); font-weight: 600;
+            cursor: pointer; background: none; border: none; transition: opacity var(--transition);
+        }
+        .notif-dropdown-link:hover { opacity: 0.8; }
+        .notif-dropdown-list { max-height: 320px; overflow-y: auto; }
+        .notif-dropdown-item {
+            padding: var(--space-md) var(--space-lg); border-bottom: 1px solid var(--border);
+            cursor: pointer; transition: background var(--transition); position: relative;
+        }
+        .notif-dropdown-item:last-child { border-bottom: none; }
+        .notif-dropdown-item:hover { background: rgba(255,255,255,0.03); }
+        .notif-dropdown-item.unread { background: rgba(255,85,0,0.04); }
+        .notif-dropdown-item.unread::before {
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent-orange);
+        }
+        .notif-dropdown-item-title { font-size: 13px; font-weight: 600; margin-bottom: 2px; color: var(--text-primary); }
+        .notif-dropdown-item-msg {
+            font-size: 12px; color: var(--text-secondary); line-height: 1.4;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+        }
+        .notif-dropdown-item-time { font-size: 10px; color: var(--text-muted); margin-top: 4px; font-family: var(--font-mono); }
+        .notif-dropdown-empty { padding: var(--space-xl); text-align: center; color: var(--text-muted); font-size: 13px; }
+        .notif-dropdown-footer { padding: var(--space-sm) var(--space-lg); border-top: 1px solid var(--border); text-align: center; }
+        .notif-dropdown-footer a { font-size: 12px; color: var(--accent-orange); font-weight: 600; }
+
+        @media (max-width: 768px) {
+            .notif-dropdown { width: 280px; right: -60px; }
+            .navbar-right span { display: none; }
+        }
+
+        /* Dashboard Layout */
+        .dashboard {
+            max-width: 1400px; margin: 0 auto; padding: 120px var(--space-md) var(--space-xl);
+            display: grid; grid-template-columns: 280px 1fr; gap: var(--space-xl);
+        }
+        @media (max-width: 1024px) { .dashboard { grid-template-columns: 1fr; } }
+
+        /* Sidebar */
+        .sidebar { display: flex; flex-direction: column; gap: var(--space-xs); }
+        .sidebar-link {
+            padding: 12px 16px; border-radius: var(--radius-sm);
+            color: var(--text-secondary); font-weight: 500; font-size: 14px;
+            display: flex; align-items: center; gap: var(--space-sm);
+            transition: var(--transition); border: 1px solid transparent; cursor: pointer;
+            background: none; width: 100%; text-align: left;
+        }
+        .sidebar-link:hover { background: rgba(255,255,255,0.03); color: var(--text-primary); }
+        .sidebar-link.active {
+            background: rgba(255, 85, 0, 0.1); color: var(--accent-orange);
+            border-color: rgba(255, 85, 0, 0.2);
+        }
+        .sidebar-link svg { width: 20px; height: 20px; opacity: 0.7; }
+        .sidebar-link.active svg { opacity: 1; }
+        .sidebar-divider { height: 1px; background: var(--border); margin: var(--space-sm) 0; }
+
+        /* Content Area */
+        .content-area { display: flex; flex-direction: column; gap: var(--space-lg); }
+        .dashboard-header h1 { font-size: 32px; font-weight: 700; margin-bottom: 8px; }
+        .dashboard-header p { color: var(--text-secondary); }
+
+        /* KPI Grid */
+        .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--space-md); }
+        .kpi-card {
+            background: var(--bg-card); backdrop-filter: var(--glass);
+            border: 1px solid var(--border); border-radius: var(--radius-md);
+            padding: var(--space-lg); transition: var(--transition);
+        }
+        .kpi-card:hover { border-color: var(--border-hover); transform: translateY(-2px); }
+        .kpi-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: var(--space-xs); }
+        .kpi-value { font-size: 32px; font-weight: 700; font-family: var(--font-mono); line-height: 1; }
+        .kpi-sub { font-size: 13px; color: var(--text-secondary); margin-top: var(--space-xs); }
+        .kpi-value.green { color: var(--accent-green); }
+        .kpi-value.orange { color: var(--accent-orange); }
+        .kpi-value.blue { color: var(--accent-blue); }
+
+        /* Cards & Sections */
+        .dash-section { margin-bottom: var(--space-lg); }
+        .dash-section-title {
+            font-size: 18px; font-weight: 600; margin-bottom: var(--space-md);
+            display: flex; align-items: center; gap: var(--space-sm);
+        }
+        .card {
+            background: var(--bg-card); backdrop-filter: var(--glass);
+            border: 1px solid var(--border); border-radius: var(--radius-lg);
+            padding: var(--space-lg); transition: var(--transition);
+        }
+        .card:hover { border-color: var(--border-hover); }
+
+        /* Plan Card */
+        .plan-card {
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: var(--space-lg);
+        }
+        .plan-info { flex: 1; min-width: 200px; }
+        .plan-name { font-size: 20px; font-weight: 700; margin-bottom: var(--space-xs); display: flex; align-items: center; gap: var(--space-sm); }
+        .plan-badge {
+            background: rgba(255, 85, 0, 0.15); color: var(--accent-orange);
+            padding: 4px 12px; border-radius: var(--radius-pill);
+            font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        .plan-details { font-size: 14px; color: var(--text-secondary); margin-top: var(--space-xs); }
+        .plan-price { text-align: right; }
+        .plan-price-value { font-size: 24px; font-weight: 700; font-family: var(--font-mono); }
+        .plan-price-period { font-size: 13px; color: var(--text-muted); }
+        .plan-renewal { font-size: 12px; color: var(--text-muted); margin-top: var(--space-xs); }
+
+        /* Buttons */
+        .btn-upgrade {
+            display: inline-flex; align-items: center; justify-content: center;
+            height: 40px; padding: 0 var(--space-lg);
+            background: var(--accent-orange); border: none; border-radius: var(--radius-sm);
+            color: white; font-size: 14px; font-weight: 600; cursor: pointer; transition: var(--transition);
+        }
+        .btn-upgrade:hover { background: #ff6b00; transform: translateY(-2px); box-shadow: 0 0 15px var(--accent-orange-glow); }
+        .btn-secondary {
+            background: transparent; border: 1px solid var(--border); color: var(--text-secondary);
+        }
+        .btn-secondary:hover { border-color: var(--accent-orange); color: var(--accent-orange); background: transparent; transform: none; box-shadow: none; }
+
+        /* API Keys */
+        .api-keys-list { display: flex; flex-direction: column; gap: var(--space-sm); }
+        .api-key-item {
+            background: var(--bg-secondary); border: 1px solid var(--border);
+            border-radius: var(--radius-md); padding: var(--space-md) var(--space-lg);
+            display: flex; align-items: center; justify-content: space-between; gap: var(--space-md); flex-wrap: wrap;
+        }
+        .api-key-info { flex: 1; min-width: 200px; }
+        .api-key-name { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+        .api-key-value { font-family: var(--font-mono); font-size: 13px; color: var(--text-muted); user-select: all; }
+        .api-key-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+        .api-key-actions { display: flex; gap: var(--space-sm); }
+        .btn-icon {
+            width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+            background: transparent; border: 1px solid var(--border); border-radius: var(--radius-sm);
+            color: var(--text-secondary); cursor: pointer; transition: var(--transition);
+        }
+        .btn-icon:hover { border-color: var(--border-hover); color: var(--text-primary); }
+        .btn-icon.danger:hover { border-color: var(--accent-red); color: var(--accent-red); }
+        .btn-icon svg { width: 16px; height: 16px; }
+        .btn-generate {
+            display: inline-flex; align-items: center; gap: var(--space-xs);
+            height: 40px; padding: 0 var(--space-lg);
+            background: transparent; border: 1px solid var(--border); border-radius: var(--radius-sm);
+            color: var(--text-secondary); font-size: 14px; font-weight: 500; cursor: pointer; transition: var(--transition);
+            margin-top: var(--space-md);
+        }
+        .btn-generate:hover { border-color: var(--accent-orange); color: var(--accent-orange); }
+
+        /* Tokens Chart */
+        .tokens-chart-card { position: relative; overflow: hidden; }
+        .tokens-chart-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent-orange), transparent); opacity: 0.4;
+        }
+        .tokens-chart-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: var(--space-xl); flex-wrap: wrap; gap: var(--space-md); }
+        .tokens-chart-title { font-size: 16px; font-weight: 600; margin-bottom: var(--space-xs); }
+        .tokens-chart-subtitle { font-size: 13px; color: var(--text-muted); }
+        .tokens-chart-total { text-align: right; }
+        .tokens-chart-total-value { font-size: 28px; font-weight: 700; font-family: var(--font-mono); color: var(--accent-orange); line-height: 1.1; }
+        .tokens-chart-total-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
+        .tokens-bar-list { display: flex; flex-direction: column; gap: var(--space-lg); }
+        .tokens-bar-item { display: grid; grid-template-columns: 160px 1fr auto; align-items: center; gap: var(--space-md); }
+        .tokens-bar-label { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+        .tokens-bar-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .tokens-bar-provider { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+        .tokens-bar-track { position: relative; height: 32px; background: var(--bg-secondary); border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border); }
+        .tokens-bar-fill {
+            position: absolute; top: 0; left: 0; height: 100%; border-radius: var(--radius-sm); width: 0;
+            transition: width 1.4s cubic-bezier(0.22, 1, 0.36, 1); display: flex; align-items: center; padding-left: var(--space-sm); overflow: hidden;
+        }
+        .tokens-bar-fill::after {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.08) 50%, transparent 100%);
+            animation: barShimmer 2.5s ease-in-out infinite;
+        }
+        @keyframes barShimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(200%); } }
+        .tokens-bar-fill.fable { background: linear-gradient(90deg, var(--accent-orange), #ff8c42); box-shadow: 0 0 20px rgba(255, 85, 0, 0.35); }
+        .tokens-bar-fill.opus { background: linear-gradient(90deg, var(--accent-blue), #4d9fff); box-shadow: 0 0 20px rgba(0, 212, 255, 0.3); }
+        .tokens-bar-fill.sonnet { background: linear-gradient(90deg, var(--accent-green), #34d399); box-shadow: 0 0 20px rgba(0, 255, 148, 0.3); }
+        .tokens-bar-fill.glm { background: linear-gradient(90deg, var(--accent-amber), #fbbf24); box-shadow: 0 0 20px rgba(245, 158, 11, 0.3); }
+        .tokens-bar-fill.gpt { background: linear-gradient(90deg, #a855f7, #c084fc); box-shadow: 0 0 20px rgba(168, 85, 247, 0.3); }
+        .tokens-bar-value { font-family: var(--font-mono); font-size: 14px; font-weight: 600; white-space: nowrap; min-width: 80px; text-align: right; }
+        .tokens-bar-value .unit { color: var(--text-muted); font-weight: 400; font-size: 12px; margin-left: 2px; }
+        .tokens-chart-footer { margin-top: var(--space-xl); padding-top: var(--space-md); border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-sm); }
+        .tokens-chart-note { font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+        .tokens-chart-note svg { width: 14px; height: 14px; color: var(--accent-green); }
+        .tokens-chart-period { font-size: 12px; color: var(--text-muted); font-family: var(--font-mono); }
+
+        @media (max-width: 640px) {
+            .tokens-bar-item { grid-template-columns: 1fr auto; grid-template-areas: "label value" "track track"; gap: var(--space-xs) var(--space-md); }
+            .tokens-bar-label { grid-area: label; }
+            .tokens-bar-value { grid-area: value; }
+            .tokens-bar-track { grid-area: track; }
+            .tokens-chart-total { text-align: left; }
+        }
+
+        /* IP Section */
+        .ip-display { font-family: var(--font-mono); font-size: 18px; color: var(--accent-blue); margin: var(--space-xs) 0; }
+        .status-badge {
+            display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: var(--radius-pill);
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+        }
+        .status-active { background: rgba(0, 255, 148, 0.1); color: var(--accent-green); }
+        .status-pending { background: rgba(255, 85, 0, 0.1); color: var(--accent-orange); }
+
+        /* Expiration Banner */
+        #expiryBanner {
+            display: none; position: fixed; top: 80px; left: 0; right: 0; z-index: 99;
+            background: linear-gradient(90deg, #FF5500, #cc4400); color: white;
+            padding: 12px 24px; font-size: 14px; font-weight: 600; text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        #expiryBanner a { color: white; text-decoration: underline; margin-left: 12px; font-weight: 700; }
+        #expiryBanner button { background: none; border: none; color: rgba(255,255,255,0.7); cursor: pointer; margin-left: 12px; font-size: 16px; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .dashboard { padding-top: 100px; grid-template-columns: 1fr; }
+            .sidebar { display: none; } /* Hide sidebar on mobile for now, or implement drawer */
+            .plan-card { flex-direction: column; align-items: flex-start; }
+            .plan-price { text-align: left; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-inner">
+            <a href="index.html" class="navbar-logo">
+                <svg viewBox="0 0 48 48"><path d="M24 4C14 4 8 12 8 22v14c0 2 1 4 3 4h2l3-4h4l3 4h2l3-4h4l3 4h2c2 0 3-2 3-4V22C40 12 34 4 24 4zm-8 22a3 3 0 110-6 3 3 0 010 6zm16 0a3 3 0 110-6 3 3 0 010 6z"/></svg>
+                8Token
+            </a>
+            <div class="navbar-right">
+                <a href="admin.html" id="adminLink" style="display:none;font-size:13px;font-weight:600;color:#a855f7;padding:8px 16px;border:1px solid rgba(168,85,247,0.4);border-radius:var(--radius-sm);background:rgba(168,85,247,0.1);transition:var(--transition);">⚙ Painel Admin</a>
+
+                <div class="notif-bell-wrap">
+                    <button class="notif-bell-btn" onclick="toggleNotifDropdown(event)" aria-label="Notificações">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                        <span class="notif-badge hidden" id="notifBadge">0</span>
+                    </button>
+                    <div class="notif-dropdown" id="notifDropdown">
+                        <div class="notif-dropdown-header">
+                            <span class="notif-dropdown-title">Notificações</span>
+                            <button class="notif-dropdown-link" onclick="markAllReadDash()">Marcar todas lidas</button>
+                        </div>
+                        <div class="notif-dropdown-list" id="notifDropdownList">
+                            <div class="notif-dropdown-empty">Carregando...</div>
+                        </div>
+                        <div class="notif-dropdown-footer">
+                            <a href="notifications.html">Ver todas as notificações →</a>
+                        </div>
+                    </div>
+                </div>
+
+                <a href="account.html" class="btn-secondary" style="padding: 8px 16px; font-size: 13px; border-radius: var(--radius-sm);">Minha Conta</a>
+
+                <div class="user-pill">
+                    <div class="navbar-avatar">U</div>
+                    <span style="font-size: 14px; font-weight: 500;" id="userEmailDisplay">usuario@email.com</span>
+                </div>
+
+                <button class="btn-logout" onclick="handleLogout()">Sair</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Expiration Banner -->
+    <div id="expiryBanner">
+        <span id="expiryBannerText"></span>
+        <a href="account.html">Renovar agora →</a>
+        <button onclick="document.getElementById('expiryBanner').style.display='none'">✕</button>
+    </div>
+
+    <!-- Dashboard -->
+    <main class="dashboard">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <button class="sidebar-link active" onclick="window.location.href='dashboard.html'">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                Dashboard
+            </button>
+            <button class="sidebar-link" onclick="window.location.href='account.html'">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Minha Conta
+            </button>
+            <button class="sidebar-link" onclick="window.location.href='affiliate.html'">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                Afiliados
+            </button>
+            <button class="sidebar-link" id="sidebarAdminLink" style="display:none;" onclick="window.location.href='admin.html'">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                Painel Admin
+            </button>
+            <div class="sidebar-divider"></div>
+            <button class="sidebar-link" onclick="handleLogout()" style="color:var(--accent-red);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Sair
+            </button>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="content-area">
+            <div class="dashboard-header">
+                <h1>Visão Geral</h1>
+                <p>Gerencie sua assinatura, chaves e acompanhe o uso em tempo real.</p>
+            </div>
+
+            <!-- KPIs -->
+            <div class="kpi-row">
+                <div class="kpi-card">
+                    <div class="kpi-label">Plano Atual</div>
+                    <div class="kpi-value orange" id="kpiPlan">Carregando...</div>
+                    <div class="kpi-sub" id="kpiPlanExpiry">—</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Chaves API</div>
+                    <div class="kpi-value green">2</div>
+                    <div class="kpi-sub">Ativas</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Tokens Usados (Mês)</div>
+                    <div class="kpi-value blue">4.2B</div>
+                    <div class="kpi-sub">∞ Ilimitado</div>
+                </div>
+            </div>
+
+            <!-- Subscription & IP -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md);">
+                <div class="dash-section" style="margin-bottom: 0;">
+                    <div class="dash-section-title">Assinatura</div>
+                    <div class="card plan-card">
+                        <div class="plan-info">
+                            <div class="plan-name">
+                                <span id="planCardName">Trimestral</span>
+                                <span class="plan-badge" id="planCardBadge">Mais Escolhido</span>
+                            </div>
+                            <div class="plan-details">
+                                Claude Opus 5, Sonnet 5, Fable 5.1 e GLM 5.3 · Uso ilimitado
+                            </div>
+                        </div>
+                        <div class="plan-price">
+                            <div class="plan-price-value" id="planCardPrice">R$ 399</div>
+                            <div class="plan-price-period" id="planCardPeriod">/trimestre</div>
+                            <div class="plan-renewal" id="planCardRenewal">Próxima cobrança: 12/12/2026</div>
+                        </div>
+                        <button class="btn-upgrade btn-secondary">Gerenciar Plano</button>
+                    </div>
+                </div>
+
+                <div class="dash-section" style="margin-bottom: 0;">
+                    <div class="dash-section-title">IP Autorizado</div>
+                    <div class="card" style="display:flex; flex-direction:column; gap:var(--space-lg);">
+                        <!-- IP Principal -->
+                        <div>
+                            <div class="kpi-label">IP Autorizado</div>
+                            <div class="ip-display" id="ipMainValue">Carregando...</div>
+                            <span class="status-badge" id="ipStatusBadge" style="background:rgba(122,117,117,0.15);color:var(--text-muted);">Carregando...</span>
+                            <div id="ipPendingChange" style="display:none;font-size:12px;color:var(--accent-amber);margin-top:4px;"></div>
+                        </div>
+
+                        <!-- IP Atual da Rede -->
+                        <div style="border-top:1px solid var(--border);padding-top:var(--space-lg);">
+                            <div class="kpi-label">IP atual da rede</div>
+                            <div id="ipCurrentNetwork" style="font-family:var(--font-mono);font-size:16px;color:var(--accent-blue);margin:var(--space-xs) 0;">Carregando...</div>
+                            <button class="btn-upgrade" id="btnAuthorizeCurrentIp" onclick="authorizeCurrentIp()" style="height:36px;padding:0 var(--space-md);font-size:13px;display:none;">Liberar este IP</button>
+                            <div id="ipAuthorizeFeedback" style="display:none;font-size:13px;margin-top:var(--space-sm);line-height:1.5;"></div>
+                        </div>
+
+                        <!-- IP Adicional (Casa/Trabalho) -->
+                        <div style="border-top:1px solid var(--border);padding-top:var(--space-lg);">
+                            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-sm);margin-bottom:var(--space-sm);">
+                                <div class="kpi-label" style="margin-bottom:0;">IP Adicional (Casa/Trabalho)</div>
+                                <div id="ipAdditionalExpires" style="display:none;font-size:11px;color:var(--accent-amber);font-family:var(--font-mono);"></div>
+                            </div>
+
+                            <!-- Estado: Não comprado -->
+                            <div id="ipAdditionalNotPurchased">
+                                <button class="btn-upgrade" onclick="buyAdditionalIp()" style="font-size:13px;height:40px;padding:0 var(--space-lg);width:100%;">
+                                    Comprar IP Adicional — R$ 74,90/mês
+                                </button>
+                                <div style="font-size:12px;color:var(--text-muted);margin-top:var(--space-sm);text-align:center;">
+                                    +1 IP extra para alternar entre casa e trabalho
+                                </div>
+                            </div>
+
+                            <!-- Estado: Comprado, gerenciável -->
+                            <div id="ipAdditionalPurchased" style="display:none;">
+                                <div id="ipAdditionalContainer" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);padding:var(--space-md);">
+                                    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-sm);">
+                                        <div>
+                                            <div style="font-size:12px;color:var(--text-muted);margin-bottom:2px;">IP Liberado</div>
+                                            <div id="ipAdditionalValue" style="font-family:var(--font-mono);font-size:15px;font-weight:600;color:var(--accent-green);">Carregando...</div>
+                                        </div>
+                                        <div id="ipAdditionalActions" style="display:flex;gap:var(--space-sm);"></div>
+                                    </div>
+                                </div>
+                                <!-- Formulário inline para definir/trocar IP adicional -->
+                                <div id="ipAdditionalForm" style="display:none;margin-top:var(--space-md);">
+                                    <div style="display:flex;align-items:stretch;gap:var(--space-sm);flex-wrap:wrap;">
+                                        <input type="text" id="ipAdditionalInput" placeholder="Ex.: 189.45.12.34" autocomplete="off" spellcheck="false"
+                                            style="flex:1;min-width:180px;height:36px;padding:0 var(--space-md);font-family:var(--font-mono);font-size:13px;color:var(--text-primary);background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);outline:none;transition:border-color var(--transition);"
+                                            onfocus="this.style.borderColor='var(--accent-orange)'" onblur="this.style.borderColor='var(--border)'">
+                                        <button class="btn-upgrade" id="ipAdditionalSaveBtn" onclick="saveAdditionalIp()" style="height:36px;padding:0 var(--space-md);font-size:12px;">Salvar</button>
+                                        <button class="btn-upgrade btn-secondary" onclick="toggleAdditionalIpForm()" style="height:36px;padding:0 var(--space-md);font-size:12px;">Cancelar</button>
+                                    </div>
+                                    <div id="ipAdditionalFeedback" style="display:none;font-size:12px;margin-top:var(--space-xs);"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Solicitar Alteração (IP Principal) -->
+                        <div style="border-top:1px solid var(--border);padding-top:var(--space-lg);">
+                            <button class="btn-upgrade btn-secondary" id="ipChangeToggleBtn" onclick="toggleIpChangeForm()" style="height:36px;padding:0 var(--space-md);font-size:13px;width:100%;">Solicitar Alteração</button>
+                            <div id="ipChangeForm" style="display:none;margin-top:var(--space-md);">
+                                <div style="font-size:13px;color:var(--text-secondary);margin-bottom:var(--space-sm);line-height:1.5;">
+                                    Digite o novo IP que deseja autorizar. A alteração entra em fila para aprovação do admin.
+                                </div>
+                                <div style="display:flex;align-items:stretch;gap:var(--space-sm);flex-wrap:wrap;">
+                                    <input type="text" id="ipChangeInput" placeholder="Ex.: 189.45.12.34" autocomplete="off" spellcheck="false"
+                                        style="flex:1;min-width:200px;height:40px;padding:0 var(--space-md);font-family:var(--font-mono);font-size:14px;color:var(--text-primary);background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);outline:none;transition:border-color var(--transition);"
+                                        onfocus="this.style.borderColor='var(--accent-orange)'" onblur="this.style.borderColor='var(--border)'">
+                                    <button class="btn-upgrade" id="ipChangeSubmitBtn" onclick="submitIpChange()" style="height:40px;padding:0 var(--space-lg);font-size:13px;">Enviar Solicitação</button>
+                                    <button class="btn-upgrade btn-secondary" onclick="toggleIpChangeForm()" style="height:40px;padding:0 var(--space-md);font-size:13px;">Cancelar</button>
+                                </div>
+                                <div id="ipChangeFeedback" style="display:none;font-size:13px;margin-top:var(--space-sm);line-height:1.5;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- API Keys Section -->
+            <div class="dash-section" id="apiKeysSection">
+                <div class="dash-section-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-orange)" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+                    Chave API
+                </div>
+
+                <div class="card api-locked" id="apiLocked" style="flex-direction:column;align-items:flex-start;gap:var(--space-md);">
+                    <div style="display:flex;align-items:center;gap:var(--space-sm);color:var(--accent-amber);">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        <strong style="font-size:15px;color:var(--text-primary);">Acesso exclusivo para assinantes</strong>
+                    </div>
+                    <p style="font-size:14px;color:var(--text-secondary);line-height:1.55;margin:0;">
+                        A chave API e a URL do gateway só ficam disponíveis depois que você assina um plano.
+                    </p>
+                    <a href="index.html#precos" class="btn-upgrade" style="height:40px;padding:0 var(--space-lg);font-size:14px;">Ver planos e assinar</a>
+                </div>
+
+                <div id="apiUnlocked" style="display:none;">
+                    <div class="api-keys-list">
+                        <div class="api-key-item">
+                            <div class="api-key-info">
+                                <div class="api-key-name">Chave de acesso (Bearer)</div>
+                                <div class="api-key-value" id="apiKeyValue" style="user-select:all;">gcli_••••••••••••••••••••••••••••</div>
+                            </div>
+                            <div class="api-key-actions">
+                                <button class="btn-icon" onclick="copyApiKey()" title="Copiar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                            </div>
+                        </div>
+                        <div class="api-key-item">
+                            <div class="api-key-info">
+                                <div class="api-key-name">Endpoint Base (Gateway URL)</div>
+                                <div class="api-key-value" id="gatewayUrlValue" style="user-select:all;color:var(--accent-blue);">https://api.8token.ai/v1</div>
+                            </div>
+                            <div class="api-key-actions">
+                                <button class="btn-icon" onclick="copyGatewayUrl()" title="Copiar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn-generate" onclick="regenerateApiKey()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                        Gerar Nova Chave
+                    </button>
+                </div>
+            </div>
+
+            <!-- Usage Breakdown -->
+            <div class="dash-section">
+                <div class="card tokens-chart-card">
+                    <div class="tokens-chart-header">
+                        <div>
+                            <div class="tokens-chart-title">Uso por Modelo (Últimos 30 dias)</div>
+                            <div class="tokens-chart-subtitle">Distribuição do consumo de tokens</div>
+                        </div>
+                        <div class="tokens-chart-total">
+                            <div class="tokens-chart-total-value">4.2B</div>
+                            <div class="tokens-chart-total-label">Total Tokens</div>
+                        </div>
+                    </div>
+                    <div class="tokens-bar-list">
+                        <div class="tokens-bar-item">
+                            <div class="tokens-bar-label">
+                                <div class="tokens-bar-name">Claude Fable 5.1</div>
+                                <div class="tokens-bar-provider">Anthropic</div>
+                            </div>
+                            <div class="tokens-bar-track"><div class="tokens-bar-fill fable" style="width: 48%;"></div></div>
+                            <div class="tokens-bar-value">2.01B <span class="unit">tokens</span></div>
+                        </div>
+                        <div class="tokens-bar-item">
+                            <div class="tokens-bar-label">
+                                <div class="tokens-bar-name">GPT-6 Astra</div>
+                                <div class="tokens-bar-provider">OpenAI</div>
+                            </div>
+                            <div class="tokens-bar-track"><div class="tokens-bar-fill gpt" style="width: 22%;"></div></div>
+                            <div class="tokens-bar-value">924M <span class="unit">tokens</span></div>
+                        </div>
+                        <div class="tokens-bar-item">
+                            <div class="tokens-bar-label">
+                                <div class="tokens-bar-name">Claude Opus 5</div>
+                                <div class="tokens-bar-provider">Anthropic</div>
+                            </div>
+                            <div class="tokens-bar-track"><div class="tokens-bar-fill opus" style="width: 18%;"></div></div>
+                            <div class="tokens-bar-value">756M <span class="unit">tokens</span></div>
+                        </div>
+                        <div class="tokens-bar-item">
+                            <div class="tokens-bar-label">
+                                <div class="tokens-bar-name">Outros Modelos</div>
+                                <div class="tokens-bar-provider">Mixed</div>
+                            </div>
+                            <div class="tokens-bar-track"><div class="tokens-bar-fill glm" style="width: 12%;"></div></div>
+                            <div class="tokens-bar-value">504M <span class="unit">tokens</span></div>
+                        </div>
+                    </div>
+                    <div class="tokens-chart-footer">
+                        <div class="tokens-chart-note">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                            Uso ilimitado incluso no plano
+                        </div>
+                        <div class="tokens-chart-period">Atualizado em tempo real</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const API_BASE = '';
+
+        function handleUserClick() {
+            const isLoggedIn = localStorage.getItem('8token_logged_in') === 'true';
+            window.location.href = isLoggedIn ? 'dashboard.html' : 'login.html';
+        }
+
+        function updateUserBtn() {
+            const emailDisplay = document.getElementById('userEmailDisplay');
+            const avatar = document.querySelector('.navbar-avatar');
+            if (!emailDisplay) return;
+            const isLoggedIn = localStorage.getItem('8token_logged_in') === 'true';
+            if (isLoggedIn) {
+                const email = localStorage.getItem('8token_email') || 'U';
+                const initial = email.charAt(0).toUpperCase();
+                avatar.textContent = initial;
+                emailDisplay.textContent = email;
+            }
+        }
+        updateUserBtn();
+
+        function handleLogout() {
+            localStorage.removeItem('8token_logged_in');
+            localStorage.removeItem('8token_token');
+            localStorage.removeItem('8token_email');
+            window.location.href = 'index.html';
+        }
+
+        // ---- NOTIFICATIONS ----
+        let dashNotifications = [];
+        function timeAgoDash(dateStr) {
+            const now = new Date(); const date = new Date(dateStr); const diffMs = now - date;
+            const diffMin = Math.floor(diffMs / 60000); const diffHr = Math.floor(diffMs / 3600000); const diffDay = Math.floor(diffMs / 86400000);
+            if (diffMin < 1) return 'agora'; if (diffMin < 60) return diffMin + ' min'; if (diffHr < 24) return diffHr + 'h'; if (diffDay < 7) return diffDay + 'd';
+            return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+        }
+        function escHtmlDash(str) { const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML; }
+        function toggleNotifDropdown(e) {
+            if (e) e.stopPropagation();
+            const dd = document.getElementById('notifDropdown');
+            dd.classList.toggle('open');
+            if (dd.classList.contains('open')) loadDashNotifications();
+        }
+        document.addEventListener('click', function(e) {
+            const dd = document.getElementById('notifDropdown'); const wrap = document.querySelector('.notif-bell-wrap');
+            if (dd && wrap && !wrap.contains(e.target)) dd.classList.remove('open');
+        });
+        async function loadDashNotifications() {
+            try {
+                const token = localStorage.getItem('8token_token');
+                const res = await fetch(API_BASE + '/api/notifications', { headers: { 'Authorization': 'Bearer ' + token } });
+                if (!res.ok) return;
+                dashNotifications = await res.json();
+                renderNotifDropdown(); updateNotifBadge();
+            } catch (e) { console.error('Notif load error:', e); }
+        }
+        function renderNotifDropdown() {
+            const list = document.getElementById('notifDropdownList'); if (!list) return;
+            const recent = dashNotifications.slice(0, 1);
+            if (!recent.length) { list.innerHTML = '<div class="notif-dropdown-empty">Nenhuma notificação ainda</div>'; return; }
+            list.innerHTML = recent.map(n => `
+                <div class="notif-dropdown-item ${n.read ? '' : 'unread'}" onclick="markReadDash(${n.id})">
+                    <div class="notif-dropdown-item-title">${escHtmlDash(n.title)}</div>
+                    <div class="notif-dropdown-item-msg">${escHtmlDash(n.message)}</div>
+                    <div class="notif-dropdown-item-time">${timeAgoDash(n.created_at)}</div>
+                </div>
+            `).join('');
+        }
+        function updateNotifBadge() {
+            const badge = document.getElementById('notifBadge'); if (!badge) return;
+            const unread = dashNotifications.filter(n => !n.read).length;
+            if (unread > 0) { badge.textContent = unread > 9 ? '9+' : unread; badge.classList.remove('hidden'); } else { badge.classList.add('hidden'); }
+        }
+        async function markReadDash(id) {
+            try {
+                const token = localStorage.getItem('8token_token');
+                await fetch(API_BASE + '/api/notifications/' + id + '/read', { method: 'PUT', headers: { 'Authorization': 'Bearer ' + token } });
+                const n = dashNotifications.find(x => x.id === id); if (n) n.read = true;
+                renderNotifDropdown(); updateNotifBadge();
+            } catch (e) { console.error(e); }
+        }
+        async function markAllReadDash() {
+            try {
+                const token = localStorage.getItem('8token_token');
+                await fetch(API_BASE + '/api/notifications/read-all', { method: 'PUT', headers: { 'Authorization': 'Bearer ' + token } });
+                dashNotifications.forEach(n => n.read = true); renderNotifDropdown(); updateNotifBadge();
+            } catch (e) { console.error(e); }
+        }
+        if (localStorage.getItem('8token_token')) { loadDashNotifications(); setInterval(loadDashNotifications, 60000); }
+
+        // ---- IP & PLAN LOGIC (Preserved from original) ----
+        // ---- IP BLOCK LOGIC ----
+        let currentNetworkIp = null;
+        let authorizedIp = null;
+
+        async function loadIpInfo() {
+            try {
+                const token = localStorage.getItem('8token_token');
+                const headers = { 'Authorization': 'Bearer ' + token };
+
+                // Fetch IP info and current network IP in parallel
+                const [ipRes, currentIpRes] = await Promise.all([
+                    fetch(API_BASE + '/api/user/ip-info', { headers }),
+                    fetch(API_BASE + '/api/user/current-ip', { headers })
+                ]);
+
+                const data = ipRes.ok ? await ipRes.json() : {};
+                const currentIpData = currentIpRes.ok ? await currentIpRes.json() : {};
+
+                currentNetworkIp = currentIpData.ip || null;
+                authorizedIp = data.ip || null;
+
+                // IP Autorizado
+                const ipMainEl = document.getElementById('ipMainValue');
+                const statusBadge = document.getElementById('ipStatusBadge');
+                if (ipMainEl) ipMainEl.textContent = authorizedIp || 'Nenhum IP cadastrado';
+
+                if (statusBadge) {
+                    const status = data.status || 'unknown';
+                    let color = 'var(--text-muted)', bg = 'rgba(122,117,117,0.15)', label = status;
+                    if (status === 'active') { color = 'var(--accent-green)'; bg = 'rgba(0,255,148,0.1)'; label = 'Ativo'; }
+                    else if (status === 'expired') { color = 'var(--accent-red)'; bg = 'rgba(255,51,51,0.1)'; label = 'Expirado'; }
+                    else if (status === 'suspended') { color = 'var(--accent-amber)'; bg = 'rgba(245,158,11,0.1)'; label = 'Suspenso'; }
+                    statusBadge.style.color = color; statusBadge.style.background = bg; statusBadge.textContent = label;
+                }
+
+                // Pending change
+                const pendingEl = document.getElementById('ipPendingChange');
+                if (pendingEl && data.pending_ip_change) {
+                    pendingEl.style.display = 'block';
+                    pendingEl.textContent = '⏳ Alteração pendente para ' + data.pending_ip_change.new_ip;
+                } else if (pendingEl) {
+                    pendingEl.style.display = 'none';
+                }
+
+                // IP Atual da Rede
+                const currentIpEl = document.getElementById('ipCurrentNetwork');
+                const authorizeBtn = document.getElementById('btnAuthorizeCurrentIp');
+                const authorizeFeedback = document.getElementById('ipAuthorizeFeedback');
+                if (currentIpEl) currentIpEl.textContent = currentNetworkIp || 'Não detectado';
+                if (authorizeBtn && authorizeFeedback) {
+                    authorizeFeedback.style.display = 'none';
+                    if (currentNetworkIp && authorizedIp && currentNetworkIp === authorizedIp) {
+                        authorizeBtn.style.display = 'inline-flex';
+                        authorizeBtn.textContent = 'IP da rede liberado!';
+                        authorizeBtn.disabled = true;
+                        authorizeBtn.style.background = 'var(--accent-green)';
+                        authorizeBtn.style.borderColor = 'var(--accent-green)';
+                    } else if (currentNetworkIp) {
+                        authorizeBtn.style.display = 'inline-flex';
+                        authorizeBtn.textContent = 'Liberar este IP';
+                        authorizeBtn.disabled = false;
+                        authorizeBtn.style.background = '';
+                        authorizeBtn.style.borderColor = '';
+                    } else {
+                        authorizeBtn.style.display = 'none';
+                    }
+                }
+
+                // IP Adicional
+                const notPurchasedEl = document.getElementById('ipAdditionalNotPurchased');
+                const purchasedEl = document.getElementById('ipAdditionalPurchased');
+                const additionalValueEl = document.getElementById('ipAdditionalValue');
+                const additionalActionsEl = document.getElementById('ipAdditionalActions');
+                const additionalExpiresEl = document.getElementById('ipAdditionalExpires');
+
+                if (data.has_additional_ip) {
+                    if (notPurchasedEl) notPurchasedEl.style.display = 'none';
+                    if (purchasedEl) purchasedEl.style.display = 'block';
+                    if (additionalValueEl) {
+                        additionalValueEl.textContent = data.additional_ip || 'Não definido';
+                        additionalValueEl.style.color = data.additional_ip ? 'var(--accent-green)' : 'var(--text-muted)';
+                    }
+                    if (additionalExpiresEl) {
+                        if (data.additional_ip_expires_at) {
+                            const expDate = new Date(data.additional_ip_expires_at);
+                            additionalExpiresEl.textContent = 'Vence em ' + expDate.toLocaleDateString('pt-BR');
+                            additionalExpiresEl.style.display = 'block';
+                        } else {
+                            additionalExpiresEl.style.display = 'none';
+                        }
+                    }
+                    if (additionalActionsEl) {
+                        additionalActionsEl.innerHTML =
+                            '<button class="btn-upgrade btn-secondary" onclick="toggleAdditionalIpForm()" style="height:30px;padding:0 10px;font-size:11px;">Editar</button>' +
+                            '<button class="btn-upgrade btn-secondary" onclick="removeAdditionalIp()" style="height:30px;padding:0 10px;font-size:11px;border-color:var(--accent-red);color:var(--accent-red);">Excluir</button>';
+                    }
+                } else {
+                    if (notPurchasedEl) notPurchasedEl.style.display = 'block';
+                    if (purchasedEl) purchasedEl.style.display = 'none';
+                    if (additionalExpiresEl) additionalExpiresEl.style.display = 'none';
+                }
+            } catch (e) { console.error('Load IP info error:', e); }
+        }
+        loadIpInfo();
+
+        // Authorize current network IP as main IP
+        async function authorizeCurrentIp() {
+            const btn = document.getElementById('btnAuthorizeCurrentIp');
+            const feedback = document.getElementById('ipAuthorizeFeedback');
+            if (btn) { btn.disabled = true; btn.textContent = 'Liberando...'; }
+            try {
+                const token = localStorage.getItem('8token_token');
+                const res = await fetch(API_BASE + '/api/user/authorize-current-ip', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-green)'; feedback.textContent = data.message || 'IP liberado com sucesso!'; }
+                    loadIpInfo();
+                } else {
+                    if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-red)'; feedback.textContent = data.error || 'Erro ao liberar IP.'; }
+                }
+            } catch (e) {
+                if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-red)'; feedback.textContent = 'Erro de conexão.'; }
+            } finally {
+                if (btn) { btn.disabled = false; btn.textContent = 'Liberar este IP'; }
+            }
+        }
+
+        // Buy additional IP — redirect to checkout
+        function buyAdditionalIp() { window.location.href = 'checkout-ip.html'; }
+
+        // Toggle additional IP edit form
+        function toggleAdditionalIpForm() {
+            const form = document.getElementById('ipAdditionalForm');
+            const feedback = document.getElementById('ipAdditionalFeedback');
+            if (!form) return;
+            const willShow = form.style.display === 'none';
+            form.style.display = willShow ? 'block' : 'none';
+            if (willShow) {
+                const input = document.getElementById('ipAdditionalInput');
+                if (input) { input.value = ''; setTimeout(() => input.focus(), 50); }
+                if (feedback) feedback.style.display = 'none';
+            }
+        }
+
+        // Save additional IP
+        async function saveAdditionalIp() {
+            const input = document.getElementById('ipAdditionalInput');
+            const saveBtn = document.getElementById('ipAdditionalSaveBtn');
+            const feedback = document.getElementById('ipAdditionalFeedback');
+            const ip = input ? input.value.trim() : '';
+            if (!ip) { if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-red)'; feedback.textContent = 'Digite um IP válido.'; } return; }
+            if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(ip)) { if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-red)'; feedback.textContent = 'Formato de IP inválido.'; } return; }
+            if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Salvando...'; }
+            try {
+                const token = localStorage.getItem('8token_token');
+                const res = await fetch(API_BASE + '/api/user/additional-ip', {
+                    method: 'PUT',
+                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ip })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-green)'; feedback.textContent = 'IP adicional salvo!'; }
+                    loadIpInfo();
+                    setTimeout(toggleAdditionalIpForm, 1200);
+                } else {
+                    if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-red)'; feedback.textContent = data.error || 'Erro ao salvar IP.'; }
+                }
+            } catch (e) {
+                if (feedback) { feedback.style.display = 'block'; feedback.style.color = 'var(--accent-red)'; feedback.textContent = 'Erro de conexão.'; }
+            } finally {
+                if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Salvar'; }
+            }
+        }
+
+        // Remove additional IP
+        async function removeAdditionalIp() {
+            if (!confirm('Excluir o IP adicional?')) return;
+            try {
+                const token = localStorage.getItem('8token_token');
+                const res = await fetch(API_BASE + '/api/user/additional-ip', {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (res.ok) { loadIpInfo(); } else { alert('Erro ao remover IP adicional.'); }
+            } catch (e) { alert('Erro de conexão.'); }
+        }
+
+        function toggleIpChangeForm() {
+            const form = document.getElementById('ipChangeForm'); const btn = document.getElementById('ipChangeToggleBtn'); const feedback = document.getElementById('ipChangeFeedback');
+            if (!form) return;
+            const willShow = form.style.display === 'none';
+            form.style.display = willShow ? 'block' : 'none';
+            if (btn) btn.textContent = willShow ? 'Cancelar' : 'Solicitar Alteração';
+            if (willShow) { const input = document.getElementById('ipChangeInput'); if (input) { input.value = ''; setTimeout(() => input.focus(), 50); } if (feedback) feedback.style.display = 'none'; }
+        }
+        function showIpFeedback(msg, ok) {
+            const feedback = document.getElementById('ipChangeFeedback'); if (!feedback) return;
+            feedback.style.display = 'block'; feedback.style.color = ok ? 'var(--accent-green)' : 'var(--accent-red)'; feedback.textContent = msg;
+        }
+        async function submitIpChange() {
+            const input = document.getElementById('ipChangeInput'); const submitBtn = document.getElementById('ipChangeSubmitBtn'); const newIp = input ? input.value.trim() : '';
+            if (!newIp) { showIpFeedback('Digite um IP válido.', false); return; }
+            if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(newIp)) { showIpFeedback('Formato inválido.', false); return; }
+            if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Enviando...'; }
+            try {
+                const token = localStorage.getItem('8token_token');
+                const res = await fetch(API_BASE + '/api/user/change-ip', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ new_ip: newIp.trim() }) });
+                const data = await res.json();
+                if (res.ok) { showIpFeedback(data.message || 'Solicitação enviada.', true); if (input) input.value = ''; loadIpInfo(); setTimeout(toggleIpChangeForm, 1800); } else { showIpFeedback(data.error || 'Erro.', false); }
+            } catch (e) { showIpFeedback('Erro de conexão.', false); }
+            finally { if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Enviar Solicitação'; } }
+        }
+
+        // ---- API KEY LOGIC ----
+        function copyApiKey() {
+            const val = document.getElementById('apiKeyValue').textContent;
+            navigator.clipboard.writeText(val).then(() => alert('Chave copiada!'));
+        }
+        function copyGatewayUrl() {
+            const val = document.getElementById('gatewayUrlValue').textContent;
+            navigator.clipboard.writeText(val).then(() => alert('URL copiada!'));
+        }
+        function regenerateApiKey() {
+            if(confirm('Gerar nova chave? A antiga será invalidada.')) {
+                alert('Funcionalidade de regeneração requer backend integration.');
+            }
+        }
+    </script>
+</body>
+</html>
