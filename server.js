@@ -1334,10 +1334,6 @@ app.delete('/api/admin/users/:subId/delete-complete', adminAuth, async (req, res
 // --- ADMIN: RESET SUBSCRIPTION (alias route matching frontend call) ---
 app.post('/api/admin/subscriptions/:id/reset', adminAuth, async (req, res) => {
   const { id } = req.params;
-  const { admin_password } = req.body;
-  if (admin_password !== ADMIN_SECRET) {
-    return res.status(403).json({ error: 'Senha de administrador incorreta' });
-  }
   try {
     const { data: sub, error: subErr } = await supabase
       .from('ip_subscriptions').select('id, user_id, ip, plan').eq('id', id).single();
@@ -1383,10 +1379,6 @@ app.post('/api/admin/subscriptions/:id/reset', adminAuth, async (req, res) => {
 // --- ADMIN: DELETE SUBSCRIPTION COMPLETE (alias route matching frontend call) ---
 app.delete('/api/admin/subscriptions/:id/delete-complete', adminAuth, async (req, res) => {
   const { id } = req.params;
-  const { admin_password } = req.body;
-  if (admin_password !== ADMIN_SECRET) {
-    return res.status(403).json({ error: 'Senha de administrador incorreta' });
-  }
   try {
     const { data: sub, error: subErr } = await supabase
       .from('ip_subscriptions').select('id, user_id, ip').eq('id', id).single();
