@@ -1330,6 +1330,93 @@ app.delete('/api/admin/users/:subId/delete-complete', adminAuth, async (req, res
   }
 });
 
+
+// --- ADMIN: RESET SUBSCRIPTION (alias route matching frontend call) ---
+app.post('/api/admin/subscriptions/:id/reset', adminAuth, async (req, res) => {
+  const { id } = req.params;
+  const { admin_password } = req.body;
+  if (admin_password !== ADMIN_SECRET) {
+    return res.status(403).json({ error: 'Senha de administrador incorreta' });
+  }
+  try {
+    const { data: sub, error: subErr } = await supabase
+      .from('ip_subscriptions').select('id, user_id, ip, plan').eq('id', id).single();
+    if (subErr || !sub) return res.status(404).json({ error: 'Assinatura n\u00e3o encontrada' });
+    const oldUserId = sub.user_id;
+    if (!oldUserId) return res.status(400).json({ error: 'Esta assinatura n\u00e3o tem user_id vinculado' });
+    const newUserId = crypto.randomUUID();
+    const { data: oldUser } = await supabase.from('users').select('*').eq('id', oldUserId).single();
+    if (!oldUser) return res.status(404).json({ error: 'Usu\u00e1rio n\u00e3o encontrado na tabela users' });
+    const { error: insertErr } = await supabase.from('users').insert({
+      id: newUserId, email: oldUser.email, name: oldUser.name,
+      role: oldUser.role || 'user', plan: 'free', plan_expires_at: null,
+      created_at: new Date().toISOString(), updated_at: new Date().toISOString()
+    });
+    if (insertErr) return res.status(500).json({ error: 'Falha ao criar novo registro: ' + insertErr.message });
+    await supabase.from('users').delete().eq('id', oldUserId);
+    await supabase.from('ip_subscriptions').update({
+      user_id: newUserId, plan: 'free', status: 'pending_ip',
+      ip: 'pending-activation', expires_at: null,
+      notes: `[RESET ${new Date().toISOString()}] Conta resetada pelo admin. Old user_id: ${oldUserId}`
+    }).eq('id', id);
+    await supabase.from('api_keys').delete().eq('user_id', oldUserId);
+    const { data: oldKeys } = await supabase.from('api_keys').select('id').eq('user_id', oldUserId);
+    if (oldKeys && oldKeys.length > 0) {
+      await supabase.from('key_authorized_ips').delete().in('key_id', oldKeys.map(k => k.id));
+    }
+    await supabase.from('invoices').update({
+      status: 'archived_reset',
+      notes: `Conta resetada em ${new Date().toISOString()}. New user_id: ${newUserId}`
+    }).eq('user_id', oldUserId);
+    await supabase.from('plan_audit_log').insert({
+      user_id: newUserId, actor: 'admin', action: 'account_reset',
+      field_changed: 'user_id', old_value: oldUserId, new_value: newUserId
+    });
+    console.log(`[Admin Reset] User ${oldUser.email} reset: ${oldUserId} -> ${newUserId}`);
+    res.json({ success: true, message: 'Conta resetada com sucesso', old_user_id: oldUserId, new_user_id: newUserId });
+  } catch (err) {
+    console.error('[Admin Reset] Error:', err);
+    res.status(500).json({ error: 'Erro ao resetar conta: ' + err.message });
+  }
+});
+
+// --- ADMIN: DELETE SUBSCRIPTION COMPLETE (alias route matching frontend call) ---
+app.delete('/api/admin/subscriptions/:id/delete-complete', adminAuth, async (req, res) => {
+  const { id } = req.params;
+  const { admin_password } = req.body;
+  if (admin_password !== ADMIN_SECRET) {
+    return res.status(403).json({ error: 'Senha de administrador incorreta' });
+  }
+  try {
+    const { data: sub, error: subErr } = await supabase
+      .from('ip_subscriptions').select('id, user_id, ip').eq('id', id).single();
+    if (subErr || !sub) return res.status(404).json({ error: 'Assinatura n\u00e3o encontrada' });
+    const userId = sub.user_id;
+    if (!userId) {
+      await supabase.from('ip_subscriptions').delete().eq('id', id);
+      return res.json({ success: true, message: 'Assinatura sem usu\u00e1rio vinculada deletada' });
+    }
+    const { data: user } = await supabase.from('users').select('email, name').eq('id', userId).single();
+    const userEmail = user?.email || 'unknown';
+    const { data: userKeys } = await supabase.from('api_keys').select('id').eq('user_id', userId);
+    if (userKeys && userKeys.length > 0) {
+      await supabase.from('key_authorized_ips').delete().in('key_id', userKeys.map(k => k.id));
+    }
+    await supabase.from('api_keys').delete().eq('user_id', userId);
+    await supabase.from('ip_subscriptions').delete().eq('user_id', userId);
+    await supabase.from('invoices').delete().eq('user_id', userId);
+    await supabase.from('plan_audit_log').delete().eq('user_id', userId);
+    await supabase.from('affiliates').delete().eq('user_id', userId);
+    await supabase.from('users').delete().eq('id', userId);
+    console.log(`[Admin Delete] User ${userEmail} (${userId}) completely deleted`);
+    res.json({ success: true, message: `Usu\u00e1rio ${userEmail} deletado permanentemente`, deleted_user_id: userId });
+  } catch (err) {
+    console.error('[Admin Delete] Error:', err);
+    res.status(500).json({ error: 'Erro ao deletar usu\u00e1rio: ' + err.message });
+  }
+});
+
+
 // --- ADMIN: FIX LEGACY IPS — reset subscriptions that have a real IP but user never authorized it ---
 // Logic: if a subscription has status 'active' and an IP that is NOT in key_authorized_ips for that user,
 // it was auto-set by the old webhook bug. Reset to pending-activation + pending_ip.
@@ -1781,9 +1868,6 @@ app.post('/api/admin/setup', adminAuth, async (req, res) => {
         results.push({ action: 'promote-admin', email: 'matetomete@gmail.com', status: 'already-exists-promoted' });
       } else {
         results.push({ action: 'promote-admin', email: 'matetomete@gmail.com', status: 'error', error: insErr?.message });
-      }
-    }
-        results.push({ action: 'link-subaffiliate', status: 'linked', parent: affRecord.id, child: subRecord.id });
       }
     }
 
