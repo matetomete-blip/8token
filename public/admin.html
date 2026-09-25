@@ -265,8 +265,7 @@
             </a>
             <div class="navbar-right">
                 <button class="btn btn-secondary btn-sm" onclick="fixLegacyIps()" style="border-color:var(--accent-amber);color:var(--accent-amber);">🔧 Corrigir IPs Legados</button>
-                <button class="btn btn-secondary btn-sm" onclick="createTestAccounts()" style="border-color:var(--accent-purple);color:var(--accent-purple);">⚡ Contas Teste</button>
-                <a href="dashboard.html" class="btn btn-secondary btn-sm">Dashboard</a>
+                                <a href="dashboard.html" class="btn btn-secondary btn-sm">Dashboard</a>
                 <a href="index.html" class="btn btn-secondary btn-sm">Site</a>
             </div>
         </div>
@@ -475,14 +474,14 @@
                         <div class="form-group" style="grid-column: 1 / -1;"><label class="form-label">Notas</label><textarea id="fieldNotes" class="form-input" placeholder="Observações internas..."></textarea></div>
                     </div>
 
-                    <div style="display:flex;gap:var(--space-md);margin-top:var(--space-lg);justify-content:space-between;align-items:center;">
-                        <div style="display:flex;gap:var(--space-sm);" id="dangerZoneButtons">
+                    <div style="display:flex;gap:var(--space-sm);margin-top:var(--space-lg);justify-content:space-between;align-items:center;flex-wrap:wrap;">
+                        <div style="display:flex;gap:var(--space-xs);flex-wrap:wrap;" id="dangerZoneButtons">
                             <button class="btn btn-warning btn-sm" onclick="resetUserAccount()" id="btnResetUser" style="display:none;">🔄 Resetar Conta</button>
                             <button class="btn btn-danger btn-sm" onclick="deleteUserCompletely()" id="btnDeleteUser" style="display:none;">🗑️ Deletar Usuário</button>
                         </div>
-                        <div style="display:flex;gap:var(--space-md);">
-                            <button class="btn btn-secondary" onclick="closeUserModal()">Cancelar</button>
-                            <button class="btn btn-primary" onclick="saveSubscription()">Salvar Alterações</button>
+                        <div style="display:flex;gap:var(--space-sm);flex-wrap:wrap;margin-left:auto;">
+                            <button class="btn btn-secondary btn-sm" onclick="closeUserModal()">Cancelar</button>
+                            <button class="btn btn-primary btn-sm" onclick="saveSubscription()">Salvar Alterações</button>
                         </div>
                     </div>
                 </div>
@@ -1449,20 +1448,7 @@
             } catch (e) { showAlert('userFormAlert', e.message, 'error'); }
         }
 
-        async function createTestAccounts() {
-            if (!confirm('Isso criará 5 contas teste (admin, afiliado, subafiliado, usuário ativo, usuário expirado). Continuar?')) return;
-            try {
-                const result = await apiFetch('/api/admin/test-accounts/create', { method: 'POST' });
-                let msg = 'Contas criadas:\n';
-                result.accounts.forEach(a => {
-                    msg += `\n[${a.type}] ${a.email} / ${a.password}`;
-                    if (a.code) msg += ` (código: ${a.code})`;
-                });
-                alert(msg);
-                loadSubscriptions(); loadAffiliates(); loadDashboard();
-            } catch (e) { alert(e.message); }
-        }
-
+        
         async function loadSubscriptions() {
             try {
                 allSubs = await apiFetch('/api/admin/subscriptions');
