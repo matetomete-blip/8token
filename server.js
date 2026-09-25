@@ -563,7 +563,7 @@ app.post('/api/webhooks/kirvano', async (req, res) => {
     if (existingSub) {
       const { error: subUpdateErr } = await supabase
         .from('ip_subscriptions')
-        .update({ plan, status: 'active', expires_at: expiresAt, auto_renew: true })
+        .update({ plan, status: 'active', expires_at: expiresAt })
         .eq('id', existingSub.id);
       if (subUpdateErr) {
         console.error('[Kirvano Webhook] Failed to update subscription:', subUpdateErr);
@@ -574,7 +574,7 @@ app.post('/api/webhooks/kirvano', async (req, res) => {
       const ip = req.clientIp || 'pending-activation';
       const { data: newSub, error: subInsertErr } = await supabase
         .from('ip_subscriptions')
-        .insert({ user_id: user.id, ip, plan, status: 'active', expires_at: expiresAt, auto_renew: true })
+        .insert({ user_id: user.id, ip, plan, status: 'active', expires_at: expiresAt })
         .select('id')
         .single();
       if (subInsertErr) {
@@ -1426,7 +1426,7 @@ app.post('/api/admin/setup', adminAuth, async (req, res) => {
 // --- ADMIN: WEBHOOK KIRVANO CONFIG ---
 app.post('/api/admin/webhook-config', adminAuth, async (req, res) => {
   try {
-    const { webhook_token, product_mensal_id, product_trimestral_id, product_anual_id, checkout_mensal_url, checkout_trimestral_url, checkout_anual_url } = req.body;
+    const { webhook_token, product_mensal_id, product_trimestral_id, product_anual_id, product_ip_adicional_id, checkout_mensal_url, checkout_trimestral_url, checkout_anual_url, checkout_ip_adicional_url } = req.body;
     if (!webhook_token) return res.status(400).json({ error: 'Token do webhook é obrigatório' });
     // Store config in a settings table (create if not exists)
     const configData = {
@@ -1436,9 +1436,11 @@ app.post('/api/admin/webhook-config', adminAuth, async (req, res) => {
         product_mensal_id: product_mensal_id || '',
         product_trimestral_id: product_trimestral_id || '',
         product_anual_id: product_anual_id || '',
+        product_ip_adicional_id: product_ip_adicional_id || '',
         checkout_mensal_url: checkout_mensal_url || '',
         checkout_trimestral_url: checkout_trimestral_url || '',
-        checkout_anual_url: checkout_anual_url || ''
+        checkout_anual_url: checkout_anual_url || '',
+        checkout_ip_adicional_url: checkout_ip_adicional_url || ''
       }),
       updated_at: new Date().toISOString()
     };
