@@ -519,7 +519,13 @@
             <button class="btn btn-primary btn-sm" onclick="submitPasswordModal()" id="pwdModalSubmitBtn" style="min-width:100px;">Confirmar</button>
         </div>
     </div>
-</div>
+</div>                <div class="card">
+                    <h3 style="font-size:16px;font-weight:700;margin-bottom:var(--space-lg);color:var(--text-primary);">📊 Estatísticas Rápidas</h3>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:var(--space-md);">
+                        <div style="padding:var(--space-md);background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">Total de Usuários</div><div style="font-size:24px;font-weight:700;color:var(--accent-orange);" id="totalUsersCount">-</div></div>
+                        <div style="padding:var(--space-md);background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);"><div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">Notificações Enviadas</div><div style="font-size:24px;font-weight:700;color:var(--accent-green);" id="totalNotifsCount">-</div></div>
+                    </div>
+                </div>
             </div>
 
             <!-- TAB: EXPIRED -->
@@ -2314,7 +2320,10 @@
                     apiFetch('/api/admin/stats'),
                     apiFetch('/api/admin/notifications/count').catch(() => null)
                 ]);
-                            } catch (e) { console.error('Notif stats error:', e); }
+                if (usersRes) {
+                    document.getElementById('totalUsersCount').textContent = usersRes.total_users || usersRes.totalUsers || '-';
+                }
+            } catch (e) { console.error('Notif stats error:', e); }
         }
 
         // ---- INIT ----
