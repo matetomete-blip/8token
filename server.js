@@ -1417,7 +1417,7 @@ app.post('/api/admin/deploy', adminAuth, async (req, res) => {
   res.json({ success: true, message: 'Deploy iniciado — servidor vai reiniciar em 2s' });
   setTimeout(() => {
     const { exec } = require('child_process');
-    exec('cd /opt/8token && git pull && pm2 restart 8token', { timeout: 30000 }, (err) => {
+    exec('cd /opt/8token && git stash && git pull && pm2 restart 8token', { timeout: 30000 }, (err) => {
       if (err) console.error('[Deploy] Error:', err.message);
       else console.log('[Deploy] Success — server restarted');
     });

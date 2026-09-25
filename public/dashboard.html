@@ -470,6 +470,31 @@
                     <div class="kpi-value blue" id="kpiTokens">—</div>
                     <div class="kpi-sub">∞ Ilimitado</div>
                 </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Mensagens Hoje</div>
+                    <div class="kpi-value orange" id="kpiMsgToday">—</div>
+                    <div class="kpi-sub">Uso ilimitado</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Mensagens Totais</div>
+                    <div class="kpi-value" id="kpiMsgTotal" style="color:var(--text-primary);">—</div>
+                    <div class="kpi-sub">Desde a criação da conta</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Tokens Processados</div>
+                    <div class="kpi-value blue" id="kpiTokensTotal">—</div>
+                    <div class="kpi-sub">Entrada + saída (estimativa)</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Modelos Usados</div>
+                    <div class="kpi-value green" id="kpiModels">—</div>
+                    <div class="kpi-sub">Modelos distintos nas suas conversas</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Tempo de Resposta</div>
+                    <div class="kpi-value" id="kpiLatency" style="color:var(--accent-teal, #2dd4bf);">—</div>
+                    <div class="kpi-sub">Latência média</div>
+                </div>
             </div>
 
             <!-- IP Autorizado — full width -->
@@ -1061,6 +1086,99 @@
                 alert('Funcionalidade de regeneração requer backend integration.');
             }
         }
+
+        // ---- USAGE STATS (real-time metrics from /api/user/usage-stats) ----
+        function formatNumber(n) {
+            if (n == null) return '—';
+            if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+            if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+            if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+            return n.toLocaleString('pt-BR');
+        }
+
+        async function loadUsageStats() {
+            try {
+                const token = localStorage.getItem('8token_token');
+                if (!token) return;
+                const headers = { 'Authorization': 'Bearer ' + token };
+
+                // Fetch usage stats and API keys in parallel
+                const [usageRes, keysRes] = await Promise.all([
+                    fetch(API_BASE + '/api/user/usage-stats', { headers }),
+                    fetch(API_BASE + '/api/keys', { headers })
+                ]);
+
+                if (usageRes.ok) {
+                    const stats = await usageRes.json();
+
+                    // KPI: Tokens Usados (Mês) — últimos 30 dias
+                    const kpiTokens = document.getElementById('kpiTokens');
+                    if (kpiTokens) kpiTokens.textContent = formatNumber(stats.usage_last_30d_tokens || 0);
+
+                    // KPI: Mensagens Hoje
+                    const kpiMsgToday = document.getElementById('kpiMsgToday');
+                    if (kpiMsgToday) kpiMsgToday.textContent = (stats.today_messages || 0).toLocaleString('pt-BR');
+
+                    // KPI: Mensagens Totais
+                    const kpiMsgTotal = document.getElementById('kpiMsgTotal');
+                    if (kpiMsgTotal) kpiMsgTotal.textContent = (stats.total_messages || 0).toLocaleString('pt-BR');
+
+                    // KPI: Tokens Processados (total vida)
+                    const kpiTokensTotal = document.getElementById('kpiTokensTotal');
+                    if (kpiTokensTotal) kpiTokensTotal.textContent = formatNumber(stats.total_tokens || 0);
+
+                    // KPI: Modelos Usados
+                    const kpiModels = document.getElementById('kpiModels');
+                    if (kpiModels) kpiModels.textContent = (stats.usage_by_model || []).length;
+
+                    // KPI: Tempo de Resposta (latência média)
+                    const kpiLatency = document.getElementById('kpiLatency');
+                    if (kpiLatency) {
+                        const lat = stats.avg_latency_ms || 0;
+                        kpiLatency.textContent = lat > 0 ? (lat >= 1000 ? (lat / 1000).toFixed(1) + 's' : lat + 'ms') : '—';
+                    }
+
+                    // Total tokens no chart header
+                    const tokensChartTotal = document.getElementById('tokensChartTotal');
+                    if (tokensChartTotal) tokensChartTotal.textContent = formatNumber(stats.usage_last_30d_tokens || 0);
+
+                    // Render model bars dynamically
+                    const barList = document.getElementById('tokensBarList');
+                    if (barList && stats.usage_by_model && stats.usage_by_model.length > 0) {
+                        const maxTokens = Math.max(...stats.usage_by_model.map(m => m.tokens_in + m.tokens_out));
+                        const colors = ['fable', 'gpt', 'opus', 'glm', 'fable', 'gpt'];
+                        barList.innerHTML = stats.usage_by_model.map((m, i) => {
+                            const total = m.tokens_in + m.tokens_out;
+                            const pct = maxTokens > 0 ? Math.max(2, (total / maxTokens) * 100) : 2;
+                            const colorClass = colors[i % colors.length];
+                            return `<div class="tokens-bar-item">
+                                <div class="tokens-bar-label">
+                                    <div class="tokens-bar-name">${m.model}</div>
+                                    <div class="tokens-bar-provider">${m.messages} mensagens</div>
+                                </div>
+                                <div class="tokens-bar-track"><div class="tokens-bar-fill ${colorClass}" style="width: ${pct}%;"></div></div>
+                                <div class="tokens-bar-value">${formatNumber(total)} <span class="unit">tokens</span></div>
+                            </div>`;
+                        }).join('');
+                    } else if (barList) {
+                        barList.innerHTML = '<div style="text-align:center;padding:var(--space-lg);color:var(--text-muted);font-size:13px;">Nenhum uso registrado ainda. Comece a usar suas chaves API!</div>';
+                    }
+                }
+
+                // KPI: Chaves API ativas
+                if (keysRes.ok) {
+                    const keys = await keysRes.json();
+                    const activeKeys = (keys || []).filter(k => !k.revoked);
+                    const kpiKeys = document.getElementById('kpiKeys');
+                    if (kpiKeys) kpiKeys.textContent = activeKeys.length;
+                }
+            } catch (e) {
+                console.error('Load usage stats error:', e);
+            }
+        }
+
+        // Load usage stats on page load
+        loadUsageStats();
     </script>
 </body>
 </html>
