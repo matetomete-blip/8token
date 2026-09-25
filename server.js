@@ -353,9 +353,12 @@ app.put('/api/user/name', authenticateToken, async (req, res) => {
 });
 
 // --- API KEYS ---
+// GET /api/keys — lista chaves com IPs autorizados (JOIN key_authorized_ips)
 app.get('/api/keys', authenticateToken, async (req, res) => {
-  const { data } = await supabase.from('api_keys').select('id, name, key_prefix, key_suffix, key_encrypted, created_at, last_used_at, revoked').eq('user_id', req.user.id).order('created_at', { ascending: false });
-  // Decrypt keys for display
+  const { data } = await supabase.from('api_keys')
+    .select('id, name, key_prefix, key_suffix, key_encrypted, created_at, last_used_at, revoked, key_authorized_ips(id, ip, authorized_at)')
+    .eq('user_id', req.user.id)
+    .order('created_at', { ascending: false });
   const keys = (data || []).map(k => {
     let full_key = null;
     if (k.key_encrypted) {
@@ -364,29 +367,95 @@ app.get('/api/keys', authenticateToken, async (req, res) => {
         full_key = decipher.update(k.key_encrypted, 'hex', 'utf8') + decipher.final('utf8');
       } catch (e) { /* decryption failed, leave null */ }
     }
-    return { ...k, full_key };
+    return { ...k, full_key, authorized_ips: k.key_authorized_ips || [] };
   });
   res.json(keys);
 });
 
+// POST /api/keys — gerar chave (máximo 1 ativa por usuário)
 app.post('/api/keys', authenticateToken, async (req, res) => {
+  // Verificar se já existe chave não-revogada
+  const { data: existing } = await supabase.from('api_keys')
+    .select('id').eq('user_id', req.user.id).eq('revoked', false).limit(1);
+  if (existing && existing.length > 0) {
+    return res.status(400).json({ error: 'Você já possui uma chave ativa. Exclua-a antes de gerar uma nova.' });
+  }
   const { name } = req.body;
   const apiKey = generateApiKey();
   const keyHash = crypto.createHash('sha256').update(apiKey).digest('hex');
   const prefix = apiKey.slice(0, 8);
   const suffix = apiKey.slice(-4);
-  // Encrypt the full key for storage (so user can reveal it later)
   let keyEncrypted = null;
   try {
     const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(process.env.JWT_SECRET || 'fallback-secret-key-32chars!!', 'utf8').slice(0, 32), Buffer.alloc(16, 0));
     keyEncrypted = cipher.update(apiKey, 'utf8', 'hex') + cipher.final('hex');
   } catch (e) { console.error('Key encryption failed:', e.message); }
-  const { data } = await supabase.from('api_keys').insert({ user_id: req.user.id, name: name || 'Nova chave', key_hash: keyHash, key_prefix: prefix, key_suffix: suffix, key_encrypted: keyEncrypted }).select().single();
-  res.json({ id: data.id, key: apiKey, name: name || 'Nova chave', prefix, suffix });
+  const { data, error } = await supabase.from('api_keys').insert({
+    user_id: req.user.id, name: name || 'Minha chave', key_hash: keyHash,
+    key_prefix: prefix, key_suffix: suffix, key_encrypted: keyEncrypted
+  }).select().single();
+  if (error) return res.status(500).json({ error: 'Erro ao criar chave: ' + error.message });
+  res.json({ id: data.id, key: apiKey, name: name || 'Minha chave', prefix, suffix });
 });
 
+// DELETE /api/keys/:id — revogar chave + remover todos os IPs autorizados (CASCADE via FK)
 app.delete('/api/keys/:id', authenticateToken, async (req, res) => {
+  // CASCADE na FK key_authorized_ips.api_key_id remove os IPs automaticamente
   await supabase.from('api_keys').update({ revoked: true }).eq('id', req.params.id).eq('user_id', req.user.id);
+  // Limpar cache do gateway para esta chave
+  try {
+    const { data: keyRow } = await supabase.from('api_keys').select('key_hash').eq('id', req.params.id).single();
+    if (keyRow?.key_hash) { deleteCache(keyCache, keyRow.key_hash); deleteCache(subCache, req.user.id); }
+  } catch (_) {}
+  res.json({ success: true });
+});
+
+// POST /api/keys/:id/authorize-ip — autorizar um IP para uma chave específica
+app.post('/api/keys/:id/authorize-ip', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  const { ip, use_current } = req.body;
+  const targetIp = use_current ? req.clientIp : (ip || '').trim();
+  if (!targetIp) return res.status(400).json({ error: 'IP é obrigatório.' });
+  // Verificar que a chave pertence ao usuário e não está revogada
+  const { data: keyRow } = await supabase.from('api_keys')
+    .select('id, revoked').eq('id', id).eq('user_id', req.user.id).single();
+  if (!keyRow) return res.status(404).json({ error: 'Chave não encontrada.' });
+  if (keyRow.revoked) return res.status(400).json({ error: 'Chave revogada.' });
+  // Verificar plano ativo
+  const { data: profile } = await supabase.from('users').select('plan, plan_expires_at').eq('id', req.user.id).single();
+  const hasPlan = profile?.plan && profile.plan !== 'free';
+  const planActive = hasPlan && (!profile?.plan_expires_at || new Date(profile.plan_expires_at) > new Date());
+  if (!planActive) return res.status(403).json({ error: 'Plano ativo necessário para autorizar IPs.' });
+  // Inserir (ignorar duplicata via ON CONFLICT)
+  const { error } = await supabase.from('key_authorized_ips').upsert(
+    { api_key_id: id, ip: targetIp },
+    { onConflict: 'api_key_id,ip', ignoreDuplicates: true }
+  );
+  if (error) return res.status(500).json({ error: 'Erro ao autorizar IP: ' + error.message });
+  // Limpar cache
+  try {
+    const { data: kh } = await supabase.from('api_keys').select('key_hash').eq('id', id).single();
+    if (kh?.key_hash) deleteCache(keyCache, kh.key_hash);
+  } catch (_) {}
+  // Retornar lista atualizada de IPs desta chave
+  const { data: ips } = await supabase.from('key_authorized_ips')
+    .select('id, ip, authorized_at').eq('api_key_id', id).order('authorized_at', { ascending: false });
+  res.json({ success: true, ip: targetIp, authorized_ips: ips || [] });
+});
+
+// DELETE /api/keys/:id/authorized-ips/:ipId — remover um IP autorizado de uma chave
+app.delete('/api/keys/:id/authorized-ips/:ipId', authenticateToken, async (req, res) => {
+  const { id, ipId } = req.params;
+  // Verificar propriedade da chave
+  const { data: keyRow } = await supabase.from('api_keys')
+    .select('id').eq('id', id).eq('user_id', req.user.id).single();
+  if (!keyRow) return res.status(404).json({ error: 'Chave não encontrada.' });
+  await supabase.from('key_authorized_ips').delete().eq('id', ipId).eq('api_key_id', id);
+  // Limpar cache
+  try {
+    const { data: kh } = await supabase.from('api_keys').select('key_hash').eq('id', id).single();
+    if (kh?.key_hash) deleteCache(keyCache, kh.key_hash);
+  } catch (_) {}
   res.json({ success: true });
 });
 
@@ -2200,9 +2269,9 @@ async function validateApiKey(req, res, next) {
     let sub = keyData ? getCached(subCache, keyData.userId) : null;
 
     if (!keyData || !sub) {
-      // Query única com JOIN via PostgREST foreign table
+      // Query: buscar chave + plano do usuário + IPs autorizados para esta chave
       const { data, error } = await supabase.from('api_keys')
-        .select('id, user_id, revoked, ip_subscriptions(ip, additional_ip, has_additional_ip, plan, status, expires_at)')
+        .select('id, user_id, revoked, users(plan, plan_expires_at), key_authorized_ips(ip)')
         .eq('key_hash', keyHash)
         .single();
 
@@ -2212,26 +2281,33 @@ async function validateApiKey(req, res, next) {
       keyData = { id: data.id, userId: data.user_id, revoked: data.revoked };
       setCached(keyCache, keyHash, keyData);
 
-      // Pegar a primeira subscription ativa do array retornado pelo JOIN
-      const activeSub = (data.ip_subscriptions || []).find(s => s.status === 'active');
-      if (!activeSub) return res.status(403).json({ error: 'Nenhum plano ativo encontrado' });
-      sub = activeSub;
+      // Verificar plano ativo do usuário
+      const user = data.users;
+      const hasPlan = user?.plan && user.plan !== 'free';
+      const planActive = hasPlan && (!user?.plan_expires_at || new Date(user.plan_expires_at) > new Date());
+      if (!planActive) return res.status(403).json({ error: 'Plano expirado ou inativo. Renove sua assinatura.' });
+
+      // IPs autorizados para ESTA chave específica
+      const authorizedIps = (data.key_authorized_ips || []).map(r => r.ip);
+      sub = { plan: user.plan, plan_expires_at: user.plan_expires_at, authorized_ips: authorizedIps };
       setCached(subCache, keyData.userId, sub);
     }
     if (keyData.revoked) return res.status(401).json({ error: 'Chave API revogada' });
 
     // 3. Verificar expiração
-    if (sub.expires_at && new Date(sub.expires_at) < new Date()) {
+    if (sub.plan_expires_at && new Date(sub.plan_expires_at) < new Date()) {
       return res.status(403).json({ error: 'Plano expirado. Renove sua assinatura.' });
     }
 
-    // 4. Verificar IP binding
+    // 4. Verificar IP binding — só IPs autorizados para esta chave
     const clientIp = req.clientIp;
-    const allowedIps = [sub.ip];
-    if (sub.has_additional_ip && sub.additional_ip) allowedIps.push(sub.additional_ip);
+    const allowedIps = sub.authorized_ips || [];
+    if (allowedIps.length === 0) {
+      return res.status(403).json({ error: 'Nenhum IP autorizado para esta chave. Autorize seu IP no painel.' });
+    }
     if (!allowedIps.includes(clientIp)) {
       return res.status(403).json({
-        error: `IP não autorizado. Seu IP (${clientIp}) não está vinculado a esta chave. IPs autorizados: ${allowedIps.join(', ')}`
+        error: `IP não autorizado. Seu IP (${clientIp}) não está vinculado a esta chave.`
       });
     }
 
