@@ -464,7 +464,7 @@ app.post('/api/webhooks/kirvano', async (req, res) => {
     // Step 1: Update users.plan atomically
     const { error: userUpdateErr } = await supabase
       .from('users')
-      .update({ plan, plan_expires_at: expiresAt, updated_at: new Date().toISOString() })
+      .update({ plan, plan_expires_at: expiresAt })
       .eq('id', user.id);
     if (userUpdateErr) {
       console.error('[Kirvano Webhook] Failed to update user plan:', userUpdateErr);
@@ -817,7 +817,6 @@ app.post('/api/admin/ips/validate', adminAuth, async (req, res) => {
       const userUpdate = {};
       if (plan) userUpdate.plan = plan;
       if (expires_at) userUpdate.plan_expires_at = expires_at;
-      userUpdate.updated_at = new Date().toISOString();
       await supabase.from('users').update(userUpdate).eq('id', sub.user_id);
     }
   } else {
@@ -834,7 +833,7 @@ app.post('/api/admin/ips/invalidate', adminAuth, async (req, res) => {
   await supabase.from('ip_subscriptions').update({ status: 'suspended' }).eq('ip', ip);
   // CRITICAL: Sync users table — suspended IP means user loses access
   if (sub && sub.user_id) {
-    await supabase.from('users').update({ updated_at: new Date().toISOString() }).eq('id', sub.user_id);
+    // users table has no updated_at column — skip timestamp update
   }
   res.json({ success: true, ip, status: 'suspended' });
 });
@@ -1798,7 +1797,7 @@ app.post('/api/admin/crm/users/:id/sync-plan', adminAuth, async (req, res) => {
     }
 
     // Update user plan
-    await supabase.from('users').update({ plan: canonicalPlan, updated_at: new Date().toISOString() }).eq('id', id);
+    await supabase.from('users').update({ plan: canonicalPlan }).eq('id', id);
 
     // Audit log
     const { data: auditEntry } = await supabase
