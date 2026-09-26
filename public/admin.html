@@ -892,9 +892,10 @@
             };
             const res = await fetch(API_BASE + url, { ...options, headers });
             if (res.status === 401 || res.status === 403) {
-                safeRemoveItem('8token_admin_token');
-                showAdminLoginModal();
-                throw new Error('Sessão expirada ou acesso negado. Faça login novamente.');
+                // NÃO disparar showAdminLoginModal() automaticamente — isso causa loop infinito
+                // Apenas logar o erro e lançar exceção para o caller tratar
+                console.error('API 401/403:', url, res.status);
+                throw new Error('Acesso negado (401/403). Verifique suas credenciais.');
             }
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Erro na requisição');
