@@ -3290,9 +3290,39 @@ async function proxyRequest(req, res, path) {
 
 app.post('/v1/chat/completions', validateApiKey, (req, res) => proxyRequest(req, res, '/chat/completions'));
 app.post('/v1/completions', validateApiKey, (req, res) => proxyRequest(req, res, '/completions'));
+// Middleware leve: valida apenas a chave API (sem IP binding) para endpoints informativos
+async function validateApiKeyOnly(req, res, next) {
+  try {
+    const authHeader = req.headers['authorization'] || '';
+    const apiKey = authHeader.replace('Bearer ', '').trim();
+    if (!apiKey || !apiKey.startsWith('8tk_')) {
+      return res.status(401).json({ error: 'Chave API inválida. Use Authorization: Bearer 8tk_xxx' });
+    }
+    const keyHash = crypto.createHash('sha256').update(apiKey).digest('hex');
+    let keyData = getCached(keyCache, keyHash);
+    if (!keyData) {
+      const { data, error } = await supabase.from('api_keys')
+        .select('id, user_id, revoked')
+        .eq('key_hash', keyHash)
+        .single();
+      if (!data || error) return res.status(401).json({ error: 'Chave API não encontrada' });
+      if (data.revoked) return res.status(401).json({ error: 'Chave API revogada' });
+      keyData = { id: data.id, userId: data.user_id, revoked: data.revoked };
+      setCached(keyCache, keyHash, keyData);
+    }
+    if (keyData.revoked) return res.status(401).json({ error: 'Chave API revogada' });
+    req.apiKeyUser = { id: keyData.id, user_id: keyData.userId };
+    next();
+  } catch (err) {
+    console.error('[validateApiKeyOnly] Error:', err);
+    res.status(500).json({ error: 'Erro interno na validação' });
+  }
+}
+
 // Endpoint nativo /v1/models — retorna lista estática sem depender do upstream
+// Usa validateApiKeyOnly (sem IP binding) pois é endpoint informativo, não proxy
 // Resolve: 502 quando GhostCLI está fora e 404 quando path duplica /v1/v1/models
-app.get('/v1/models', validateApiKey, (req, res) => {
+app.get('/v1/models', validateApiKeyOnly, (req, res) => {
   const models = [
     'claude-fable-5-1',
     'claude-opus-5',
