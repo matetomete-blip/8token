@@ -891,7 +891,7 @@
         }
 
         function handleLogout() {
-            localStorage.removeItem('8token_token');
+            try { localStorage.removeItem('8token_token'); } catch (_) {}
             safeRemoveItem('8token_admin_token');
             window.location.href = '/login';
         }
