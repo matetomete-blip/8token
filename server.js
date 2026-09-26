@@ -3290,7 +3290,23 @@ async function proxyRequest(req, res, path) {
 
 app.post('/v1/chat/completions', validateApiKey, (req, res) => proxyRequest(req, res, '/chat/completions'));
 app.post('/v1/completions', validateApiKey, (req, res) => proxyRequest(req, res, '/completions'));
-app.get('/v1/models', validateApiKey, (req, res) => proxyRequest(req, res, '/models'));
+// Endpoint nativo /v1/models — retorna lista estática sem depender do upstream
+// Resolve: 502 quando GhostCLI está fora e 404 quando path duplica /v1/v1/models
+app.get('/v1/models', validateApiKey, (req, res) => {
+  const models = [
+    'claude-fable-5-1',
+    'claude-opus-5',
+    'claude-sonnet-5',
+    'gpt-6-astra',
+    'glm-5.3',
+  ].map(id => ({
+    id,
+    object: 'model',
+    created: Math.floor(Date.now() / 1000),
+    owned_by: '8token',
+  }));
+  res.json({ object: 'list', data: models });
+});
 app.post('/v1/messages', validateApiKey, (req, res) => proxyRequest(req, res, '/messages'));
 app.post('/v1/embeddings', validateApiKey, (req, res) => proxyRequest(req, res, '/embeddings'));
 
