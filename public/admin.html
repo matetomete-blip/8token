@@ -860,8 +860,16 @@
                 safeSetItem('8token_admin_token', data.token);
                 const overlay = document.getElementById('adminLoginOverlay');
                 if (overlay) overlay.remove();
-                // Recarregar dados sem location.reload() para não zerar _memStore
-                loadDashboard();
+                // Pequeno delay para garantir que o token esteja disponível antes de carregar dados
+                setTimeout(() => {
+                    const tokenCheck = safeGetItem('8token_admin_token');
+                    if (tokenCheck) {
+                        loadDashboard();
+                    } else {
+                        console.error('Token não encontrado após login');
+                        showAdminLoginModal();
+                    }
+                }, 150);
             } catch (e) {
                 if (errEl) { errEl.style.display = 'block'; errEl.textContent = e.message || 'Erro ao autenticar.'; }
                 if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
