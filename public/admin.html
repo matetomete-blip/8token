@@ -774,6 +774,27 @@
     </main>
 
     <script>
+        // Fallback para sessionStorage quando aberto como file:// ou data: URL
+        // (Storage é desabilitado nesses contextos e crasha todo o JS)
+        (function() {
+            try {
+                const testKey = '__storage_test__';
+                sessionStorage.setItem(testKey, '1');
+                sessionStorage.removeItem(testKey);
+            } catch (e) {
+                const memStore = {};
+                const fakeStorage = {
+                    getItem: (k) => Object.prototype.hasOwnProperty.call(memStore, k) ? memStore[k] : null,
+                    setItem: (k, v) => { memStore[k] = String(v); },
+                    removeItem: (k) => { delete memStore[k]; },
+                    clear: () => { for (const k in memStore) delete memStore[k]; },
+                    key: (i) => Object.keys(memStore)[i] || null,
+                    get length() { return Object.keys(memStore).length; }
+                };
+                try { Object.defineProperty(window, 'sessionStorage', { value: fakeStorage, configurable: true }); } catch (_) { window.sessionStorage = fakeStorage; }
+                try { Object.defineProperty(window, 'localStorage', { value: fakeStorage, configurable: true }); } catch (_) { window.localStorage = fakeStorage; }
+            }
+        })();
         const API_BASE = '';
         let allSubs = [];
         let allActivations = [];
