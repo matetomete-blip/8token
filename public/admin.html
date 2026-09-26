@@ -2339,7 +2339,9 @@
         }
 
         // ---- INIT ----
-        loadDashboard();
+        // loadDashboard() NÃO é chamado aqui — só após login TOTP bem-sucedido
+        // Isso evita o loop: apiFetch sem token → 403 → showAdminLoginModal() → repete
+        // O dashboard é carregado pelo setTimeout(150ms) dentro de submitAdminLogin()
 
         // Responsive dash grid
         const style = document.createElement('style');
