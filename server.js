@@ -3230,7 +3230,6 @@ async function proxyRequest(req, res, path) {
       },
       body: ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body),
       signal: controller.signal,
-      dispatcher: keepAliveDispatcher,
     });
     clearTimeout(timeoutId);
     ttfb = Date.now() - startTime; // Captura latência real ANTES de qualquer processing
