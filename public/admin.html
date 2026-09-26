@@ -135,7 +135,8 @@
         }
 
         /* Content Area */
-        .content-area { display: flex; flex-direction: column; gap: var(--space-lg); min-width: 0; }
+        .content-area { display: flex; flex-direction: column; gap: var(--space-lg); min-width: 0; grid-column: 2; }
+        @media (max-width: 1024px) { .content-area { grid-column: 1; } }
         .tab-panel { display: none; }
         .tab-panel.active { display: block; }
 
@@ -419,107 +420,59 @@
                 </div>
             </div>
 
-            <!-- User Edit Modal (Hidden by default) -->
-            <div id="userModal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.85);backdrop-filter:blur(6px);overflow-y:auto;padding:var(--space-md);">
-                <div style="max-width:640px;margin:0 auto;min-height:100%;display:flex;align-items:flex-start;justify-content:center;padding:var(--space-xl) 0;">
-                <div style="width:100%;background:var(--bg-card-solid);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-xl);position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
-                    <button onclick="closeUserModal()" style="position:absolute;top:20px;right:20px;background:none;border:none;color:var(--text-muted);font-size:24px;cursor:pointer;">&times;</button>
-                    <h2 id="userModalTitle" style="margin-bottom:var(--space-lg);font-size:20px;">Editar Usuário</h2>
-                    <div id="userFormAlert" class="alert"></div>
-                    <input type="hidden" id="editId" value="">
+            
 
+            <!-- TAB: NOTIFICATIONS -->
+            <div class="tab-panel" id="tab-notifications">
+                <div class="card">
+                    <div class="card-title">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-orange)" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                        Enviar Notificação para Todos os Usuários
+                    </div>
+                    <p style="color:var(--text-secondary);font-size:13px;margin-bottom:var(--space-lg);line-height:1.6;">Envie uma notificação push ou email para todos os usuários ativos da plataforma. Use com moderação.</p>
+                    <div id="notifFormAlert" class="alert"></div>
                     <div class="form-row">
-                        <div class="form-group"><label class="form-label">Nome</label><input type="text" id="fieldName" class="form-input" placeholder="Nome do usuário"></div>
-                        <div class="form-group"><label class="form-label">Email</label><input type="email" id="fieldEmail" class="form-input" placeholder="email@exemplo.com"></div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group"><label class="form-label">Cargo</label><select id="fieldRole" class="form-select"><option value="user">Usuário</option><option value="admin">Admin</option><option value="affiliate">Afiliado</option></select></div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group"><label class="form-label">Plano</label><select id="fieldPlan" class="form-select"><option value="free">Free</option><option value="mensal">Mensal</option><option value="trimestral">Trimestral</option><option value="anual">Anual</option></select></div>
-                        <div class="form-group"><label class="form-label">Expira em</label><input type="datetime-local" id="fieldExpires" class="form-input"></div>
-                    </div>
-
-                    <!-- Amigos e Família -->
-                    <div style="margin-top:var(--space-sm);margin-bottom:var(--space-md);padding:var(--space-sm) var(--space-md);background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);display:flex;align-items:center;gap:var(--space-sm);">
-                        <input type="checkbox" id="fieldFriendsFamily" style="width:18px;height:18px;accent-color:var(--accent-orange);cursor:pointer;">
-                        <label for="fieldFriendsFamily" style="font-size:13px;color:var(--text-primary);cursor:pointer;user-select:none;">
-                            👨‍👩‍👧 Amigos e Família
-                            <span style="display:block;font-size:11px;color:var(--text-muted);margin-top:2px;">Marque se este usuário não paga — não conta no custo por IP</span>
-                        </label>
-                    </div>
-
-                    <!-- Produto +1 IP Adicional -->
-                    <div style="margin-top:var(--space-md);margin-bottom:var(--space-md);padding:var(--space-md);background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);">
-                        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-sm);">
-                            <div>
-                                <div style="font-size:13px;font-weight:600;color:var(--text-primary);">Produto +1 IP Adicional</div>
-                                <div style="font-size:11px;color:var(--text-muted);margin-top:2px;" id="additionalIpStatus">Carregando...</div>
-                            </div>
-                            <div style="display:flex;gap:var(--space-xs);">
-                                <button class="btn btn-success btn-sm" onclick="adminToggleAdditionalIp(true)" style="font-size:11px;padding:4px 10px;height:28px;">+ Dar +1 IP</button>
-                                <button class="btn btn-danger btn-sm" onclick="adminToggleAdditionalIp(false)" style="font-size:11px;padding:4px 10px;height:28px;">− Remover +1 IP</button>
-                            </div>
+                        <div class="form-group" style="flex:2;">
+                            <label class="form-label">Título da Notificação *</label>
+                            <input type="text" id="notifTitle" class="form-input" placeholder="Ex: Nova funcionalidade disponível!">
                         </div>
-                    </div>
-
-                    <!-- IPs Autorizados — containers individuais por chave/IP -->
-                    <div style="margin-top:var(--space-sm);margin-bottom:var(--space-md);">
-                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-sm);">
-                            <label class="form-label" style="margin-bottom:0;">IPs Autorizados por Chave</label>
-                            <span id="ipCountBadge" style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono);"></span>
-                        </div>
-                        <div id="authorizedIpsContainer" style="display:flex;flex-direction:column;gap:var(--space-sm);">
-                            <div style="text-align:center;padding:var(--space-md);color:var(--text-muted);font-size:12px;">Carregando...</div>
-                        </div>
-                        <!-- Adicionar IP manualmente -->
-                        <div style="margin-top:var(--space-sm);display:flex;gap:var(--space-xs);align-items:stretch;">
-                            <input type="text" id="adminNewIpInput" placeholder="Adicionar IP manualmente (ex: 189.45.12.34)" class="form-input" style="flex:1;font-family:var(--font-mono);font-size:12px;height:32px;padding:0 var(--space-sm);">
-                            <select id="adminNewIpKeySelect" class="form-select" style="width:140px;font-size:11px;height:32px;">
-                                <option value="">Selecionar chave...</option>
+                        <div class="form-group">
+                            <label class="form-label">Tipo</label>
+                            <select id="notifType" class="form-select">
+                                <option value="info">ℹ️ Informação</option>
+                                <option value="success">✅ Sucesso</option>
+                                <option value="warning">⚠️ Aviso</option>
+                                <option value="error">❌ Erro</option>
                             </select>
-                            <button class="btn btn-primary btn-sm" onclick="adminAddIpToKey()" style="font-size:11px;padding:0 10px;height:32px;white-space:nowrap;">+ Adicionar</button>
                         </div>
                     </div>
-                    <div class="form-row">
-                        <div class="form-group"><label class="form-label">Chave API</label><input type="text" id="fieldApiKey" class="form-input" placeholder="Gerada automaticamente" readonly style="opacity:0.7;"></div>
+                    <div class="form-group">
+                        <label class="form-label">Mensagem *</label>
+                        <textarea id="notifMessage" class="form-input" rows="4" placeholder="Escreva a mensagem que será enviada para todos os usuários..."></textarea>
                     </div>
-                    <div class="form-row">
-                        <div class="form-group" style="grid-column: 1 / -1;"><label class="form-label">Notas</label><textarea id="fieldNotes" class="form-input" placeholder="Observações internas..."></textarea></div>
+                    <div style="display:flex;gap:var(--space-sm);margin-top:var(--space-md);align-items:center;flex-wrap:wrap;">
+                        <button class="btn btn-primary" onclick="sendBroadcastNotification()" id="btnSendNotif">🚀 Enviar Notificação</button>
+                        <span id="notifStatus" style="font-size:12px;color:var(--text-muted);"></span>
                     </div>
+                </div>
 
-                    <div style="display:flex;gap:var(--space-sm);margin-top:var(--space-lg);justify-content:space-between;align-items:center;flex-wrap:wrap;">
-                        <div style="display:flex;gap:var(--space-xs);flex-wrap:wrap;" id="dangerZoneButtons">
-                            <button class="btn btn-warning btn-sm" onclick="resetUserAccount()" id="btnResetUser" style="display:none;">🔄 Resetar Conta</button>
-                            <button class="btn btn-danger btn-sm" onclick="deleteUserCompletely()" id="btnDeleteUser" style="display:none;">🗑️ Deletar Usuário</button>
+                <div class="card" style="margin-top:var(--space-lg);">
+                    <div class="card-title">Estatísticas de Notificações</div>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:var(--space-md);margin-top:var(--space-md);">
+                        <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-md);">
+                            <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Total de Usuários</div>
+                            <div style="font-family:var(--font-mono);font-size:24px;font-weight:700;color:var(--accent-blue);" id="notifTotalUsers">—</div>
                         </div>
-                        <div style="display:flex;gap:var(--space-sm);flex-wrap:wrap;margin-left:auto;">
-                            <button class="btn btn-secondary btn-sm" onclick="closeUserModal()">Cancelar</button>
-                            <button class="btn btn-primary btn-sm" onclick="saveSubscription()">Salvar Alterações</button>
+                        <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-md);">
+                            <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Usuários Ativos</div>
+                            <div style="font-family:var(--font-mono);font-size:24px;font-weight:700;color:var(--accent-green);" id="notifActiveUsers">—</div>
+                        </div>
+                        <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-md);">
+                            <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Notificações Enviadas</div>
+                            <div style="font-family:var(--font-mono);font-size:24px;font-weight:700;color:var(--accent-orange);" id="notifSentCount">—</div>
                         </div>
                     </div>
                 </div>
-                </div><!-- end flex wrapper -->
-            </div><!-- end userModal overlay -->
-
-<!-- PASSWORD CONFIRMATION MODAL (overlay on top of userModal) -->
-<div id="passwordConfirmModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:10000;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);align-items:center;justify-content:center;">
-    <div style="background:#111111;border:1px solid #FF5500;border-radius:16px;padding:32px;max-width:420px;width:90%;box-shadow:0 0 40px rgba(255,85,0,0.25),0 20px 60px rgba(0,0,0,0.8);">
-        <div style="text-align:center;margin-bottom:24px;">
-            <div style="font-size:48px;margin-bottom:8px;" id="pwdModalIcon">&#128274;</div>
-            <h3 style="color:#FFFFFF;font-size:18px;font-weight:700;margin-bottom:8px;" id="pwdModalTitle">Confirmação Necessária</h3>
-            <p style="color:#A0A0A0;font-size:13px;line-height:1.5;" id="pwdModalMessage">Digite a senha de administrador para confirmar esta ação.</p>
-        </div>
-        <div style="margin-bottom:24px;">
-            <input type="password" id="pwdModalInput" class="form-input" placeholder="Senha do administrador" style="width:100%;text-align:center;font-size:16px;letter-spacing:2px;" autocomplete="off">
-            <p id="pwdModalError" style="color:#FF3333;font-size:12px;margin-top:8px;display:none;text-align:center;"></p>
-        </div>
-        <div style="display:flex;gap:16px;justify-content:center;">
-            <button class="btn btn-secondary btn-sm" onclick="closePasswordModal()" style="min-width:100px;">Cancelar</button>
-            <button class="btn btn-primary btn-sm" onclick="submitPasswordModal()" id="pwdModalSubmitBtn" style="min-width:100px;">Confirmar</button>
-        </div>
-    </div>
-</div>
             </div>
 
             <!-- TAB: EXPIRED -->
@@ -772,6 +725,89 @@
             </div>
         </div>
     </main>
+<!-- User Edit Modal (Hidden by default) -->
+            <div id="userModal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.85);backdrop-filter:blur(6px);overflow-y:auto;padding:var(--space-md);">
+                <div style="max-width:640px;margin:0 auto;min-height:100%;display:flex;align-items:flex-start;justify-content:center;padding:var(--space-xl) 0;">
+                <div style="width:100%;background:var(--bg-card-solid);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-xl);position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+                    <button onclick="closeUserModal()" style="position:absolute;top:20px;right:20px;background:none;border:none;color:var(--text-muted);font-size:24px;cursor:pointer;">&times;</button>
+                    <h2 id="userModalTitle" style="margin-bottom:var(--space-lg);font-size:20px;">Editar Usuário</h2>
+                    <div id="userFormAlert" class="alert"></div>
+                    <input type="hidden" id="editId" value="">
+
+                    <div class="form-row">
+                        <div class="form-group"><label class="form-label">Nome</label><input type="text" id="fieldName" class="form-input" placeholder="Nome do usuário"></div>
+                        <div class="form-group"><label class="form-label">Email</label><input type="email" id="fieldEmail" class="form-input" placeholder="email@exemplo.com"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label class="form-label">Cargo</label><select id="fieldRole" class="form-select"><option value="user">Usuário</option><option value="admin">Admin</option><option value="affiliate">Afiliado</option></select></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label class="form-label">Plano</label><select id="fieldPlan" class="form-select"><option value="free">Free</option><option value="mensal">Mensal</option><option value="trimestral">Trimestral</option><option value="anual">Anual</option></select></div>
+                        <div class="form-group"><label class="form-label">Expira em</label><input type="datetime-local" id="fieldExpires" class="form-input"></div>
+                    </div>
+
+                    <!-- Amigos e Família -->
+                    <div style="margin-top:var(--space-sm);margin-bottom:var(--space-md);padding:var(--space-sm) var(--space-md);background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);display:flex;align-items:center;gap:var(--space-sm);">
+                        <input type="checkbox" id="fieldFriendsFamily" style="width:18px;height:18px;accent-color:var(--accent-orange);cursor:pointer;">
+                        <label for="fieldFriendsFamily" style="font-size:13px;color:var(--text-primary);cursor:pointer;user-select:none;">
+                            👨‍👩‍👧 Amigos e Família
+                            <span style="display:block;font-size:11px;color:var(--text-muted);margin-top:2px;">Marque se este usuário não paga — não conta no custo por IP</span>
+                        </label>
+                    </div>
+
+                    <!-- Produto +1 IP Adicional -->
+                    <div style="margin-top:var(--space-md);margin-bottom:var(--space-md);padding:var(--space-md);background:var(--bg-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);">
+                        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--space-sm);">
+                            <div>
+                                <div style="font-size:13px;font-weight:600;color:var(--text-primary);">Produto +1 IP Adicional</div>
+                                <div style="font-size:11px;color:var(--text-muted);margin-top:2px;" id="additionalIpStatus">Carregando...</div>
+                            </div>
+                            <div style="display:flex;gap:var(--space-xs);">
+                                <button class="btn btn-success btn-sm" onclick="adminToggleAdditionalIp(true)" style="font-size:11px;padding:4px 10px;height:28px;">+ Dar +1 IP</button>
+                                <button class="btn btn-danger btn-sm" onclick="adminToggleAdditionalIp(false)" style="font-size:11px;padding:4px 10px;height:28px;">− Remover +1 IP</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- IPs Autorizados — containers individuais por chave/IP -->
+                    <div style="margin-top:var(--space-sm);margin-bottom:var(--space-md);">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-sm);">
+                            <label class="form-label" style="margin-bottom:0;">IPs Autorizados por Chave</label>
+                            <span id="ipCountBadge" style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono);"></span>
+                        </div>
+                        <div id="authorizedIpsContainer" style="display:flex;flex-direction:column;gap:var(--space-sm);">
+                            <div style="text-align:center;padding:var(--space-md);color:var(--text-muted);font-size:12px;">Carregando...</div>
+                        </div>
+                        <!-- Adicionar IP manualmente -->
+                        <div style="margin-top:var(--space-sm);display:flex;gap:var(--space-xs);align-items:stretch;">
+                            <input type="text" id="adminNewIpInput" placeholder="Adicionar IP manualmente (ex: 189.45.12.34)" class="form-input" style="flex:1;font-family:var(--font-mono);font-size:12px;height:32px;padding:0 var(--space-sm);">
+                            <select id="adminNewIpKeySelect" class="form-select" style="width:140px;font-size:11px;height:32px;">
+                                <option value="">Selecionar chave...</option>
+                            </select>
+                            <button class="btn btn-primary btn-sm" onclick="adminAddIpToKey()" style="font-size:11px;padding:0 10px;height:32px;white-space:nowrap;">+ Adicionar</button>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label class="form-label">Chave API</label><input type="text" id="fieldApiKey" class="form-input" placeholder="Gerada automaticamente" readonly style="opacity:0.7;"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group" style="grid-column: 1 / -1;"><label class="form-label">Notas</label><textarea id="fieldNotes" class="form-input" placeholder="Observações internas..."></textarea></div>
+                    </div>
+
+                    <div style="display:flex;gap:var(--space-sm);margin-top:var(--space-lg);justify-content:space-between;align-items:center;flex-wrap:wrap;">
+                        <div style="display:flex;gap:var(--space-xs);flex-wrap:wrap;" id="dangerZoneButtons">
+                            <button class="btn btn-warning btn-sm" onclick="resetUserAccount()" id="btnResetUser" style="display:none;">🔄 Resetar Conta</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteUserCompletely()" id="btnDeleteUser" style="display:none;">🗑️ Deletar Usuário</button>
+                        </div>
+                        <div style="display:flex;gap:var(--space-sm);flex-wrap:wrap;margin-left:auto;">
+                            <button class="btn btn-secondary btn-sm" onclick="closeUserModal()">Cancelar</button>
+                            <button class="btn btn-primary btn-sm" onclick="saveSubscription()">Salvar Alterações</button>
+                        </div>
+                    </div>
+                </div>
+                </div><!-- end flex wrapper -->
+            </div><!-- end userModal overlay -->
+
 
     <script>
         // Wrapper seguro para storage — funciona mesmo em file://, data:, preview do editor
@@ -2222,42 +2258,30 @@
             const title = document.getElementById('notifTitle').value.trim();
             const message = document.getElementById('notifMessage').value.trim();
             const type = document.getElementById('notifType').value;
-            const targetPlan = document.getElementById('notifTargetPlan').value;
-            const statusEl = document.getElementById('notifSendStatus');
-            const btn = document.getElementById('sendNotifBtn');
+            const statusEl = document.getElementById('notifStatus');
+            const btn = document.getElementById('btnSendNotif');
+            const alertEl = document.getElementById('notifFormAlert');
 
             if (!title || !message) {
-                statusEl.style.display = 'block';
-                statusEl.style.background = 'rgba(255,51,51,0.1)';
-                statusEl.style.color = 'var(--accent-red)';
-                statusEl.style.border = '1px solid rgba(255,51,51,0.3)';
-                statusEl.textContent = '❌ Título e mensagem são obrigatórios.';
+                if (alertEl) { alertEl.className = 'alert alert-error'; alertEl.textContent = '❌ Título e mensagem são obrigatórios.'; alertEl.style.display = 'block'; }
                 return;
             }
 
             btn.disabled = true;
             btn.textContent = '⏳ Enviando...';
-            statusEl.style.display = 'none';
+            if (alertEl) alertEl.style.display = 'none';
 
             try {
                 const res = await apiFetch('/api/admin/notifications/broadcast', {
                     method: 'POST',
-                    body: JSON.stringify({ title, message, type, target_plan: targetPlan })
+                    body: JSON.stringify({ title, message, type })
                 });
-                statusEl.style.display = 'block';
-                statusEl.style.background = 'rgba(0,255,148,0.1)';
-                statusEl.style.color = 'var(--accent-green)';
-                statusEl.style.border = '1px solid rgba(0,255,148,0.3)';
-                statusEl.textContent = '✅ ' + (res.message || 'Notificação enviada com sucesso!');
+                if (alertEl) { alertEl.className = 'alert alert-success'; alertEl.textContent = '✅ ' + (res.message || 'Notificação enviada com sucesso!'); alertEl.style.display = 'block'; }
                 document.getElementById('notifTitle').value = '';
                 document.getElementById('notifMessage').value = '';
                 loadNotifStats();
             } catch (e) {
-                statusEl.style.display = 'block';
-                statusEl.style.background = 'rgba(255,51,51,0.1)';
-                statusEl.style.color = 'var(--accent-red)';
-                statusEl.style.border = '1px solid rgba(255,51,51,0.3)';
-                statusEl.textContent = '❌ Erro: ' + e.message;
+                if (alertEl) { alertEl.className = 'alert alert-error'; alertEl.textContent = '❌ Erro: ' + e.message; alertEl.style.display = 'block'; }
             } finally {
                 btn.disabled = false;
                 btn.textContent = '🚀 Enviar Notificação';
@@ -2270,7 +2294,13 @@
                     apiFetch('/api/admin/stats'),
                     apiFetch('/api/admin/notifications/count').catch(() => null)
                 ]);
-                            } catch (e) { console.error('Notif stats error:', e); }
+                const totalEl = document.getElementById('notifTotalUsers');
+                const activeEl = document.getElementById('notifActiveUsers');
+                const sentEl = document.getElementById('notifSentCount');
+                if (totalEl) totalEl.textContent = usersRes.totalUsers ?? usersRes.total ?? '—';
+                if (activeEl) activeEl.textContent = usersRes.activeSubscriptions?.length ?? usersRes.active ?? '—';
+                if (sentEl && notifsRes) sentEl.textContent = notifsRes.count ?? notifsRes.total ?? '—';
+            } catch (e) { console.error('Notif stats error:', e); }
         }
 
         // ---- INIT ----
