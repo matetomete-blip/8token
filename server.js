@@ -3278,6 +3278,8 @@ async function proxyRequest(req, res, path) {
   } catch (err) {
     clearTimeout(timeoutId);
     console.error('[proxy] Error:', err.message);
+    console.error('[proxy] Cause:', err.cause?.message || err.cause?.code || 'no cause');
+    console.error('[proxy] Stack:', err.stack?.split('\n').slice(0, 3).join(' | '));
     if (!res.headersSent) {
       if (err.name === 'AbortError') {
         res.status(504).json({ error: 'Upstream timeout — provedor não respondeu em 60s' });
