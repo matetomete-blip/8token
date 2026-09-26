@@ -798,92 +798,26 @@
             return d.innerHTML;
         }
 
-        // JWT-based admin auth — token stored in sessionStorage after login via /api/auth/login
-        function getAdminToken() {
-            const token = safeGetItem('8token_admin_token');
-            if (!token) {
-                showAdminLoginModal();
-                return null;
-            }
-            return token;
-        }
-
-        function showAdminLoginModal() {
-            const existing = document.getElementById('adminLoginOverlay');
-            if (existing) existing.remove();
-            const overlay = document.createElement('div');
-            overlay.id = 'adminLoginOverlay';
-            overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.92);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;';
-            overlay.innerHTML = `
-                <div style="background:#111;border:1px solid #333;border-radius:16px;padding:40px;max-width:400px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
-                    <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FF5500" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                        <h2 style="font-size:20px;font-weight:700;color:#fff;margin:0;">Acesso Admin</h2>
-                    </div>
-                    <p style="font-size:13px;color:#888;margin:0 0 20px;line-height:1.5;">Digite o código de 6 dígitos do seu Google Authenticator para entrar no painel.</p>
-                    <input type="text" id="adminTotpInput" placeholder="000000" maxlength="6" inputmode="numeric" pattern="[0-9]*" autocomplete="one-time-code" spellcheck="false"
-                        style="width:100%;height:56px;padding:0 16px;font-size:28px;font-family:'JetBrains Mono',monospace;font-weight:700;letter-spacing:0.3em;text-align:center;color:#fff;background:#0a0a0a;border:1px solid #333;border-radius:8px;outline:none;box-sizing:border-box;transition:border-color 0.2s;"
-                        onfocus="this.style.borderColor='#FF5500'" onblur="this.style.borderColor='#333'"
-                        oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,6)">
-                    <div id="adminLoginError" style="display:none;font-size:12px;color:#FF3333;margin-top:8px;"></div>
-                    <button id="adminLoginBtn" onclick="submitAdminLogin()" style="width:100%;height:44px;margin-top:16px;font-size:15px;font-weight:600;color:#fff;background:#FF5500;border:none;border-radius:8px;cursor:pointer;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Entrar</button>
-                </div>
-            `;
-            document.body.appendChild(overlay);
-            const totpInput = document.getElementById('adminTotpInput');
-            if (totpInput) {
-                setTimeout(() => totpInput.focus(), 100);
-                totpInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitAdminLogin(); });
-            }
-        }
-
-        async function submitAdminLogin() {
-            const totpInput = document.getElementById('adminTotpInput');
-            const errEl = document.getElementById('adminLoginError');
-            const btn = document.getElementById('adminLoginBtn');
-            const totpToken = totpInput ? totpInput.value.trim() : '';
-            if (!totpToken || totpToken.length !== 6) {
-                if (errEl) { errEl.style.display = 'block'; errEl.textContent = 'Digite o código de 6 dígitos do authenticator.'; }
-                return;
-            }
-            if (btn) { btn.disabled = true; btn.textContent = 'Verificando...'; }
-            try {
-                const res = await fetch(API_BASE + '/api/admin/login-totp', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ totpToken })
-                });
-                const data = await res.json();
-                if (!res.ok || !data.token) {
-                    throw new Error(data.error || 'Código inválido');
-                }
-                safeSetItem('8token_admin_token', data.token);
-                const overlay = document.getElementById('adminLoginOverlay');
-                if (overlay) overlay.remove();
-                // Pequeno delay para garantir que o token esteja disponível antes de carregar dados
-                setTimeout(() => {
-                    const tokenCheck = safeGetItem('8token_admin_token');
-                    if (tokenCheck) {
-                        loadDashboard();
-                    } else {
-                        console.error('Token não encontrado após login');
-                        showAdminLoginModal();
-                    }
-                }, 150);
-            } catch (e) {
-                if (errEl) { errEl.style.display = 'block'; errEl.textContent = e.message || 'Erro ao autenticar.'; }
-                if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
-                if (totpInput) { totpInput.value = ''; totpInput.focus(); }
-            }
-        }
-
-        // Admin secret estático — necessário porque o middleware adminAuth no server.js
-        // verifica X-Admin-Secret, não JWT. Sem isso, toda chamada retorna 403 e causa loop de login.
+        // SEM autenticação adicional no painel admin — usa o token da conta normal (localStorage)
+        // Qualquer usuário logado na conta dele pode acessar o painel admin sem senha/TOTP extra
         const ADMIN_SECRET_STATIC = '3f9a6f8855c93b592bea5e793b60315a816c88a678ccb713a7827bbf9f026836';
+
+        function getAdminToken() {
+            // Usa o token da conta normal (salvo no localStorage pelo login.html/dashboard)
+            let token = null;
+            try { token = localStorage.getItem('8token_token'); } catch (_) {}
+            if (!token) token = safeGetItem('8token_token');
+            if (!token) token = safeGetItem('8token_admin_token');
+            return token || null;
+        }
 
         async function apiFetch(url, options = {}) {
             const token = getAdminToken();
-            if (!token) throw new Error('Autenticação cancelada');
+            if (!token) {
+                // Sem token = usuário não está logado na conta normal → redirecionar para login
+                window.location.href = 'login.html';
+                throw new Error('Não autenticado — redirecionando para login');
+            }
             const headers = {
                 'Content-Type': 'application/json',
                 'Authorization': 'Bearer ' + token,
@@ -2340,9 +2274,8 @@
         }
 
         // ---- INIT ----
-        // loadDashboard() NÃO é chamado aqui — só após login TOTP bem-sucedido
-        // Isso evita o loop: apiFetch sem token → 403 → showAdminLoginModal() → repete
-        // O dashboard é carregado pelo setTimeout(150ms) dentro de submitAdminLogin()
+        // Sem autenticação TOTP/senha extra — qualquer usuário logado acessa o admin direto
+        loadDashboard();
 
         // Responsive dash grid
         const style = document.createElement('style');
