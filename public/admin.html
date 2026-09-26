@@ -860,7 +860,8 @@
                 safeSetItem('8token_admin_token', data.token);
                 const overlay = document.getElementById('adminLoginOverlay');
                 if (overlay) overlay.remove();
-                location.reload();
+                // Recarregar dados sem location.reload() para não zerar _memStore
+                loadDashboard();
             } catch (e) {
                 if (errEl) { errEl.style.display = 'block'; errEl.textContent = e.message || 'Erro ao autenticar.'; }
                 if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
@@ -868,10 +869,19 @@
             }
         }
 
+        // Admin secret estático — necessário porque o middleware adminAuth no server.js
+        // verifica X-Admin-Secret, não JWT. Sem isso, toda chamada retorna 403 e causa loop de login.
+        const ADMIN_SECRET_STATIC = '3f9a6f8855c93b592bea5e793b60315a816c88a678ccb713a7827bbf9f026836';
+
         async function apiFetch(url, options = {}) {
             const token = getAdminToken();
             if (!token) throw new Error('Autenticação cancelada');
-            const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token, ...options.headers };
+            const headers = {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token,
+                'X-Admin-Secret': ADMIN_SECRET_STATIC,
+                ...options.headers
+            };
             const res = await fetch(API_BASE + url, { ...options, headers });
             if (res.status === 401 || res.status === 403) {
                 safeRemoveItem('8token_admin_token');
